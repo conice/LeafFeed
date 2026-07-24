@@ -1,0 +1,48 @@
+package me.ash.reader.infrastructure.preference
+
+import android.content.Context
+import androidx.compose.runtime.compositionLocalOf
+import androidx.datastore.preferences.core.Preferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import me.ash.reader.ui.ext.PreferencesKey
+import me.ash.reader.ui.ext.getPreference
+import me.ash.reader.ui.ext.PreferencesKey.Companion.readingTitleBold
+import me.ash.reader.ui.ext.dataStore
+import me.ash.reader.ui.ext.put
+
+val LocalReadingTitleBold =
+    compositionLocalOf<ReadingTitleBoldPreference> { ReadingTitleBoldPreference.default }
+
+sealed class ReadingTitleBoldPreference(val value: Boolean) : Preference() {
+    object ON : ReadingTitleBoldPreference(true)
+    object OFF : ReadingTitleBoldPreference(false)
+
+    override fun put(context: Context, scope: CoroutineScope) {
+        scope.launch {
+            context.dataStore.put(
+                PreferencesKey.readingTitleBold,
+                value
+            )
+        }
+    }
+
+    companion object {
+
+        val default = OFF
+        val values = listOf(ON, OFF)
+
+        fun fromPreferences(preferences: Preferences) =
+            when (preferences.getPreference<Boolean>(readingTitleBold)) {
+                true -> ON
+                false -> OFF
+                else -> default
+            }
+    }
+}
+
+operator fun ReadingTitleBoldPreference.not(): ReadingTitleBoldPreference =
+    when (value) {
+        true -> ReadingTitleBoldPreference.OFF
+        false -> ReadingTitleBoldPreference.ON
+    }
