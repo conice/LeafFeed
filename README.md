@@ -133,6 +133,14 @@ keyPassword=...
 
 Do not commit keystores or real credentials to the repository.
 
+Non-tag commit and pull-request workflows use the `githubDebug` variant so that
+missing release credentials cannot make ordinary CI runs spend time in R8
+before failing. Tagged releases require these GitHub Actions secrets:
+`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
+and `ANDROID_KEY_PASSWORD`. The keystore secret is the single-line base64
+encoding of the release keystore (for example, `base64 -w 0 release.keystore`
+on Linux).
+
 ## Project Structure
 
 LeafFeed is currently a single-module Android application. Its source code is divided into three main layers:

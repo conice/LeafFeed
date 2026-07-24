@@ -1,5 +1,6 @@
 import java.io.FileInputStream
 import java.util.Properties
+import org.gradle.api.GradleException
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -32,9 +33,39 @@ val debugKeyPropsFile: File = rootProject.file("signature/keystore.properties")
 
 if (releaseKeyPropsFile.exists()) {
     println("Loading keystore properties from ${releaseKeyPropsFile.absolutePath}")
-    keyProps.load(FileInputStream(releaseKeyPropsFile))
+    FileInputStream(releaseKeyPropsFile).use { keyProps.load(it) }
 } else if (debugKeyPropsFile.exists()) {
-    keyProps.load(FileInputStream(debugKeyPropsFile))
+    FileInputStream(debugKeyPropsFile).use { keyProps.load(it) }
+}
+
+fun signingProperty(propertyName: String, environmentName: String): String? =
+    project.providers.environmentVariable(environmentName).orNull
+        ?.takeIf { it.isNotBlank() }
+        ?: keyProps.getProperty(propertyName)?.takeIf { it.isNotBlank() }
+
+val releaseStoreFilePath = signingProperty("storeFile", "LEAFFEED_SIGNING_STORE_FILE")
+val releaseStorePassword = signingProperty("storePassword", "LEAFFEED_SIGNING_STORE_PASSWORD")
+val releaseKeyAlias = signingProperty("keyAlias", "LEAFFEED_SIGNING_KEY_ALIAS")
+val releaseKeyPassword = signingProperty("keyPassword", "LEAFFEED_SIGNING_KEY_PASSWORD")
+val releaseStoreFile = releaseStoreFilePath?.let { project.file(it) }
+val hasReleaseSigning =
+    releaseStoreFile?.isFile == true &&
+        listOf(releaseStorePassword, releaseKeyAlias, releaseKeyPassword).all { !it.isNullOrBlank() }
+
+val releaseBuildRequested = gradle.startParameter.taskNames.any { requestedTask ->
+    val taskName = requestedTask.substringAfterLast(':')
+    (taskName.startsWith("assemble", ignoreCase = true) ||
+        taskName.startsWith("bundle", ignoreCase = true) ||
+        taskName.startsWith("package", ignoreCase = true)) &&
+        taskName.endsWith("Release", ignoreCase = true)
+}
+if (releaseBuildRequested && !hasReleaseSigning) {
+    throw GradleException(
+        "Release signing is not configured. Provide " +
+            "LEAFFEED_SIGNING_STORE_FILE, LEAFFEED_SIGNING_STORE_PASSWORD, " +
+            "LEAFFEED_SIGNING_KEY_ALIAS, and LEAFFEED_SIGNING_KEY_PASSWORD " +
+            "or configure signature/keystore_release.properties.",
+    )
 }
 
 android {
@@ -74,11 +105,13 @@ android {
         }
     }
     signingConfigs {
-        create("release") {
-            keyAlias = keyProps["keyAlias"] as String?
-            keyPassword = keyProps["keyPassword"] as String?
-            storeFile = keyProps["storeFile"]?.let { file(it as String) }
-            storePassword = keyProps["storePassword"] as String?
+        if (hasReleaseSigning) {
+            create("release") {
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+                storeFile = releaseStoreFile
+                storePassword = releaseStorePassword
+            }
         }
     }
     lint { disable.addAll(listOf("MissingTranslation", "ExtraTranslation")) }
@@ -90,9 +123,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            signingConfig = signingConfigs.getByName("release")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
-        all { signingConfig = signingConfigs.getByName("release") }
     }
     applicationVariants.all {
         outputs.all {
