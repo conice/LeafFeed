@@ -13,7 +13,7 @@ jobs:
 
             - uses: gradle/actions/setup-gradle@v5
             - name: Assemble GitHub release with Gradle Wrapper
-              run: ./gradlew assembleGithubRelease
+              run: sh ./gradlew assembleGithubRelease
 
             - uses: actions/upload-artifact@v5
               with:

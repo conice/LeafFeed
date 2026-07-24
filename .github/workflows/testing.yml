@@ -22,6 +22,6 @@ jobs:
       uses: gradle/actions/setup-gradle@v5
 
     - name: Unit Test with Gradle Wrapper
-      run: ./gradlew testGithubReleaseUnitTest --max-workers=2
+      run: sh ./gradlew testGithubReleaseUnitTest --max-workers=2
     - name: Lint GitHub release
-      run: ./gradlew lintGithubRelease --max-workers=2
+      run: sh ./gradlew lintGithubRelease --max-workers=2
