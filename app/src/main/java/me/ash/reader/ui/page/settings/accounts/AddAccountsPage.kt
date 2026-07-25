@@ -64,27 +64,6 @@ fun AddAccountsPage(
                     ) {}
                     Spacer(modifier = Modifier.height(24.dp))
                 }
-/*                item {
-                    Subtitle(
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                        text = stringResource(R.string.services),
-                    )
-                    SettingItem(
-                        enabled = false,
-                        title = stringResource(R.string.feedly),
-                        desc = stringResource(R.string.feedly_desc),
-                        iconPainter = painterResource(id = R.drawable.ic_feedly),
-                        onClick = {},
-                    ) {}
-                    SettingItem(
-                        enabled = false,
-                        title = stringResource(R.string.inoreader),
-                        desc = stringResource(R.string.inoreader_desc),
-                        iconPainter = painterResource(id = R.drawable.ic_inoreader),
-                        onClick = {},
-                    ) {}
-                    Spacer(modifier = Modifier.height(24.dp))
-                }*/
                 item {
                     Subtitle(
                         modifier = Modifier.padding(horizontal = 24.dp),

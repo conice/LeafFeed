@@ -91,7 +91,7 @@
     <string name="settings_search">Search settings</string>
     <string name="settings_account_section">Account and sync</string>
     <string name="settings_reading_section">Reading and appearance</string>
-    <string name="settings_interaction_section">Interaction</string>
+    <string name="settings_interaction_section">General</string>
     <string name="settings_system_section">System and support</string>
     <string name="refresh">Refresh</string>
     <string name="search">Search</string>
@@ -277,6 +277,12 @@
     <string name="podcast_remove_from_queue">Remove from queue</string>
     <string name="podcast_default_title">Podcast</string>
     <string name="settings_reading_title">Reading and articles</string>
+    <string name="settings_accounts_sync_title">Accounts and sync</string>
+    <string name="settings_accounts_sync_desc">Manage accounts and synchronization</string>
+    <string name="settings_general_title">General</string>
+    <string name="settings_media_notifications_title">Podcasts and notifications</string>
+    <string name="settings_media_notifications_desc">Playback, downloads and alerts</string>
+    <string name="settings_help_about_title">Help and about</string>
     <string name="settings_reading_desc">Reading status, article controls and rules</string>
     <string name="settings_media_section">Media and alerts</string>
     <string name="settings_data_section">Data</string>

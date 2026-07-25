@@ -125,7 +125,7 @@ fun ColorAndStylePage(
         content = {
             LazyColumn {
                 item {
-                    DisplayText(text = stringResource(R.string.color_and_style), desc = "")
+                    DisplayText(text = stringResource(R.string.appearance), desc = "")
                 }
                 item {
                     Row(
@@ -141,7 +141,7 @@ fun ColorAndStylePage(
                         DynamicSVGImage(
                             modifier = Modifier.padding(60.dp),
                             svgImageString = SVGString.PALETTE,
-                            contentDescription = stringResource(R.string.color_and_style),
+                            contentDescription = stringResource(R.string.appearance),
                         )
                     }
                     Spacer(modifier = Modifier.height(24.dp))

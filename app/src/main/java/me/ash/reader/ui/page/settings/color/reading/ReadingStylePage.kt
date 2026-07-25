@@ -38,7 +38,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import me.ash.reader.R
-import me.ash.reader.infrastructure.preference.LocalPullToSwitchArticle
 import me.ash.reader.infrastructure.preference.LocalReadingAutoHideToolbar
 import me.ash.reader.infrastructure.preference.LocalReadingBoldCharacters
 import me.ash.reader.infrastructure.preference.LocalReadingFonts
@@ -80,7 +79,6 @@ fun ReadingStylePage(
     val tonalElevation = LocalReadingPageTonalElevation.current
     val fonts = LocalReadingFonts.current
     val autoHideToolbar = LocalReadingAutoHideToolbar.current
-    val pullToSwitchArticle = LocalPullToSwitchArticle.current
     val renderer = LocalReadingRenderer.current
     val boldCharacters = LocalReadingBoldCharacters.current
 
@@ -113,7 +111,7 @@ fun ReadingStylePage(
         content = {
             LazyColumn {
                 item {
-                    DisplayText(text = stringResource(R.string.reading_page), desc = "")
+                    DisplayText(text = "Reading page style", desc = "")
                 }
 
                 // Preview
@@ -203,13 +201,6 @@ fun ReadingStylePage(
                         onClick = {},
                     ) {}
 
-                    SettingItem(
-                        title = stringResource(id = R.string.pull_to_switch_article),
-                        onClick = { pullToSwitchArticle.toggle(context, scope) }) {
-                        RYSwitch(activated = pullToSwitchArticle.value, onClick = {
-                            pullToSwitchArticle.toggle(context, scope)
-                        })
-                    }
                     Subtitle(
                         modifier = Modifier.padding(horizontal = 24.dp),
                         text = stringResource(R.string.toolbars)

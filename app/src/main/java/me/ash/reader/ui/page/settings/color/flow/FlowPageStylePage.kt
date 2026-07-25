@@ -37,11 +37,6 @@ fun FlowPageStylePage(
     val articleListStickyDate = LocalFlowArticleListDateStickyHeader.current
     val articleListTonalElevation = LocalFlowArticleListTonalElevation.current
     val articleListReadIndicator = LocalFlowArticleListReadIndicator.current
-    val sortUnreadArticles = LocalSortUnreadArticles.current
-
-    val settings = LocalSettings.current
-    val pullToSwitchFeed = settings.pullToSwitchFeed
-
     val scope = rememberCoroutineScope()
 
     var filterBarStyleDialogVisible by remember { mutableStateOf(false) }
@@ -51,10 +46,6 @@ fun FlowPageStylePage(
     var articleListTonalElevationDialogVisible by remember { mutableStateOf(false) }
     var articleListReadIndicatorDialogVisible by remember { mutableStateOf(false) }
     var showArticleListDescDialog by remember { mutableStateOf(false) }
-    var showPullToLoadDialog by remember { mutableStateOf(false) }
-
-    var showSortUnreadArticlesDialog by remember { mutableStateOf(false) }
-
     var filterBarPaddingValue: Int? by remember { mutableStateOf(filterBarPadding) }
 
     RYScaffold(
@@ -193,23 +184,6 @@ fun FlowPageStylePage(
                             articleListReadIndicatorDialogVisible = true
                         }
                     )
-                    SettingItem(
-                        title = stringResource(R.string.sort_unread_articles),
-                        onClick = {
-                            showSortUnreadArticlesDialog = true
-                        },
-                        desc = sortUnreadArticles.description()
-                    ) {
-                    }
-
-                    SettingItem(
-                        title = stringResource(R.string.pull_from_bottom),
-                        desc = pullToSwitchFeed.description(),
-                        onClick = {
-                            showPullToLoadDialog = true
-                        },
-                    )
-
                     SettingItem(
                         title = stringResource(R.string.tonal_elevation),
                         desc = "${articleListTonalElevation.value}dp",
@@ -366,35 +340,4 @@ fun FlowPageStylePage(
         articleListReadIndicatorDialogVisible = false
     }
 
-    RadioDialog(
-        visible = showSortUnreadArticlesDialog,
-        title = stringResource(R.string.sort_unread_articles),
-        options = SortUnreadArticlesPreference.values.map {
-            RadioDialogOption(
-                text = it.description(),
-                selected = it == sortUnreadArticles,
-            ) {
-                it.put(context, scope)
-            }
-        },
-        onDismissRequest = {
-            showSortUnreadArticlesDialog = false
-        }
-    )
-
-    RadioDialog(
-        visible = showPullToLoadDialog,
-        title = stringResource(R.string.pull_from_bottom),
-        options = PullToLoadNextFeedPreference.values.map {
-            RadioDialogOption(
-                text = it.description(),
-                selected = it == pullToSwitchFeed,
-            ) {
-                it.put(context, scope)
-            }
-        },
-        onDismissRequest = {
-            showPullToLoadDialog = false
-        }
-    )
 }

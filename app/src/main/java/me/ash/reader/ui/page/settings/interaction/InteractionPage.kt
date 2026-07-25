@@ -55,6 +55,7 @@ import me.ash.reader.ui.theme.palette.onLight
 @Composable
 fun InteractionPage(
     onBack: () -> Unit,
+    navigateToLanguages: () -> Unit,
 ) {
     val context = LocalContext.current
     val initialPage = LocalInitialPage.current
@@ -98,7 +99,7 @@ fun InteractionPage(
         content = {
             LazyColumn {
                 item {
-                    DisplayText(text = stringResource(R.string.interaction), desc = "")
+                    DisplayText(text = stringResource(R.string.settings_general_title), desc = "")
                     Spacer(modifier = Modifier.height(16.dp))
                 }
                 item {
@@ -234,6 +235,16 @@ fun InteractionPage(
                         onClick = {
                             sharedContentDialogVisible = true
                         },
+                    ) {}
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Subtitle(
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        text = stringResource(R.string.settings_system_section),
+                    )
+                    SettingItem(
+                        title = stringResource(R.string.languages),
+                        onClick = navigateToLanguages,
                     ) {}
                     Spacer(modifier = Modifier.height(24.dp))
                 }

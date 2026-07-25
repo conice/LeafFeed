@@ -3,11 +3,6 @@
 package me.ash.reader.ui.page.settings.troubleshooting
 
 import android.content.ClipData
-import android.net.Uri
-import android.widget.Toast
-import androidx.activity.compose.ManagedActivityResultLauncher
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -23,7 +18,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.outlined.Info
-import androidx.compose.material.icons.outlined.ReportGmailerrorred
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -60,15 +54,10 @@ import me.ash.reader.infrastructure.preference.OpenLinkPreference
 import me.ash.reader.ui.component.base.Banner
 import me.ash.reader.ui.component.base.DisplayText
 import me.ash.reader.ui.component.base.FeedbackIconButton
-import me.ash.reader.ui.component.base.RYDialog
 import me.ash.reader.ui.component.base.RYScaffold
 import me.ash.reader.ui.component.base.Subtitle
-import me.ash.reader.ui.ext.DateFormat
-import me.ash.reader.ui.ext.MimeType
 import me.ash.reader.ui.ext.collectAsStateValue
 import me.ash.reader.ui.ext.openURL
-import me.ash.reader.ui.ext.toString
-import me.ash.reader.ui.page.settings.SettingItem
 import me.ash.reader.infrastructure.preference.SyncSummary
 import me.ash.reader.ui.theme.palette.onLight
 
@@ -77,12 +66,6 @@ import me.ash.reader.ui.theme.palette.onLight
 fun TroubleshootingPage(onBack: () -> Unit, viewModel: TroubleshootingViewModel = hiltViewModel()) {
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
-    val scope = rememberCoroutineScope()
-    val uiState = viewModel.troubleshootingUiState.collectAsStateValue()
-    var byteArray by remember { mutableStateOf(ByteArray(0)) }
-    var exportOptionsVisible by remember { mutableStateOf(false) }
-    var includeSensitivePreferences by remember { mutableStateOf(false) }
-
     val syncLogList = remember { mutableStateListOf<Log>() }
     var syncSummary by remember { mutableStateOf<SyncSummary?>(null) }
 
@@ -90,74 +73,6 @@ fun TroubleshootingPage(onBack: () -> Unit, viewModel: TroubleshootingViewModel 
         viewModel.getSyncLogs().let { syncLogList.addAll(it) }
         syncSummary = viewModel.getCurrentSyncSummary()
     }
-
-    val exportLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(MimeType.JSON)) {
-            result ->
-            viewModel.exportPreferencesAsJSON(context, includeSensitivePreferences) { byteArray ->
-                result?.let { uri ->
-                    context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-                        outputStream.write(byteArray)
-                    }
-                }
-            }
-        }
-
-    val importLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
-            it?.let { uri ->
-                context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    byteArray = inputStream.readBytes()
-                    viewModel.tryImport(context, byteArray) { result ->
-                        val message = result.fold(
-                            onSuccess = {
-                                context.getString(
-                                    R.string.preferences_imported,
-                                    it.importedCount,
-                                    it.skippedCount,
-                                )
-                            },
-                            onFailure = { context.getString(R.string.import_failed) },
-                        )
-                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                    }
-                }
-            }
-        }
-
-    val readingDataExportLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(MimeType.JSON)) {
-            uri ->
-            uri?.let {
-                viewModel.exportReadingData { data ->
-                    context.contentResolver.openOutputStream(it)?.use { output ->
-                        output.write(data)
-                    }
-                }
-            }
-        }
-
-    val readingDataImportLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-            uri?.let {
-                context.contentResolver.openInputStream(it)?.use { input ->
-                    viewModel.importReadingData(input.readBytes()) { result ->
-                        val message = result.fold(
-                            onSuccess = { imported ->
-                                context.getString(
-                                    R.string.reading_data_imported,
-                                    imported.tags,
-                                    imported.notes,
-                                    imported.savedSearches,
-                                )
-                            },
-                            onFailure = { context.getString(R.string.import_failed) },
-                        )
-                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
-                    }
-                }
-            }
-        }
 
     val onetimeWorkerInfos =
         viewModel.workManager
@@ -183,7 +98,7 @@ fun TroubleshootingPage(onBack: () -> Unit, viewModel: TroubleshootingViewModel 
         content = {
             LazyColumn {
                 item {
-                    DisplayText(text = stringResource(R.string.troubleshooting), desc = "")
+                    DisplayText(text = "Diagnostic details", desc = "")
                     Spacer(modifier = Modifier.height(16.dp))
                     Banner(
                         title = stringResource(R.string.bug_report),
@@ -201,34 +116,6 @@ fun TroubleshootingPage(onBack: () -> Unit, viewModel: TroubleshootingViewModel 
                         )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
-                }
-                item {
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Subtitle(
-                        modifier = Modifier.padding(horizontal = 24.dp),
-                        text = "Backup and recovery",
-                    )
-                    SettingItem(
-                        title = stringResource(R.string.import_from_json),
-                        onClick = { importLauncher.launch(arrayOf(MimeType.ANY)) },
-                    ) {}
-                    SettingItem(
-                        title = stringResource(R.string.export_as_json),
-                        onClick = { exportOptionsVisible = true },
-                    ) {}
-                    SettingItem(
-                        title = stringResource(R.string.import_reading_data),
-                        onClick = { readingDataImportLauncher.launch(arrayOf(MimeType.JSON)) },
-                    ) {}
-                    SettingItem(
-                        title = stringResource(R.string.export_reading_data),
-                        onClick = {
-                            readingDataExportLauncher.launch(
-                                "LeafFeed-reading-${Date().toString(DateFormat.YYYYMMDD_DASH_HHMM)}.json"
-                            )
-                        },
-                    ) {}
-                    Spacer(modifier = Modifier.height(24.dp))
                 }
                 item {
                     Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = "Worker infos")
@@ -312,70 +199,6 @@ fun TroubleshootingPage(onBack: () -> Unit, viewModel: TroubleshootingViewModel 
         },
     )
 
-    RYDialog(
-        visible = exportOptionsVisible,
-        onDismissRequest = { exportOptionsVisible = false },
-        title = { Text(text = stringResource(R.string.export_as_json)) },
-        text = { Text(text = stringResource(R.string.export_preferences_sensitive_warning)) },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    exportOptionsVisible = false
-                    includeSensitivePreferences = false
-                    preferenceFileLauncher(exportLauncher)
-                }
-            ) {
-                Text(text = stringResource(R.string.export_without_api_keys))
-            }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = {
-                    exportOptionsVisible = false
-                    includeSensitivePreferences = true
-                    preferenceFileLauncher(exportLauncher)
-                }
-            ) {
-                Text(text = stringResource(R.string.export_with_api_keys))
-            }
-        },
-    )
-
-    RYDialog(
-        visible = uiState.warningDialogVisible,
-        onDismissRequest = { viewModel.hideWarningDialog() },
-        icon = {
-            Icon(
-                imageVector = Icons.Outlined.ReportGmailerrorred,
-                contentDescription = stringResource(R.string.import_from_json),
-            )
-        },
-        title = { Text(text = stringResource(R.string.import_from_json)) },
-        text = { Text(text = stringResource(R.string.invalid_json_file_warning)) },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    viewModel.hideWarningDialog()
-                    viewModel.importPreferencesFromJSON(context, byteArray)
-                }
-            ) {
-                Text(text = stringResource(R.string.confirm))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = { viewModel.hideWarningDialog() }) {
-                Text(text = stringResource(R.string.cancel))
-            }
-        },
-    )
-}
-
-private fun preferenceFileLauncher(
-    launcher: ManagedActivityResultLauncher<String, Uri?>,
-) {
-    launcher.launch(
-        "LeafFeed-settings-${Date().toString(DateFormat.YYYYMMDD_DASH_HHMM)}.json"
-    )
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)

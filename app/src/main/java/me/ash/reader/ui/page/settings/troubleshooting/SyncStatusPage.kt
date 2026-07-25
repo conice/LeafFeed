@@ -47,7 +47,7 @@ fun SyncStatusPage(
         },
         content = {
             LazyColumn {
-                item { DisplayText(text = "Reliability center", desc = "") }
+                item { DisplayText(text = "Sync and diagnostics", desc = "") }
                 item { Subtitle(Modifier.padding(horizontal = 24.dp), "Latest synchronization") }
                 item {
                     val current = summary
@@ -89,8 +89,8 @@ fun SyncStatusPage(
                 }
                 item {
                     SettingItem(
-                        title = "Logs and worker details",
-                        desc = "Open troubleshooting for detailed diagnostics",
+                        title = "Diagnostic details",
+                        desc = "Worker information, errors and repair tools",
                         onClick = navigateToLogs,
                     ) {}
                 }

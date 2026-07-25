@@ -12,12 +12,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.outlined.AccountCircle
-import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.BugReport
-import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.MenuBook
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Podcasts
 import androidx.compose.material.icons.outlined.PrivacyTip
@@ -41,11 +37,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import java.util.Locale
 import me.ash.reader.R
 import me.ash.reader.infrastructure.preference.LocalNewVersionNumber
 import me.ash.reader.infrastructure.preference.LocalSkipVersionNumber
-import me.ash.reader.infrastructure.preference.toDisplayName
 import me.ash.reader.ui.component.base.Banner
 import me.ash.reader.ui.component.base.DisplayText
 import me.ash.reader.ui.component.base.FeedbackIconButton
@@ -63,13 +57,9 @@ fun SettingsPage(
     navigateToAccounts: () -> Unit,
     navigateToColorAndStyle: () -> Unit,
     navigateToInteraction: () -> Unit,
-    navigateToLanguages: () -> Unit,
-    navigateToTroubleshooting: () -> Unit,
     navigateToTipsAndSupport: () -> Unit,
-    navigateToAiSettings: () -> Unit,
     navigateToReadingOptions: () -> Unit,
     navigateToPodcastSettings: () -> Unit,
-    navigateToNotificationSettings: () -> Unit,
     navigateToDataPrivacySettings: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -79,27 +69,22 @@ fun SettingsPage(
     var searchVisible by rememberSaveable { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
 
-    val accountTitle = stringResource(R.string.accounts)
-    val accountDesc = stringResource(R.string.accounts_desc)
-    val aiTitle = stringResource(R.string.ai_settings)
-    val aiDesc = stringResource(R.string.ai_settings_desc)
+    val accountTitle = stringResource(R.string.settings_accounts_sync_title)
+    val accountDesc = stringResource(R.string.settings_accounts_sync_desc)
     val readingTitle = stringResource(R.string.settings_reading_title)
     val readingDesc = stringResource(R.string.settings_reading_desc)
-    val podcastTitle = stringResource(R.string.settings_podcast_title)
-    val podcastDesc = stringResource(R.string.settings_podcast_desc)
-    val notificationTitle = stringResource(R.string.settings_notifications_title)
-    val notificationDesc = stringResource(R.string.settings_notifications_desc)
+    val aiSearchAlias = stringResource(R.string.ai_settings)
+    val podcastTitle = stringResource(R.string.settings_media_notifications_title)
+    val podcastDesc = stringResource(R.string.settings_media_notifications_desc)
+    val notificationsSearchAlias = stringResource(R.string.settings_notifications_title)
     val privacyTitle = stringResource(R.string.settings_privacy_title)
     val privacyDesc = stringResource(R.string.settings_privacy_desc)
-    val appearanceTitle = stringResource(R.string.color_and_style)
+    val appearanceTitle = stringResource(R.string.appearance)
     val appearanceDesc = stringResource(R.string.color_and_style_desc)
-    val interactionTitle = stringResource(R.string.interaction)
+    val interactionTitle = stringResource(R.string.settings_general_title)
     val interactionDesc = stringResource(R.string.interaction_desc)
-    val languageTitle = stringResource(R.string.languages)
-    val languageDesc = Locale.getDefault().toDisplayName()
-    val troubleshootingTitle = stringResource(R.string.troubleshooting)
-    val troubleshootingDesc = stringResource(R.string.troubleshooting_desc)
-    val supportTitle = stringResource(R.string.tips_and_support)
+    val languageSearchAlias = stringResource(R.string.languages)
+    val supportTitle = stringResource(R.string.settings_help_about_title)
     val supportDesc = stringResource(R.string.tips_and_support_desc)
     val query = searchQuery.trim()
 
@@ -107,19 +92,15 @@ fun SettingsPage(
         query.isBlank() || values.any { it.contains(query, ignoreCase = true) }
 
     val showAccount = matches(accountTitle, accountDesc)
-    val showAi = matches(aiTitle, aiDesc)
-    val showReading = matches(readingTitle, readingDesc)
-    val showPodcast = matches(podcastTitle, podcastDesc)
-    val showNotifications = matches(notificationTitle, notificationDesc)
+    val showReading = matches(readingTitle, readingDesc, aiSearchAlias)
+    val showPodcast = matches(podcastTitle, podcastDesc, notificationsSearchAlias)
     val showPrivacy = matches(privacyTitle, privacyDesc)
     val showAppearance = matches(appearanceTitle, appearanceDesc)
-    val showInteraction = matches(interactionTitle, interactionDesc)
-    val showLanguage = matches(languageTitle, languageDesc)
-    val showTroubleshooting = matches(troubleshootingTitle, troubleshootingDesc)
+    val showInteraction = matches(interactionTitle, interactionDesc, languageSearchAlias)
     val showSupport = matches(supportTitle, supportDesc)
     val hasResults =
-        showAccount || showAi || showReading || showPodcast || showNotifications || showPrivacy || showAppearance || showInteraction || showLanguage ||
-            showTroubleshooting || showSupport
+        showAccount || showReading || showPodcast || showPrivacy || showAppearance ||
+            showInteraction || showSupport
 
     RYScaffold(
         containerColor =
@@ -195,15 +176,26 @@ fun SettingsPage(
                         )
                     }
                 }
-                if (showAi || showAppearance || showReading) {
+                if (showInteraction) {
+                    item {
+                        SettingsSectionTitle(stringResource(R.string.settings_interaction_section))
+                        SelectableSettingGroupItem(
+                            title = interactionTitle,
+                            desc = interactionDesc,
+                            icon = Icons.Outlined.TouchApp,
+                            onClick = navigateToInteraction,
+                        )
+                    }
+                }
+                if (showAppearance || showReading) {
                     item {
                         SettingsSectionTitle(stringResource(R.string.settings_reading_section))
-                        if (showAi) {
+                        if (showReading) {
                             SelectableSettingGroupItem(
-                                title = aiTitle,
-                                desc = aiDesc,
-                                icon = Icons.Outlined.AutoAwesome,
-                                onClick = navigateToAiSettings,
+                                title = readingTitle,
+                                desc = readingDesc,
+                                icon = Icons.Outlined.MenuBook,
+                                onClick = navigateToReadingOptions,
                             )
                         }
                         if (showAppearance) {
@@ -214,35 +206,17 @@ fun SettingsPage(
                                 onClick = navigateToColorAndStyle,
                             )
                         }
-                        if (showReading) {
-                            SelectableSettingGroupItem(
-                                title = readingTitle,
-                                desc = readingDesc,
-                                icon = Icons.Outlined.MenuBook,
-                                onClick = navigateToReadingOptions,
-                            )
-                        }
                     }
                 }
-                if (showPodcast || showNotifications) {
+                if (showPodcast) {
                     item {
                         SettingsSectionTitle(stringResource(R.string.settings_media_section))
-                        if (showPodcast) {
-                            SelectableSettingGroupItem(
-                                title = podcastTitle,
-                                desc = podcastDesc,
-                                icon = Icons.Outlined.Podcasts,
-                                onClick = navigateToPodcastSettings,
-                            )
-                        }
-                        if (showNotifications) {
-                            SelectableSettingGroupItem(
-                                title = notificationTitle,
-                                desc = notificationDesc,
-                                icon = Icons.Outlined.Notifications,
-                                onClick = navigateToNotificationSettings,
-                            )
-                        }
+                        SelectableSettingGroupItem(
+                            title = podcastTitle,
+                            desc = podcastDesc,
+                            icon = Icons.Outlined.Podcasts,
+                            onClick = navigateToPodcastSettings,
+                        )
                     }
                 }
                 if (showPrivacy) {
@@ -256,44 +230,15 @@ fun SettingsPage(
                         )
                     }
                 }
-                if (showInteraction) {
-                    item {
-                        SettingsSectionTitle(stringResource(R.string.settings_interaction_section))
-                        SelectableSettingGroupItem(
-                            title = interactionTitle,
-                            desc = interactionDesc,
-                            icon = Icons.Outlined.TouchApp,
-                            onClick = navigateToInteraction,
-                        )
-                    }
-                }
-                if (showLanguage || showTroubleshooting || showSupport) {
+                if (showSupport) {
                     item {
                         SettingsSectionTitle(stringResource(R.string.settings_system_section))
-                        if (showLanguage) {
-                            SelectableSettingGroupItem(
-                                title = languageTitle,
-                                desc = languageDesc,
-                                icon = Icons.Outlined.Language,
-                                onClick = navigateToLanguages,
-                            )
-                        }
-                        if (showTroubleshooting) {
-                            SelectableSettingGroupItem(
-                                title = troubleshootingTitle,
-                                desc = troubleshootingDesc,
-                                icon = Icons.Outlined.BugReport,
-                                onClick = navigateToTroubleshooting,
-                            )
-                        }
-                        if (showSupport) {
-                            SelectableSettingGroupItem(
-                                title = supportTitle,
-                                desc = supportDesc,
-                                icon = Icons.Outlined.TipsAndUpdates,
-                                onClick = navigateToTipsAndSupport,
-                            )
-                        }
+                        SelectableSettingGroupItem(
+                            title = supportTitle,
+                            desc = supportDesc,
+                            icon = Icons.Outlined.TipsAndUpdates,
+                            onClick = navigateToTipsAndSupport,
+                        )
                     }
                 }
                 if (!hasResults) {

@@ -51,10 +51,14 @@ import me.ash.reader.ui.theme.palette.onLight
 @Composable
 fun ReadingOptionsPage(
     onBack: () -> Unit,
+    navigateToAiSettings: () -> Unit,
     navigateToCollections: () -> Unit,
     navigateToRules: () -> Unit,
 ) {
     FeatureSettingsPage(title = "Reading and articles", onBack = onBack) { settings, write ->
+        section("AI")
+        action("AI settings", "Models, prompts and request behavior", navigateToAiSettings)
+
         section("Reading status")
         toggle("Mark read when opened", settings.markReadOnOpen) { write(FeaturePreferenceKeys.markReadOnOpen, it) }
         toggle("Mark read at the end", settings.markReadAtEnd) { write(FeaturePreferenceKeys.markReadAtEnd, it) }
@@ -84,11 +88,22 @@ fun ReadingOptionsPage(
 }
 
 @Composable
-fun PodcastSettingsPage(onBack: () -> Unit, navigateToLibrary: () -> Unit) {
+fun PodcastSettingsPage(
+    onBack: () -> Unit,
+    navigateToLibrary: () -> Unit,
+    navigateToNotifications: () -> Unit,
+) {
     val context = LocalContext.current
     val viewModel: PodcastSettingsViewModel = hiltViewModel()
     var confirmClearDownloads by remember { mutableStateOf(false) }
-    FeatureSettingsPage(title = "Podcasts", onBack = onBack) { settings, write ->
+    FeatureSettingsPage(title = "Podcasts and notifications", onBack = onBack) { settings, write ->
+        section("Notifications")
+        action(
+            "Notification settings",
+            "New articles, podcasts and system controls",
+            navigateToNotifications,
+        )
+
         section("Playback")
         choice("Default speed", PodcastPlaybackSpeeds.indexOf(settings.podcastDefaultSpeed).coerceAtLeast(0), PodcastPlaybackSpeeds.map { "${it}x" }) {
             write(FeaturePreferenceKeys.podcastDefaultSpeed, PodcastPlaybackSpeeds[it])
@@ -116,7 +131,7 @@ fun PodcastSettingsPage(onBack: () -> Unit, navigateToLibrary: () -> Unit) {
         choice("Keep downloads", listOf(7, 30, 90, 0).indexOf(settings.podcastRetentionDays).coerceAtLeast(1), listOf("7 days", "30 days", "90 days", "Until manually removed")) {
             write(FeaturePreferenceKeys.podcastRetentionDays, listOf(7, 30, 90, 0)[it])
         }
-        action("Download location", viewModel.downloadLocation) {}
+        info("Download location", viewModel.downloadLocation)
         action("Clear podcast downloads", "Remove all downloaded episode files") {
             if (settings.cleanupConfirmation) confirmClearDownloads = true
             else viewModel.clearDownloads { result ->
@@ -174,8 +189,7 @@ fun NotificationSettingsPage(onBack: () -> Unit) {
 @Composable
 fun DataPrivacySettingsPage(
     onBack: () -> Unit,
-    navigateToDataTools: () -> Unit,
-    navigateToSyncStatus: () -> Unit,
+    navigateToBackupAndMigration: () -> Unit,
 ) {
     val context = LocalContext.current
     val viewModel: CacheSettingsViewModel = hiltViewModel()
@@ -189,8 +203,6 @@ fun DataPrivacySettingsPage(
         }
         toggle("Fetch full content during sync", settings.syncFullContent) { write(FeaturePreferenceKeys.syncFullContent, it) }
         toggle("Confirm before destructive cleanup", settings.cleanupConfirmation) { write(FeaturePreferenceKeys.cleanupConfirmation, it) }
-        action("Sync status", "View the latest synchronization result", navigateToSyncStatus)
-
         section("AI privacy")
         choice("Content sent for article summaries", settings.aiContentScope, listOf("Title only", "Title and description", "Displayed article content")) {
             write(FeaturePreferenceKeys.aiContentScope, it)
@@ -212,12 +224,14 @@ fun DataPrivacySettingsPage(
         }
 
         section("Backups")
-        action("Import and export preferences", "AI keys are excluded unless explicitly requested", navigateToDataTools)
-        action("Import and export reading data", "Tags, notes and saved searches", navigateToDataTools)
+        action(
+            "Backup and migration",
+            "Preferences, tags, notes and saved searches",
+            navigateToBackupAndMigration,
+        )
 
         section("Diagnostics")
         toggle("Include feed addresses in diagnostics", settings.diagnosticIncludeFeedUrls) { write(FeaturePreferenceKeys.diagnosticIncludeFeedUrls, it) }
-        action("Logs and repair tools", "Open troubleshooting", navigateToDataTools)
     }
     if (confirmClearAi) {
         ConfirmationDialog(
@@ -320,6 +334,10 @@ private class FeaturePageScope(
 
     @Composable fun action(title: String, description: String, onClick: () -> Unit) {
         SettingItem(title = title, desc = description, onClick = onClick) {}
+    }
+
+    @Composable fun info(title: String, description: String) {
+        SettingItem(enabled = false, title = title, desc = description, onClick = {}) {}
     }
 
     fun write(key: Preferences.Key<*>, value: Any) = writeValue(key, value)

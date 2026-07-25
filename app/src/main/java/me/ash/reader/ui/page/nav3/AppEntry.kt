@@ -71,6 +71,7 @@ import me.ash.reader.ui.page.settings.tips.LicenseListPage
 import me.ash.reader.ui.page.settings.tips.TipsAndSupportPage
 import me.ash.reader.ui.page.settings.troubleshooting.TroubleshootingPage
 import me.ash.reader.ui.page.settings.troubleshooting.SyncStatusPage
+import me.ash.reader.ui.page.settings.troubleshooting.BackupAndMigrationPage
 import me.ash.reader.ui.page.startup.StartupPage
 import me.ash.reader.infrastructure.audio.PodcastPlayer
 import me.ash.reader.ui.page.home.reading.PodcastMiniPlayer
@@ -220,15 +221,9 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                                 navigateToAccounts = { backStack.add(Route.Accounts) },
                                 navigateToColorAndStyle = { backStack.add(Route.ColorAndStyle) },
                                 navigateToInteraction = { backStack.add(Route.Interaction) },
-                                navigateToLanguages = { backStack.add(Route.Languages) },
-                                navigateToTroubleshooting = {
-                                    backStack.add(Route.Troubleshooting)
-                                },
                                 navigateToTipsAndSupport = { backStack.add(Route.TipsAndSupport) },
-                                navigateToAiSettings = { backStack.add(Route.AiSettings) },
                                 navigateToReadingOptions = { backStack.add(Route.ReadingOptions) },
                                 navigateToPodcastSettings = { backStack.add(Route.PodcastSettings) },
-                                navigateToNotificationSettings = { backStack.add(Route.NotificationSettings) },
                                 navigateToDataPrivacySettings = { backStack.add(Route.DataPrivacySettings) },
                             )
                         }
@@ -236,6 +231,7 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                     Route.ReadingOptions -> NavEntry(key) {
                         ReadingOptionsPage(
                             onBack = onBack,
+                            navigateToAiSettings = { backStack.add(Route.AiSettings) },
                             navigateToCollections = { backStack.add(Route.CollectionManager) },
                             navigateToRules = { backStack.add(Route.RuleManager) },
                         )
@@ -244,16 +240,22 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                         PodcastSettingsPage(
                             onBack = onBack,
                             navigateToLibrary = { backStack.add(Route.PodcastLibrary) },
+                            navigateToNotifications = {
+                                backStack.add(Route.NotificationSettings)
+                            },
                         )
                     }
                     Route.NotificationSettings -> NavEntry(key) { NotificationSettingsPage(onBack = onBack) }
                     Route.DataPrivacySettings -> NavEntry(key) {
                         DataPrivacySettingsPage(
                             onBack = onBack,
-                            navigateToDataTools = { backStack.add(Route.Troubleshooting) },
-                            navigateToSyncStatus = { backStack.add(Route.SyncStatus) },
+                            navigateToBackupAndMigration = {
+                                backStack.add(Route.BackupAndMigration)
+                            },
                         )
                     }
+                    Route.BackupAndMigration ->
+                        NavEntry(key) { BackupAndMigrationPage(onBack = onBack) }
                     Route.SyncStatus -> NavEntry(key) {
                         SyncStatusPage(
                             onBack = onBack,
@@ -285,6 +287,9 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                                 navigateToAddAccount = { backStack.add(Route.AddAccounts) },
                                 navigateToAccountDetails = {
                                     backStack.add(Route.AccountDetails(it))
+                                },
+                                navigateToSyncAndDiagnostics = {
+                                    backStack.add(Route.SyncStatus)
                                 },
                             )
                         }
@@ -350,7 +355,13 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                     Route.ReadingPageText -> NavEntry(key) { ReadingTextPage(onBack = onBack) }
                     Route.ReadingPageImage -> NavEntry(key) { ReadingImagePage(onBack = onBack) }
                     Route.ReadingPageVideo -> NavEntry(key) { ReadingVideoPage(onBack = onBack) }
-                    Route.Interaction -> NavEntry(key) { InteractionPage(onBack = onBack) }
+                    Route.Interaction ->
+                        NavEntry(key) {
+                            InteractionPage(
+                                onBack = onBack,
+                                navigateToLanguages = { backStack.add(Route.Languages) },
+                            )
+                        }
                     Route.Languages -> NavEntry(key) { LanguagesPage(onBack = onBack) }
                     Route.Troubleshooting -> NavEntry(key) { TroubleshootingPage(onBack = onBack) }
                     Route.TipsAndSupport ->

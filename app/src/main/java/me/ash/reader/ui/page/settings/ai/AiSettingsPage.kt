@@ -184,11 +184,6 @@ fun AiSettingsPage(onBack: () -> Unit) {
                         desc = "${featureSettings.aiTimeoutSeconds / 60} minutes",
                         onClick = { timeoutDialogVisible = true },
                     ) {}
-                    SettingItem(
-                        title = "Clear AI summary cache",
-                        desc = "Remove locally cached responses",
-                        onClick = { context.cacheDir.resolve("ai-summary").deleteRecursively() },
-                    ) {}
                 }
                 item {
                     Spacer(modifier = Modifier.height(24.dp))
