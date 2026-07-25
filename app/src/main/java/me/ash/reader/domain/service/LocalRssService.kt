@@ -2,6 +2,7 @@ package me.ash.reader.domain.service
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.os.SystemClock
 import androidx.work.ListenableWorker
 import androidx.work.WorkManager
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -11,11 +12,14 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 import me.ash.reader.domain.data.SyncLogger
 import me.ash.reader.domain.model.account.AccountType
 import me.ash.reader.domain.model.feed.Feed
@@ -35,6 +39,13 @@ import timber.log.Timber
 
 private const val TAG = "LocalRssService"
 private const val LOCAL_SYNC_CONCURRENCY = 8
+internal const val LOCAL_SYNC_BATCH_FEEDS = 8
+internal const val LOCAL_SYNC_BATCH_ARTICLES = 100
+private const val LOCAL_SYNC_BATCH_WINDOW_MS = 1_000L
+private const val LOCAL_SYNC_RESULT_BUFFER = 16
+
+internal fun shouldFlushLocalSyncBatch(feedCount: Int, articleCount: Int): Boolean =
+    feedCount >= LOCAL_SYNC_BATCH_FEEDS || articleCount >= LOCAL_SYNC_BATCH_ARTICLES
 
 class LocalRssService
 @Inject
@@ -94,85 +105,90 @@ constructor(
             val failedFeedIds = mutableListOf<String>()
             onProgress(SyncProgress(completed = 0, total = feedsToSync.size))
 
-            val fetchResults: List<Result<FeedWithArticle>> =
+            // Fetch concurrently into a bounded buffer. A single writer commits successful
+            // results in small batches so new articles become visible without waiting for the
+            // slowest feed, while still limiting Room/Paging invalidations.
+            val resultChannel =
+                Channel<Result<FeedWithArticle>>(capacity = LOCAL_SYNC_RESULT_BUFFER)
+            val writer = async(ioDispatcher) { persistFetchResults(resultChannel) }
+
+            try {
                 feedsToSync
                     .map { currentFeed ->
                         async(ioDispatcher) {
-                            try {
-                                val feedWithArticles = semaphore.withPermit {
-                                    val archivedArticles =
-                                        feedDao
-                                            .queryArchivedArticles(currentFeed.id)
-                                            .map { normalizeArticleUrl(it.link) }
-                                            .toSet()
-                                    val fetchedFeed = syncFeed(currentFeed, preDate)
-                                    val deduplicationMode =
-                                        settingsProvider.get(
-                                            FeaturePreferenceKeys.deduplicationMode
-                                        ) ?: 1
-                                    val fetchedArticles =
-                                        fetchedFeed.articles
-                                            .distinctBy { article ->
-                                                when (deduplicationMode) {
-                                                    0 -> article.id
-                                                    2 ->
-                                                        "${article.link}\u0000${article.title}\u0000${article.date.time / 86_400_000}"
-                                                    else -> normalizeArticleUrl(article.link)
+                            val result =
+                                try {
+                                    val feedWithArticles = semaphore.withPermit {
+                                        val archivedArticles =
+                                            feedDao
+                                                .queryArchivedArticles(currentFeed.id)
+                                                .map { normalizeArticleUrl(it.link) }
+                                                .toSet()
+                                        val fetchedFeed = syncFeed(currentFeed, preDate)
+                                        val deduplicationMode =
+                                            settingsProvider.get(
+                                                FeaturePreferenceKeys.deduplicationMode
+                                            ) ?: 1
+                                        val fetchedArticles =
+                                            fetchedFeed.articles
+                                                .distinctBy { article ->
+                                                    when (deduplicationMode) {
+                                                        0 -> article.id
+                                                        2 ->
+                                                            "${article.link}\u0000${article.title}\u0000${article.date.time / 86_400_000}"
+                                                        else ->
+                                                            normalizeArticleUrl(article.link)
+                                                    }
                                                 }
-                                            }
-                                            .filterNot {
-                                                archivedArticles.contains(
-                                                    normalizeArticleUrl(it.link)
-                                                )
-                                            }
+                                                .filterNot {
+                                                    archivedArticles.contains(
+                                                        normalizeArticleUrl(it.link)
+                                                    )
+                                                }
 
-                                    FeedWithArticle(feed = currentFeed, articles = fetchedArticles)
-                                }
-                                Result.success(feedWithArticles)
-                            } catch (throwable: Throwable) {
-                                if (throwable is CancellationException) throw throwable
-                                progressMutex.withLock { failedFeedIds += currentFeed.id }
-                                Result.failure(throwable)
-                            } finally {
-                                progressMutex.withLock {
-                                    completed += 1
-                                    val percent =
-                                        if (feedsToSync.isEmpty()) 100
-                                        else completed * 100 / feedsToSync.size
-                                    if (
-                                        percent != lastReportedPercent ||
-                                            completed == feedsToSync.size
-                                    ) {
-                                        lastReportedPercent = percent
-                                        onProgress(
-                                            SyncProgress(
-                                                completed = completed,
-                                                total = feedsToSync.size,
-                                                failedFeedIds = failedFeedIds.toList(),
-                                            )
+                                        FeedWithArticle(
+                                            feed = currentFeed,
+                                            articles = fetchedArticles,
                                         )
                                     }
+                                    Result.success(feedWithArticles)
+                                } catch (throwable: Throwable) {
+                                    if (throwable is CancellationException) throw throwable
+                                    progressMutex.withLock { failedFeedIds += currentFeed.id }
+                                    Result.failure(throwable)
+                                }
+
+                            resultChannel.send(result)
+
+                            progressMutex.withLock {
+                                completed += 1
+                                val percent =
+                                    if (feedsToSync.isEmpty()) 100
+                                    else completed * 100 / feedsToSync.size
+                                if (
+                                    percent != lastReportedPercent ||
+                                        completed == feedsToSync.size
+                                ) {
+                                    lastReportedPercent = percent
+                                    onProgress(
+                                        SyncProgress(
+                                            completed = completed,
+                                            total = feedsToSync.size,
+                                            failedFeedIds = failedFeedIds.toList(),
+                                        )
+                                    )
                                 }
                             }
                         }
                     }
                     .awaitAll()
-
-            // Fetch and parse feeds concurrently, but commit all successful results together.
-            // A transaction produces one Room invalidation instead of repeatedly refreshing the
-            // visible PagingSource, unread counters, and article-rule observers for every feed.
-            val insertedFeeds =
-                articleDao.insertFeedArticlesIfNotExist(fetchResults.mapNotNull { it.getOrNull() })
-            insertedFeeds.forEach { feedWithArticles ->
-                val newArticles = feedWithArticles.articles
-                if (feedWithArticles.feed.isNotification && newArticles.isNotEmpty()) {
-                    notificationHelper.notify(feedWithArticles)
-                }
-                maybeDownloadPodcastEpisodes(newArticles)
+            } finally {
+                resultChannel.close()
             }
 
-            // Keep the existing retry contract while retaining successful feeds from this run.
-            fetchResults.firstNotNullOfOrNull { it.exceptionOrNull() }?.let { throw it }
+            // The writer keeps draining after ordinary failures, preventing producers from
+            // blocking on a full channel and preserving all successful results from this run.
+            writer.await()?.let { throw it }
 
             Timber.tag("RlOG").i("onCompletion: ${System.currentTimeMillis() - preTime}")
             accountService.update(currentAccount.copy(updateAt = Date()))
@@ -180,6 +196,98 @@ constructor(
         }
             .onFailure { syncLogger.log(it) }
             .getOrNull() ?: ListenableWorker.Result.retry()
+    }
+
+    private suspend fun persistFetchResults(
+        results: ReceiveChannel<Result<FeedWithArticle>>,
+    ): Throwable? {
+        val pending = mutableListOf<FeedWithArticle>()
+        var pendingArticleCount = 0
+        var batchStartedAt = 0L
+        var firstFailure: Throwable? = null
+
+        fun rememberFailure(throwable: Throwable) {
+            if (firstFailure == null) firstFailure = throwable
+        }
+
+        suspend fun flush() {
+            if (pending.isEmpty()) return
+            val batch = pending.toList()
+            pending.clear()
+            pendingArticleCount = 0
+            batchStartedAt = 0L
+            try {
+                persistBatch(batch)
+            } catch (throwable: Throwable) {
+                if (throwable is CancellationException) throw throwable
+                rememberFailure(throwable)
+            }
+        }
+
+        while (true) {
+            val received =
+                if (pending.isEmpty()) {
+                    results.receiveCatching()
+                } else {
+                    val elapsed = SystemClock.elapsedRealtime() - batchStartedAt
+                    val remaining = (LOCAL_SYNC_BATCH_WINDOW_MS - elapsed).coerceAtLeast(0L)
+                    if (remaining == 0L) {
+                        flush()
+                        continue
+                    }
+                    withTimeoutOrNull(remaining) { results.receiveCatching() }
+                }
+
+            if (received == null) {
+                flush()
+                continue
+            }
+
+            if (received.isClosed) {
+                flush()
+                break
+            }
+
+            received.getOrThrow().fold(
+                onSuccess = { feedWithArticles ->
+                    if (pending.isEmpty()) batchStartedAt = SystemClock.elapsedRealtime()
+                    pending += feedWithArticles
+                    pendingArticleCount += feedWithArticles.articles.size
+                },
+                onFailure = ::rememberFailure,
+            )
+
+            if (shouldFlushLocalSyncBatch(pending.size, pendingArticleCount)) flush()
+        }
+
+        return firstFailure
+    }
+
+    private suspend fun persistBatch(batch: List<FeedWithArticle>) {
+        val insertedFeeds = articleDao.insertFeedArticlesIfNotExist(batch)
+        var firstPostProcessingFailure: Throwable? = null
+
+        insertedFeeds.forEach { feedWithArticles ->
+            val newArticles = feedWithArticles.articles
+            if (feedWithArticles.feed.isNotification && newArticles.isNotEmpty()) {
+                try {
+                    notificationHelper.notify(feedWithArticles)
+                } catch (throwable: Throwable) {
+                    if (throwable is CancellationException) throw throwable
+                    if (firstPostProcessingFailure == null) {
+                        firstPostProcessingFailure = throwable
+                    }
+                }
+            }
+            try {
+                maybeDownloadPodcastEpisodes(newArticles)
+            } catch (throwable: Throwable) {
+                if (throwable is CancellationException) throw throwable
+                if (firstPostProcessingFailure == null) firstPostProcessingFailure = throwable
+            }
+        }
+
+        firstPostProcessingFailure?.let { throw it }
     }
 
     private suspend fun syncFeed(feed: Feed, preDate: Date = Date()): FeedWithArticle {

@@ -6,6 +6,13 @@ import org.junit.Test
 
 class PerformancePolicyTest {
     @Test
+    fun localSyncBatchFlushesAtFeedOrArticleThreshold() {
+        assertFalse(shouldFlushLocalSyncBatch(feedCount = 7, articleCount = 99))
+        assertTrue(shouldFlushLocalSyncBatch(feedCount = 8, articleCount = 0))
+        assertTrue(shouldFlushLocalSyncBatch(feedCount = 1, articleCount = 100))
+    }
+
+    @Test
     fun syncProgressIsThrottledButCompletionIsImmediate() {
         assertFalse(
             shouldPublishSyncProgress(

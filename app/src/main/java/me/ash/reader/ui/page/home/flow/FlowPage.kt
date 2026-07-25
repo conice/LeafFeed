@@ -65,7 +65,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -654,17 +653,6 @@ fun FlowPage(
                     }
 
                     val listState = remember(pager) { listState }
-
-                    val isSyncing by rememberUpdatedState(isSyncing)
-
-                    LaunchedEffect(pagingItems) {
-                        snapshotFlow { pagingItems.loadState.isIdle }
-                            .collect {
-                                if (isSyncing) {
-                                    listState.scrollToItem(0)
-                                }
-                            }
-                    }
 
                     val loadAction =
                         remember(pager, flowUiState, pullToSwitchFeed) {
