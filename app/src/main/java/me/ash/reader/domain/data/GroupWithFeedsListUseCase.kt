@@ -70,28 +70,20 @@ class GroupWithFeedsListUseCase @Inject constructor(
 
     private fun pullHighlightedFeeds(filterState: FilterState): Job {
         val accountId = accountService.getCurrentAccountId()
-        val articleCountMap = highlightedArticleCountUseCase.invoke(
+        val countFlow = highlightedArticleCountUseCase.invoke(
             accountId = accountId,
             ruleId = filterState.highlightRuleId,
             highlightUnreadOnly = filterState.highlightUnreadOnly,
-            contentType = ArticleContentType.ARTICLE,
-        )
-        val audioCountMap = highlightedArticleCountUseCase.invoke(
-            accountId = accountId,
-            ruleId = filterState.highlightRuleId,
-            highlightUnreadOnly = filterState.highlightUnreadOnly,
-            contentType = ArticleContentType.AUDIO,
         )
         return applicationScope.launch {
             combine(
                 feedsFlow,
-                articleCountMap,
-                audioCountMap,
-            ) { groups, articleCounts, audioCounts ->
+                countFlow,
+            ) { groups, counts ->
                 val result = mutableListOf<GroupWithFeed>()
                 for (groupItem in groups) {
                     val feeds = groupItem.feeds.map { feed ->
-                        feed.copy(important = countFor(feed, articleCounts, audioCounts))
+                        feed.copy(important = countFor(feed, counts.articles, counts.audio))
                     }
                     val visibleFeeds =
                         if (hideEmptyGroups) feeds.filter { it.important > 0 } else feeds

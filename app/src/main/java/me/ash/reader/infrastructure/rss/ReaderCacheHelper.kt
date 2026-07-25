@@ -33,6 +33,11 @@ constructor(
     private val currentLegacyCacheDir: File
         get() = legacyCacheDir.resolve(accountService.getCurrentAccountId().toString())
 
+    private fun cacheDir(accountId: Int): File = offlineDir.resolve(accountId.toString())
+
+    private fun accountLegacyCacheDir(accountId: Int): File =
+        legacyCacheDir.resolve(accountId.toString())
+
     @OptIn(ExperimentalStdlibApi::class)
     private fun getFileNameFor(articleId: String): String {
         val bytes = articleId.toByteArray()
@@ -40,10 +45,14 @@ constructor(
         return digest.toHexString() + ".html"
     }
 
-    private suspend fun writeContentToCache(content: String, articleId: String): Boolean {
+    private suspend fun writeContentToCache(
+        content: String,
+        articleId: String,
+        accountId: Int = accountService.getCurrentAccountId(),
+    ): Boolean {
         return withContext(ioDispatcher) {
             runCatching {
-                    val directory = currentCacheDir.apply {
+                    val directory = cacheDir(accountId).apply {
                         check(isDirectory || mkdirs()) { "Unable to create offline content directory" }
                     }
                     val target = directory.resolve(getFileNameFor(articleId))
@@ -69,12 +78,15 @@ constructor(
         }
     }
 
-    private suspend fun fetchFullContentInternal(article: Article): Result<String> {
+    private suspend fun fetchFullContentInternal(
+        article: Article,
+        accountId: Int = accountService.getCurrentAccountId(),
+    ): Result<String> {
         return withContext(ioDispatcher) {
             runCatching {
                 val fullContent = rssHelper.parseFullContent(article.link, article.title)
                 if (fullContent.isNotBlank()) {
-                    writeContentToCache(fullContent, article.id)
+                    writeContentToCache(fullContent, article.id, accountId)
                     fullContent
                 } else return@withContext Result.failure(Exception())
             }
@@ -92,12 +104,15 @@ constructor(
         }
     }
 
-    suspend fun checkOrFetchFullContent(article: Article): Boolean {
+    suspend fun checkOrFetchFullContent(
+        article: Article,
+        accountId: Int = accountService.getCurrentAccountId(),
+    ): Boolean {
         return withContext(ioDispatcher) {
-            val file = resolveAndMigrate(article.id)
+            val file = resolveAndMigrate(article.id, accountId)
             try {
                 if (!file.exists()) {
-                    return@withContext fetchFullContentInternal(article)
+                    return@withContext fetchFullContentInternal(article, accountId)
                         .fold(onFailure = { false }, onSuccess = { true })
                 } else {
                     return@withContext true
@@ -144,13 +159,16 @@ constructor(
         )
     }
 
-    private fun resolveAndMigrate(articleId: String): File {
+    private fun resolveAndMigrate(
+        articleId: String,
+        accountId: Int = accountService.getCurrentAccountId(),
+    ): File {
         val fileName = getFileNameFor(articleId)
-        val target = currentCacheDir.resolve(fileName)
+        val target = cacheDir(accountId).resolve(fileName)
         if (target.isFile) return target
-        val legacy = currentLegacyCacheDir.resolve(fileName)
+        val legacy = accountLegacyCacheDir(accountId).resolve(fileName)
         if (!legacy.isFile) return target
-        currentCacheDir.mkdirs()
+        cacheDir(accountId).mkdirs()
         if (!legacy.renameTo(target)) legacy.copyTo(target, overwrite = true)
         legacy.delete()
         return target

@@ -1,6 +1,7 @@
 package me.ash.reader.domain.service
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import dagger.assisted.Assisted
@@ -51,6 +52,7 @@ constructor(
         var completed = 0
         var total: Int? = null
         var failedFeedIds = emptyList<String>()
+        var lastProgressPublishedAt = SystemClock.elapsedRealtime()
         syncStatusStore.write(
             SyncSummary(
                 accountId = accountId,
@@ -67,24 +69,35 @@ constructor(
                     completed = progress.completed
                     total = progress.total
                     failedFeedIds = progress.failedFeedIds
-                    syncStatusStore.write(
-                        SyncSummary(
-                            accountId = accountId,
-                            state = PersistedSyncState.RUNNING,
-                            startedAtMillis = startedAt,
-                            completed = completed,
-                            total = total,
-                            failedFeedIds = failedFeedIds,
-                            attempt = attempt,
-                            scope = scope,
+                    val now = SystemClock.elapsedRealtime()
+                    if (
+                        shouldPublishSyncProgress(
+                            nowMillis = now,
+                            lastPublishedAtMillis = lastProgressPublishedAt,
+                            completed = progress.completed,
+                            total = progress.total,
                         )
-                    )
-                    setProgress(
-                        workDataOf(
-                            PROGRESS_COMPLETED to progress.completed,
-                            PROGRESS_TOTAL to progress.total,
+                    ) {
+                        lastProgressPublishedAt = now
+                        syncStatusStore.write(
+                            SyncSummary(
+                                accountId = accountId,
+                                state = PersistedSyncState.RUNNING,
+                                startedAtMillis = startedAt,
+                                completed = completed,
+                                total = total,
+                                failedFeedIds = failedFeedIds,
+                                attempt = attempt,
+                                scope = scope,
+                            )
                         )
-                    )
+                        setProgress(
+                            workDataOf(
+                                PROGRESS_COMPLETED to progress.completed,
+                                PROGRESS_TOTAL to progress.total,
+                            )
+                        )
+                    }
                 }
                 .also { result ->
                     val succeeded = result.javaClass == Result.success().javaClass
@@ -109,8 +122,9 @@ constructor(
                             scope = scope,
                         )
                     )
-                    // Reader prefetch and widgets resolve the currently selected account. Do not
-                    // run them for a background account, or they could populate the wrong cache.
+                    // Widget data and archived-cache cleanup resolve the selected account. Keep
+                    // post-sync work scoped to it; ReaderWorker also receives the explicit ID so
+                    // a later account switch cannot redirect an already queued prefetch.
                     if (succeeded && accountService.getCurrentAccountId() == accountId) {
                         accountRssService.clearKeepArchivedArticles().forEach {
                             readerCacheHelper.deleteCacheFor(articleId = it.id)
@@ -122,6 +136,19 @@ constructor(
                                 OneTimeWorkRequestBuilder<ReaderWorker>()
                                     .addTag(READER_TAG)
                                     .addTag(ONETIME_WORK_TAG)
+                                    .setInputData(workDataOf(ReaderWorker.ACCOUNT_ID to accountId))
+                                    .setConstraints(
+                                        Constraints.Builder()
+                                            .setRequiredNetworkType(
+                                                if (account.syncOnlyOnWiFi.value) {
+                                                    NetworkType.UNMETERED
+                                                } else {
+                                                    NetworkType.CONNECTED
+                                                }
+                                            )
+                                            .setRequiresBatteryNotLow(true)
+                                            .build()
+                                    )
                                     .setBackoffCriteria(
                                         backoffPolicy = BackoffPolicy.EXPONENTIAL,
                                         backoffDelay = 30,
@@ -129,8 +156,8 @@ constructor(
                                     )
                                     .build(),
                             )
-                            .then(OneTimeWorkRequestBuilder<WidgetUpdateWorker>().build())
                             .enqueue()
+                        WidgetUpdateWorker.enqueueOneTimeWork(workManager)
                     }
                 }
         }.getOrElse { throwable ->
@@ -259,3 +286,13 @@ constructor(
         private fun postSyncWorkName(accountId: Int) = "$POST_SYNC_WORK_NAME_PREFIX-$accountId"
     }
 }
+
+internal const val SYNC_PROGRESS_MIN_INTERVAL_MS = 750L
+
+internal fun shouldPublishSyncProgress(
+    nowMillis: Long,
+    lastPublishedAtMillis: Long,
+    completed: Int,
+    total: Int,
+): Boolean =
+    completed >= total || nowMillis - lastPublishedAtMillis >= SYNC_PROGRESS_MIN_INTERVAL_MS

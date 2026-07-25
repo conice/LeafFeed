@@ -83,6 +83,26 @@ class HighlightedArticleReadUseCaseTest {
     }
 
     @Test
+    fun highlightedCountsSplitArticlesAndAudioInOnePass() {
+        val articles =
+            listOf(
+                article(id = "article", feedId = "feed-1", title = "match"),
+                article(id = "audio", feedId = "feed-1", title = "match", audioUrl = "episode.mp3"),
+                article(id = "other", feedId = "feed-2", title = "nope"),
+            )
+        val counts =
+            highlightedArticleCountsByContent(
+                articles = articles,
+                rules = listOf(rule(id = "rule", pattern = "match")),
+                selectedRuleId = null,
+                highlightUnreadOnly = false,
+            )
+
+        assertEquals(mapOf("feed-1" to 1), counts.articles)
+        assertEquals(mapOf("feed-1" to 1), counts.audio)
+    }
+
+    @Test
     fun missingSelectedHighlightDoesNotMatchEverything() {
         assertEquals(
             emptySet<String>(),
@@ -100,6 +120,7 @@ class HighlightedArticleReadUseCaseTest {
         feedId: String = "feed-1",
         groupId: String = "group-1",
         isUnread: Boolean = true,
+        audioUrl: String? = null,
         title: String,
     ) =
         ArticleFilterCandidate(
@@ -110,6 +131,7 @@ class HighlightedArticleReadUseCaseTest {
             feedId = feedId,
             groupId = groupId,
             isUnread = isUnread,
+            audioUrl = audioUrl,
         )
 
     private fun rule(

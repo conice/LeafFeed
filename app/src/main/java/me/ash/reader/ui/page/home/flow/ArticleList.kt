@@ -174,15 +174,17 @@ private fun ArticleListItem(
     onPodcastDownload: (ArticleWithFeed) -> Unit,
 ) {
     val article = item.articleWithFeed.article
-    val downloadWork = (if (article.audioUrl != null) {
+    val isPodcastDownloading = if (article.audioUrl != null) {
         observePodcastDownload(article.id)
+            .collectAsStateWithLifecycle(emptyList())
+            .value
+            .any { work ->
+                work.state == WorkInfo.State.ENQUEUED ||
+                    work.state == WorkInfo.State.BLOCKED ||
+                    work.state == WorkInfo.State.RUNNING
+            }
     } else {
-        flowOf(emptyList())
-    }).collectAsStateWithLifecycle(emptyList())
-    val isPodcastDownloading = downloadWork.value.any {
-        it.state == WorkInfo.State.ENQUEUED ||
-            it.state == WorkInfo.State.BLOCKED ||
-            it.state == WorkInfo.State.RUNNING
+        false
     }
     SwipeableArticleItem(
         modifier = modifier,

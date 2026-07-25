@@ -14,6 +14,9 @@ full-page parser request.
 
 - Each account has one unique WorkManager chain for one-time synchronization and one periodic chain.
 - A persisted summary records scope, attempt, progress, final state, and failed feed identifiers.
+- Running progress is rate-limited before it is persisted so large subscriptions do not turn a
+  synchronization into hundreds of DataStore and WorkManager database writes. Completion is
+  always published immediately.
 - A failed summary is actionable: the UI resolves identifiers to feed names when the local database
   still contains them and exposes retry access.
 - A process death may leave a `RUNNING` summary temporarily; the next WorkManager attempt replaces
@@ -26,6 +29,9 @@ full-page parser request.
 - Existing readability cache files are migrated lazily on first access.
 - Writes use a temporary file and atomic rename. A failed parser request falls back to the RSS
   description already stored in Room.
+- Background full-page prefetch uses bounded batches, honors the account's network policy and a
+  battery-not-low constraint, and treats individual pages as best-effort. A permanently broken
+  page must not cause the whole article set to retry indefinitely.
 - Clearing full-page content does not remove Room articles, reading state, tags, notes, or backups.
 
 ## Performance fixtures

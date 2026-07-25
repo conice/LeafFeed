@@ -7,20 +7,13 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetManager.Companion.SET_WIDGET_PREVIEWS_RESULT_SUCCESS
 import androidx.glance.appwidget.updateAll
 import androidx.hilt.work.HiltWorker
-import androidx.work.Constraints
 import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
+import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import java.util.concurrent.TimeUnit
-import me.ash.reader.infrastructure.preference.SyncIntervalPreference
-import me.ash.reader.infrastructure.preference.SyncOnlyOnWiFiPreference
-import me.ash.reader.infrastructure.preference.SyncOnlyWhenChargingPreference
 import me.ash.reader.ui.widget.ArticleCardWidget
 import me.ash.reader.ui.widget.ArticleCardWidgetReceiver
 import me.ash.reader.ui.widget.ArticleListWidget
@@ -59,33 +52,14 @@ constructor(
 
     companion object {
         private const val WORK_NAME_PERIODIC = "WidgetUpdateWorker"
+        private const val WORK_NAME_ONETIME = "WidgetUpdateWorker-OneTime"
 
         fun enqueueOneTimeWork(workManager: WorkManager) =
-            workManager.enqueue(OneTimeWorkRequestBuilder<WidgetUpdateWorker>().build())
-
-        fun enqueuePeriodicWork(
-            workManager: WorkManager,
-            syncInterval: SyncIntervalPreference,
-            syncOnlyWhenCharging: SyncOnlyWhenChargingPreference,
-            syncOnlyOnWiFi: SyncOnlyOnWiFiPreference,
-        ) {
-            workManager.enqueueUniquePeriodicWork(
-                WORK_NAME_PERIODIC,
-                ExistingPeriodicWorkPolicy.UPDATE,
-                PeriodicWorkRequestBuilder<WidgetUpdateWorker>(syncInterval.value, TimeUnit.MINUTES)
-                    .setConstraints(
-                        Constraints.Builder()
-                            .setRequiresCharging(syncOnlyWhenCharging.value)
-                            .setRequiredNetworkType(
-                                if (syncOnlyOnWiFi.value) NetworkType.UNMETERED
-                                else NetworkType.CONNECTED
-                            )
-                            .build()
-                    )
-                    .setInitialDelay(syncInterval.value, TimeUnit.MINUTES)
-                    .build(),
+            workManager.enqueueUniqueWork(
+                WORK_NAME_ONETIME,
+                ExistingWorkPolicy.KEEP,
+                OneTimeWorkRequestBuilder<WidgetUpdateWorker>().build(),
             )
-        }
 
         fun cancelPeriodicWork(workManager: WorkManager) =
             workManager.cancelUniqueWork(WORK_NAME_PERIODIC)

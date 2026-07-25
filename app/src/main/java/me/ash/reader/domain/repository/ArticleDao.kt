@@ -16,6 +16,7 @@ import me.ash.reader.domain.model.article.ArticleFilterCandidate
 import me.ash.reader.domain.model.article.ArticleMeta
 import me.ash.reader.domain.model.article.ArticleWithFeed
 import me.ash.reader.domain.model.feed.Feed
+import me.ash.reader.domain.model.feed.FeedWithArticle
 import java.util.Date
 
 @Dao
@@ -1208,5 +1209,27 @@ interface ArticleDao {
         ).associateBy { it.link }
 
         return articles.filterNot { existingArticles.containsKey(it.link) }.also { insertList(it) }
+    }
+
+    /**
+     * Inserts the results of one local-account refresh in a single outer transaction.
+     *
+     * Room only dispatches table invalidations after that transaction commits, so article lists
+     * and unread-count observers refresh once per synchronization instead of once per feed.
+     */
+    @Transaction
+    suspend fun insertFeedArticlesIfNotExist(
+        feedsWithArticles: List<FeedWithArticle>,
+    ): List<FeedWithArticle> {
+        return feedsWithArticles.map { feedWithArticles ->
+            val insertedArticles =
+                insertListIfNotExist(
+                    articles = feedWithArticles.articles,
+                    feed = feedWithArticles.feed,
+                )
+            feedWithArticles.copy(
+                articles = insertedArticles,
+            )
+        }
     }
 }

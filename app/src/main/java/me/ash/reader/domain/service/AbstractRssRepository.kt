@@ -198,12 +198,9 @@ abstract class AbstractRssRepository(
             }
             if (it.syncInterval.value != SyncIntervalPreference.Manually.value) {
                 SyncWorker.enqueuePeriodicWork(account = it, workManager = workManager)
-                WidgetUpdateWorker.enqueuePeriodicWork(
-                    workManager = workManager,
-                    syncInterval = it.syncInterval,
-                    syncOnlyWhenCharging = it.syncOnlyWhenCharging,
-                    syncOnlyOnWiFi = it.syncOnlyOnWiFi,
-                )
+                // A successful sync already enqueues a widget refresh. Keeping a second periodic
+                // widget worker wakes the app twice for the same unchanged database.
+                WidgetUpdateWorker.cancelPeriodicWork(workManager)
             } else {
                 SyncWorker.cancelPeriodicWork(workManager)
                 WidgetUpdateWorker.cancelPeriodicWork(workManager)
@@ -516,8 +513,6 @@ abstract class AbstractRssRepository(
         }
     }
 
-    suspend fun queryUnreadFullContentArticles() =
-        articleDao.queryUnreadFullContentArticles(accountService.getCurrentAccountId())
 }
 
 data class SyncProgress(

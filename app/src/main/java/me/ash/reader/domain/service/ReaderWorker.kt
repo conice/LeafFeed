@@ -4,14 +4,16 @@ import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import me.ash.reader.domain.repository.ArticleDao
+import me.ash.reader.infrastructure.di.IODispatcher
 import me.ash.reader.infrastructure.rss.ReaderCacheHelper
 
 @HiltWorker
@@ -20,22 +22,54 @@ class ReaderWorker
 constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
-    private val rssService: RssService,
+    private val articleDao: ArticleDao,
     private val cacheHelper: ReaderCacheHelper,
+    @IODispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
-        val semaphore = Semaphore(2)
+        return withContext(ioDispatcher) {
+            try {
+                val accountId = inputData.getInt(ACCOUNT_ID, -1)
+                if (accountId == -1) return@withContext Result.failure()
+                val articleList = articleDao.queryUnreadFullContentArticles(accountId)
+                var failedCount = 0
 
-        val deferredList =
-            withContext(Dispatchers.IO) {
-                val rssService = rssService.get()
-                val articleList = rssService.queryUnreadFullContentArticles()
-                articleList.map {
-                    async { semaphore.withPermit { cacheHelper.checkOrFetchFullContent(it) } }
+                // Do not allocate one Deferred for every unread article. Large accounts can have
+                // tens of thousands of rows; small batches keep memory and network usage bounded.
+                articleList.chunked(PREFETCH_CONCURRENCY).forEach { batch ->
+                    failedCount +=
+                        batch
+                            .map { article ->
+                                async {
+                                    try {
+                                        cacheHelper.checkOrFetchFullContent(
+                                            article = article,
+                                            accountId = accountId,
+                                        )
+                                    } catch (throwable: Throwable) {
+                                        if (throwable is CancellationException) throw throwable
+                                        false
+                                    }
+                                }
+                            }
+                            .awaitAll()
+                            .count { succeeded -> !succeeded }
                 }
-            }
 
-        return if (deferredList.awaitAll().any { !it }) Result.retry() else Result.success()
+                // Individual pages can fail permanently. The next regular sync will try them
+                // again; retrying the entire batch indefinitely wastes network and battery.
+                Result.success(workDataOf(FAILED_COUNT to failedCount))
+            } catch (throwable: Throwable) {
+                if (throwable is CancellationException) throw throwable
+                Result.retry()
+            }
+        }
+    }
+
+    companion object {
+        internal const val FAILED_COUNT = "failedCount"
+        internal const val ACCOUNT_ID = "accountId"
+        internal const val PREFETCH_CONCURRENCY = 2
     }
 }

@@ -177,6 +177,8 @@ fun FlowPage(
     val searchContentInput = viewModel.searchContentInput.collectAsStateValue()
     val savedSearches = viewModel.savedSearches.collectAsStateValue()
     val titleSummaryState = viewModel.titleSummaryState.collectAsStateValue()
+    val queuedPodcastIds =
+        remember(podcastState.queue) { podcastState.queue.mapTo(mutableSetOf()) { it.id } }
 
     val pagerData: PagerData = flowUiState.pagerData
 
@@ -805,7 +807,7 @@ fun FlowPage(
                                 playingPodcastId = podcastState.articleId,
                                 isPodcastPlaying = podcastState.isPlaying,
                                 podcastPositionMs = podcastState.positionMs,
-                                queuedPodcastIds = podcastState.queue.mapTo(mutableSetOf()) { it.id },
+                                queuedPodcastIds = queuedPodcastIds,
                                 observePodcastDownload = viewModel::observePodcastDownload,
                                 onPodcastPlay = { articleWithFeed ->
                                     if (podcastState.articleId == articleWithFeed.article.id) {
