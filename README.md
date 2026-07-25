@@ -133,9 +133,12 @@ keyPassword=...
 
 Do not commit keystores or real credentials to the repository.
 
-Non-tag commit and pull-request workflows use the `githubDebug` variant so that
-missing release credentials cannot make ordinary CI runs spend time in R8
-before failing. Tagged releases require these GitHub Actions secrets:
+Pull-request workflows use the `githubDebug` variant so untrusted changes can be validated without
+access to signing secrets. Main-branch push and tagged build artifacts use the `githubRelease`
+variant, a stable signing certificate, and an increasing CI `versionCode`, so consecutive push
+artifacts and tagged releases can update one another. The first switch from an older ephemeral
+Debug-signed artifact still requires uninstalling it once. Main-branch push and tagged builds
+require these GitHub Actions secrets:
 `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
 and `ANDROID_KEY_PASSWORD`. The keystore secret is the single-line base64
 encoding of the release keystore (for example, `base64 -w 0 release.keystore`

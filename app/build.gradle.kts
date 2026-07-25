@@ -26,6 +26,8 @@ fun fetchGitCommitHash(): String {
 }
 
 val gitCommitHash = fetchGitCommitHash()
+val ciVersionCode =
+    providers.environmentVariable("LEAFFEED_VERSION_CODE").orNull?.toIntOrNull()
 val keyProps = Properties()
 val releaseKeyPropsFile: File = rootProject.file("signature/keystore_release.properties")
 val debugKeyPropsFile: File = rootProject.file("signature/keystore.properties")
@@ -75,7 +77,9 @@ android {
         applicationId = "com.finnsta.leaffeed"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
+        // CI uses a monotonically increasing value so APKs signed by the same certificate can be
+        // installed as updates. Local builds keep the stable development fallback.
+        versionCode = ciVersionCode ?: 1
         versionName = "0.1.0"
 
         buildConfigField(
