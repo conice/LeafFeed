@@ -445,6 +445,17 @@ constructor(
         )
     }
 
+    fun setReadingHistory(filterState: FilterState, visible: Boolean) {
+        _searchContentInput.value = null
+        filterStateUseCase.updateFilterState(
+            filterState.copy(
+                filter = if (visible) Filter.History else Filter.Unread,
+                searchContent = null,
+                highlightRuleId = null,
+            )
+        )
+    }
+
     fun inputSearchContent(content: String? = null) {
         if (content != _searchContentInput.value) _searchContentInput.value = content
     }
@@ -505,6 +516,7 @@ constructor(
         get() = readingUiState.value.articleWithFeed?.feed
 
     fun initData(articleId: String, listIndex: Int? = null) {
+        val openedAt = Date()
         viewModelScope.launch {
             val snapshotList = articleListUseCase.itemSnapshotList
 
@@ -554,6 +566,9 @@ constructor(
                         .prefetchArticleId()
                         .renderContent(this)
                 }
+            }
+            viewModelScope.launch(ioDispatcher) {
+                articleDao.updateLastOpenedAt(item.article.id, openedAt)
             }
         }
     }

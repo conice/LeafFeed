@@ -15,6 +15,7 @@ import java.util.*
         Index(value = ["accountId", "isStarred", "date"]),
         Index(value = ["accountId", "isUnread", "feedId", "date"]),
         Index(value = ["accountId", "isStarred", "feedId", "date"]),
+        Index(value = ["accountId", "lastOpenedAt"]),
     ],
     foreignKeys = [ForeignKey(
         entity = Feed::class,
@@ -56,6 +57,8 @@ data class Article(
     var isReadLater: Boolean = false,
     @ColumnInfo
     var updateAt: Date? = null,
+    @ColumnInfo
+    var lastOpenedAt: Date? = null,
     /** Podcast episode media metadata. Null for ordinary RSS articles. */
     @ColumnInfo var audioUrl: String? = null,
     @ColumnInfo var audioMimeType: String? = null,

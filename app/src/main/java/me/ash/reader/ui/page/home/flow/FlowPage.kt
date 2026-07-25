@@ -451,6 +451,37 @@ fun FlowPage(
                                 visible =
                                     !onSearch &&
                                         (filterUiState.filter.isUnread() ||
+                                            filterUiState.filter.isHistory())
+                            ) {
+                                FeedbackIconButton(
+                                    imageVector =
+                                        if (filterUiState.filter.isHistory()) {
+                                            Filter.Unread.iconOutline
+                                        } else {
+                                            Filter.History.iconOutline
+                                        },
+                                    contentDescription =
+                                        stringResource(
+                                            if (filterUiState.filter.isHistory()) {
+                                                R.string.unread
+                                            } else {
+                                                R.string.reading_history
+                                            }
+                                        ),
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    onClick = {
+                                        markAsRead = false
+                                        viewModel.setReadingHistory(
+                                            filterUiState,
+                                            visible = !filterUiState.filter.isHistory(),
+                                        )
+                                    },
+                                )
+                            }
+                            RYExtensibleVisibility(
+                                visible =
+                                    !onSearch &&
+                                        (filterUiState.filter.isUnread() ||
                                             filterUiState.filter.isAll())
                             ) {
                                 FeedbackIconButton(
@@ -460,7 +491,11 @@ fun FlowPage(
                                     onClick = { viewModel.summarizeCurrentTitles() },
                                 )
                             }
-                            RYExtensibleVisibility(visible = !filterUiState.filter.isStarred()) {
+                            RYExtensibleVisibility(
+                                visible =
+                                    !filterUiState.filter.isStarred() &&
+                                        !filterUiState.filter.isHistory()
+                            ) {
                                 FeedbackIconButton(
                                     imageVector = Icons.Rounded.DoneAll,
                                     contentDescription = stringResource(R.string.mark_all_as_read),
@@ -557,10 +592,15 @@ fun FlowPage(
                             onSearch = false
                             viewModel.inputSearchContent(null)
                         },
-                        onSave = {
-                            savedSearchName = ""
-                            saveSearchDialogVisible = true
-                        },
+                        onSave =
+                            if (filterUiState.filter.isHistory()) {
+                                null
+                            } else {
+                                {
+                                    savedSearchName = ""
+                                    saveSearchDialogVisible = true
+                                }
+                            },
                         savedSearchCount = savedSearches.size,
                         onShowSaved = { savedSearchesDialogVisible = true },
                     )
@@ -1057,6 +1097,7 @@ private fun EmptyFlowState(filter: Filter, isSearch: Boolean) {
         when {
             isSearch -> stringResource(R.string.no_search_results)
             filter.isUnread() -> stringResource(R.string.no_unread_articles)
+            filter.isHistory() -> stringResource(R.string.no_reading_history)
             filter.isStarred() -> stringResource(R.string.no_starred_articles)
             filter.isHighlighted() -> stringResource(R.string.no_highlighted_articles)
             filter.isReadLater() -> stringResource(R.string.no_read_later_articles)

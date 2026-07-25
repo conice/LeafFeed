@@ -7,6 +7,7 @@
         <item quantity="other">%1$d archived items</item>
     </plurals>
     <string name="unread">Unread</string>
+    <string name="reading_history">Reading history</string>
     <plurals name="unread_desc">
         <item quantity="one">%1$d unread item</item>
         <item quantity="other">%1$d unread items</item>
@@ -497,6 +498,7 @@
     <string name="done">Done</string>
     <string name="last_updated">Last updated</string>
     <string name="no_unread_articles">No unread articles</string>
+    <string name="no_reading_history">No reading history yet</string>
     <string name="no_articles">No articles yet</string>
     <string name="no_subscriptions">No subscriptions yet</string>
     <string name="no_starred_articles">No starred articles</string>

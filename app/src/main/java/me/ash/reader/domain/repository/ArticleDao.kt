@@ -22,6 +22,53 @@ import java.util.Date
 @Dao
 interface ArticleDao {
 
+    @Query("UPDATE article SET lastOpenedAt = :openedAt WHERE id = :articleId")
+    suspend fun updateLastOpenedAt(articleId: String, openedAt: Date)
+
+    @Transaction
+    @Query(
+        """
+        SELECT article.* FROM article
+        INNER JOIN feed ON feed.id = article.feedId
+        WHERE article.accountId = :accountId
+            AND feed.accountId = :accountId
+            AND article.lastOpenedAt IS NOT NULL
+            AND (:groupId IS NULL OR feed.groupId = :groupId)
+            AND (:feedId IS NULL OR article.feedId = :feedId)
+        ORDER BY article.lastOpenedAt DESC
+        """
+    )
+    fun queryReadingHistory(
+        accountId: Int,
+        groupId: String?,
+        feedId: String?,
+    ): PagingSource<Int, ArticleWithFeed>
+
+    @Transaction
+    @Query(
+        """
+        SELECT article.* FROM article
+        INNER JOIN feed ON feed.id = article.feedId
+        WHERE article.accountId = :accountId
+            AND feed.accountId = :accountId
+            AND article.lastOpenedAt IS NOT NULL
+            AND (:groupId IS NULL OR feed.groupId = :groupId)
+            AND (:feedId IS NULL OR article.feedId = :feedId)
+            AND (
+                article.title LIKE '%' || :text || '%'
+                OR article.shortDescription LIKE '%' || :text || '%'
+                OR article.rawDescription LIKE '%' || :text || '%'
+            )
+        ORDER BY article.lastOpenedAt DESC
+        """
+    )
+    fun searchReadingHistory(
+        accountId: Int,
+        text: String,
+        groupId: String?,
+        feedId: String?,
+    ): PagingSource<Int, ArticleWithFeed>
+
     @Query(
         """
         SELECT EXISTS(
@@ -780,7 +827,7 @@ interface ArticleDao {
         """
         SELECT a.id, a.date, a.title, a.author, a.rawDescription, 
         a.shortDescription, a.fullContent, a.img, a.link, a.feedId, 
-        a.accountId, a.isUnread, a.isStarred, a.isReadLater, a.updateAt,
+        a.accountId, a.isUnread, a.isStarred, a.isReadLater, a.updateAt, a.lastOpenedAt,
         a.audioUrl, a.audioMimeType, a.audioLength, a.durationSeconds, a.episodeGuid,
         a.seasonNumber, a.episodeNumber, a.transcriptUrl, a.isExplicit,
         a.playbackPositionMs, a.isPlayed, a.downloadedPath
@@ -802,7 +849,7 @@ interface ArticleDao {
         """
         SELECT a.id, a.date, a.title, a.author, a.rawDescription, 
         a.shortDescription, a.fullContent, a.img, a.link, a.feedId, 
-        a.accountId, a.isUnread, a.isStarred, a.isReadLater, a.updateAt,
+        a.accountId, a.isUnread, a.isStarred, a.isReadLater, a.updateAt, a.lastOpenedAt,
         a.audioUrl, a.audioMimeType, a.audioLength, a.durationSeconds, a.episodeGuid,
         a.seasonNumber, a.episodeNumber, a.transcriptUrl, a.isExplicit,
         a.playbackPositionMs, a.isPlayed, a.downloadedPath
@@ -825,7 +872,7 @@ interface ArticleDao {
         """
         SELECT a.id, a.date, a.title, a.author, a.rawDescription, 
         a.shortDescription, a.fullContent, a.img, a.link, a.feedId, 
-        a.accountId, a.isUnread, a.isStarred, a.isReadLater, a.updateAt,
+        a.accountId, a.isUnread, a.isStarred, a.isReadLater, a.updateAt, a.lastOpenedAt,
         a.audioUrl, a.audioMimeType, a.audioLength, a.durationSeconds, a.episodeGuid,
         a.seasonNumber, a.episodeNumber, a.transcriptUrl, a.isExplicit,
         a.playbackPositionMs, a.isPlayed, a.downloadedPath
@@ -848,7 +895,7 @@ interface ArticleDao {
         """
         SELECT a.id, a.date, a.title, a.author, a.rawDescription,
         a.shortDescription, a.fullContent, a.img, a.link, a.feedId,
-        a.accountId, a.isUnread, a.isStarred, a.isReadLater, a.updateAt,
+        a.accountId, a.isUnread, a.isStarred, a.isReadLater, a.updateAt, a.lastOpenedAt,
         a.audioUrl, a.audioMimeType, a.audioLength, a.durationSeconds, a.episodeGuid,
         a.seasonNumber, a.episodeNumber, a.transcriptUrl, a.isExplicit,
         a.playbackPositionMs, a.isPlayed, a.downloadedPath
@@ -926,7 +973,7 @@ interface ArticleDao {
         """
         SELECT a.id, a.date, a.title, a.author, a.rawDescription, 
         a.shortDescription, a.fullContent, a.img, a.link, a.feedId, 
-        a.accountId, a.isUnread, a.isStarred, a.isReadLater, a.updateAt,
+        a.accountId, a.isUnread, a.isStarred, a.isReadLater, a.updateAt, a.lastOpenedAt,
         a.audioUrl, a.audioMimeType, a.audioLength, a.durationSeconds, a.episodeGuid,
         a.seasonNumber, a.episodeNumber, a.transcriptUrl, a.isExplicit,
         a.playbackPositionMs, a.isPlayed, a.downloadedPath

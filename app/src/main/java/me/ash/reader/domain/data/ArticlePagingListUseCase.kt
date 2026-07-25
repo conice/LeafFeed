@@ -138,6 +138,7 @@ constructor(
                                                 isStarred = filterState.filter.isStarred(),
                                                 isUnread = filterState.filter.isUnread() ||
                                                     (filterState.filter.isHighlighted() && filterState.highlightUnreadOnly),
+                                                isHistory = filterState.filter.isHistory(),
                                                 sortAscending =
                                                     settingsProvider.settings.flowSortUnreadArticles
                                                         .value,
@@ -151,6 +152,7 @@ constructor(
                                                 isStarred = filterState.filter.isStarred(),
                                                 isUnread = filterState.filter.isUnread() ||
                                                     (filterState.filter.isHighlighted() && filterState.highlightUnreadOnly),
+                                                isHistory = filterState.filter.isHistory(),
                                                 sortAscending =
                                                     settingsProvider.settings.flowSortUnreadArticles
                                                         .value,

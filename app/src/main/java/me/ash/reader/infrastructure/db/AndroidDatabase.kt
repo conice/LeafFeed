@@ -20,7 +20,7 @@ import java.util.*
 
 @Database(
     entities = [Account::class, Feed::class, Article::class, Group::class, ArchivedArticle::class],
-    version = 9,
+    version = 10,
     autoMigrations = [
         AutoMigration(from = 5, to = 6),
         AutoMigration(from = 5, to = 7),
@@ -82,7 +82,19 @@ val allMigrations = arrayOf(
     MIGRATION_4_5,
     MIGRATION_7_8,
     MIGRATION_8_9,
+    MIGRATION_9_10,
 )
+
+@Suppress("ClassName")
+object MIGRATION_9_10 : Migration(9, 10) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE article ADD COLUMN lastOpenedAt INTEGER")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS index_article_accountId_lastOpenedAt " +
+                "ON article(accountId, lastOpenedAt)"
+        )
+    }
+}
 
 @Suppress("ClassName")
 object MIGRATION_8_9 : Migration(8, 9) {
