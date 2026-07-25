@@ -42,7 +42,16 @@ jobs:
                           exit 1
                       fi
                   done
-                  printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$LEAFFEED_SIGNING_STORE_FILE"
+                  if ! printf '%s' "$ANDROID_KEYSTORE_BASE64" \
+                      | tr -d '[:space:]' \
+                      | base64 --decode > "$LEAFFEED_SIGNING_STORE_FILE"; then
+                      echo "::error::ANDROID_KEYSTORE_BASE64 is not valid Base64. Encode release-key.jks itself, without quotes, a data-URI prefix, a filename, or terminal prompt text."
+                      exit 1
+                  fi
+                  if [ ! -s "$LEAFFEED_SIGNING_STORE_FILE" ]; then
+                      echo "::error::ANDROID_KEYSTORE_BASE64 decoded to an empty file."
+                      exit 1
+                  fi
                   chmod 600 "$LEAFFEED_SIGNING_STORE_FILE"
                   keytool -list -keystore "$LEAFFEED_SIGNING_STORE_FILE" \
                       -storepass "$LEAFFEED_SIGNING_STORE_PASSWORD" \
