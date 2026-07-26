@@ -296,7 +296,9 @@ private fun AutomationEditorDialog(
                     }
                 }
                 item {
-                    TextButton(onClick = { draft = draft.copy(groups = draft.groups + listOf(defaultCondition())) }) {
+                    TextButton(onClick = {
+                        draft = draft.copy(groups = draft.groups + listOf(listOf(defaultCondition())))
+                    }) {
                         Icon(Icons.Outlined.Add, null)
                         Text("Add OR group")
                     }

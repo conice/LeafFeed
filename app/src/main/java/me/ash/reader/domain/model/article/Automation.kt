@@ -244,7 +244,9 @@ internal fun AutomationRuleBundle.toDomain(): AutomationRule =
                         },
                 )
             },
-        actions = actions.sortedBy { it.position }.mapNotNull { enumValueOrNull(it.type) },
+        actions =
+            actions.sortedBy { it.position }
+                .mapNotNull { enumValueOrNull<AutomationActionType>(it.type) },
     )
 
 private inline fun <reified T : Enum<T>> enumValueOrNull(value: String): T? =
