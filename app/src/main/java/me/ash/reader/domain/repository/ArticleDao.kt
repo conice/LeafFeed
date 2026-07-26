@@ -181,6 +181,13 @@ interface ArticleDao {
     @Query("SELECT id FROM article WHERE accountId = :accountId AND id IN (:ids)")
     suspend fun queryExistingIds(accountId: Int, ids: List<String>): List<String>
 
+    @Transaction
+    @Query("SELECT * FROM article WHERE accountId = :accountId AND id IN (:articleIds)")
+    suspend fun queryWithFeedsByIds(
+        accountId: Int,
+        articleIds: List<String>,
+    ): List<ArticleWithFeed>
+
     @Query(
         """
         SELECT article.* FROM article

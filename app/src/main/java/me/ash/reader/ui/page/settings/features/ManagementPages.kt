@@ -5,6 +5,7 @@ package me.ash.reader.ui.page.settings.features
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -359,6 +360,7 @@ fun EmptyManagerRow(text: String) {
 fun ManagementScaffold(
     title: String,
     onBack: () -> Unit,
+    actions: (@Composable RowScope.() -> Unit)? = null,
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
 ) {
     RYScaffold(
@@ -371,6 +373,7 @@ fun ManagementScaffold(
                 onClick = onBack,
             )
         },
+        actions = actions,
         content = {
             LazyColumn {
                 item { DisplayText(text = title, desc = "") }

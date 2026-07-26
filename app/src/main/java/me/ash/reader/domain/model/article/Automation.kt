@@ -191,8 +191,13 @@ data class AutomationConditionDraft(
     val caseSensitive: Boolean = false,
 )
 
-data class AutomationExecutionSummary(
+data class AutomationExecutionRecord(
     @androidx.room.Embedded val execution: AutomationExecutionEntity,
+    val ruleName: String,
+)
+
+data class AutomationExecutionSummary(
+    val execution: AutomationExecutionEntity,
     val ruleName: String,
     val articleTitle: String?,
     val feedName: String?,

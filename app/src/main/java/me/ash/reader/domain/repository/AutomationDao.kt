@@ -10,7 +10,7 @@ import me.ash.reader.domain.model.article.AutomationActionEntity
 import me.ash.reader.domain.model.article.AutomationConditionEntity
 import me.ash.reader.domain.model.article.AutomationConditionGroupEntity
 import me.ash.reader.domain.model.article.AutomationExecutionEntity
-import me.ash.reader.domain.model.article.AutomationExecutionSummary
+import me.ash.reader.domain.model.article.AutomationExecutionRecord
 import me.ash.reader.domain.model.article.AutomationRuleBundle
 import me.ash.reader.domain.model.article.AutomationRuleEntity
 
@@ -116,18 +116,13 @@ interface AutomationDao {
 
     @Query(
         """
-        SELECT e.*,
-            r.name AS ruleName,
-            a.title AS articleTitle,
-            f.name AS feedName
+        SELECT e.*, r.name AS ruleName
         FROM automation_execution AS e
         INNER JOIN automation_rule AS r ON r.id = e.ruleId
-        LEFT JOIN article AS a ON a.id = e.articleId AND a.accountId = r.accountId
-        LEFT JOIN feed AS f ON f.id = a.feedId
         WHERE r.accountId = :accountId
         ORDER BY e.executedAt DESC
         LIMIT :limit
         """
     )
-    fun observeRecentExecutions(accountId: Int, limit: Int = 100): Flow<List<AutomationExecutionSummary>>
+    fun observeRecentExecutions(accountId: Int, limit: Int = 100): Flow<List<AutomationExecutionRecord>>
 }

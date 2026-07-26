@@ -27,6 +27,7 @@ import me.ash.reader.domain.model.article.AutomationRuleEntity
 import me.ash.reader.domain.model.article.AutomationOperator
 import me.ash.reader.domain.model.article.AutomationScope
 import me.ash.reader.domain.model.article.toDomain
+import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.repository.AutomationDao
 import me.ash.reader.infrastructure.di.ApplicationScope
 import me.ash.reader.ui.ext.dataStore
@@ -34,6 +35,7 @@ import me.ash.reader.ui.ext.dataStore
 @Singleton
 class AutomationRepository @Inject constructor(
     private val dao: AutomationDao,
+    private val articleDao: ArticleDao,
     @ApplicationContext context: Context,
     @ApplicationScope applicationScope: CoroutineScope,
 ) {
@@ -60,7 +62,23 @@ class AutomationRepository @Inject constructor(
         dao.queryRules(accountId).map { it.toDomain() }
 
     fun observeRecentExecutions(accountId: Int): Flow<List<AutomationExecutionSummary>> =
-        dao.observeRecentExecutions(accountId)
+        dao.observeRecentExecutions(accountId).map { records ->
+            val articles =
+                if (records.isEmpty()) emptyMap()
+                else articleDao.queryWithFeedsByIds(
+                    accountId = accountId,
+                    articleIds = records.map { it.execution.articleId }.distinct(),
+                ).associateBy { it.article.id }
+            records.map { record ->
+                val article = articles[record.execution.articleId]
+                AutomationExecutionSummary(
+                    execution = record.execution,
+                    ruleName = record.ruleName,
+                    articleTitle = article?.article?.title,
+                    feedName = article?.feed?.name,
+                )
+            }
+        }
 
     suspend fun save(accountId: Int, draft: AutomationDraft) {
         require(draft.name.isNotBlank()) { "Automation name cannot be blank" }
