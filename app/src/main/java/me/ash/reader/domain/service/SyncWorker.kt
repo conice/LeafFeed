@@ -257,6 +257,7 @@ constructor(
                 PeriodicWorkRequestBuilder<SyncWorker>(syncInterval.value, TimeUnit.MINUTES)
                     .setConstraints(
                         Constraints.Builder()
+                            .setRequiresBatteryNotLow(true)
                             .setRequiresCharging(syncOnlyWhenCharging.value)
                             .setRequiredNetworkType(
                                 if (syncOnlyOnWiFi.value) NetworkType.UNMETERED
@@ -287,7 +288,7 @@ constructor(
     }
 }
 
-internal const val SYNC_PROGRESS_MIN_INTERVAL_MS = 750L
+internal const val SYNC_PROGRESS_MIN_INTERVAL_MS = 1_500L
 
 internal fun shouldPublishSyncProgress(
     nowMillis: Long,

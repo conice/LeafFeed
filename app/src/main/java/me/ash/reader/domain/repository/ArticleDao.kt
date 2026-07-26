@@ -1072,10 +1072,13 @@ interface ArticleDao {
         WHERE f.accountId = :accountId
         AND f.isFullContent = 1
         AND a.isUnread = 1
+        ORDER BY a.date DESC
+        LIMIT :limit
         """
     )
     suspend fun queryUnreadFullContentArticles(
         accountId: Int,
+        limit: Int,
     ): List<Article>
 
     @Transaction
@@ -1322,10 +1325,10 @@ interface ArticleDao {
     }
 
     /**
-     * Inserts the results of one local-account refresh in a single outer transaction.
+     * Inserts one refresh batch in a single outer transaction.
      *
-     * Room only dispatches table invalidations after that transaction commits, so article lists
-     * and unread-count observers refresh once per synchronization instead of once per feed.
+     * Room dispatches table invalidations after the batch commits, so article lists and unread
+     * counts refresh once per batch instead of once per feed.
      */
     @Transaction
     suspend fun insertFeedArticlesIfNotExist(

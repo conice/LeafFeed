@@ -7,9 +7,9 @@ import org.junit.Test
 class PerformancePolicyTest {
     @Test
     fun localSyncBatchFlushesAtFeedOrArticleThreshold() {
-        assertFalse(shouldFlushLocalSyncBatch(feedCount = 7, articleCount = 99))
-        assertTrue(shouldFlushLocalSyncBatch(feedCount = 8, articleCount = 0))
-        assertTrue(shouldFlushLocalSyncBatch(feedCount = 1, articleCount = 100))
+        assertFalse(shouldFlushLocalSyncBatch(feedCount = 11, articleCount = 199))
+        assertTrue(shouldFlushLocalSyncBatch(feedCount = 12, articleCount = 0))
+        assertTrue(shouldFlushLocalSyncBatch(feedCount = 1, articleCount = 200))
     }
 
     @Test

@@ -32,7 +32,14 @@ constructor(
             try {
                 val accountId = inputData.getInt(ACCOUNT_ID, -1)
                 if (accountId == -1) return@withContext Result.failure()
-                val articleList = articleDao.queryUnreadFullContentArticles(accountId)
+                // Prefetch the newest articles first and cap each run. Opening an older article
+                // still fetches it on demand, while a large unread backlog cannot hold the radio
+                // and CPU active for hours after every synchronization.
+                val articleList =
+                    articleDao.queryUnreadFullContentArticles(
+                        accountId = accountId,
+                        limit = PREFETCH_ARTICLE_LIMIT,
+                    )
                 var failedCount = 0
 
                 // Do not allocate one Deferred for every unread article. Large accounts can have
@@ -71,5 +78,6 @@ constructor(
         internal const val FAILED_COUNT = "failedCount"
         internal const val ACCOUNT_ID = "accountId"
         internal const val PREFETCH_CONCURRENCY = 2
+        internal const val PREFETCH_ARTICLE_LIMIT = 100
     }
 }

@@ -38,10 +38,10 @@ import me.ash.reader.infrastructure.rss.normalizeArticleUrl
 import timber.log.Timber
 
 private const val TAG = "LocalRssService"
-private const val LOCAL_SYNC_CONCURRENCY = 8
-internal const val LOCAL_SYNC_BATCH_FEEDS = 8
-internal const val LOCAL_SYNC_BATCH_ARTICLES = 100
-private const val LOCAL_SYNC_BATCH_WINDOW_MS = 1_000L
+private const val LOCAL_SYNC_CONCURRENCY = 4
+internal const val LOCAL_SYNC_BATCH_FEEDS = 12
+internal const val LOCAL_SYNC_BATCH_ARTICLES = 200
+private const val LOCAL_SYNC_BATCH_WINDOW_MS = 2_000L
 private const val LOCAL_SYNC_RESULT_BUFFER = 16
 
 internal fun shouldFlushLocalSyncBatch(feedCount: Int, articleCount: Int): Boolean =
