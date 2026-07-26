@@ -43,6 +43,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.AlertDialog
@@ -89,6 +90,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import me.ash.reader.R
+import me.ash.reader.domain.data.ArticleContentType
 import me.ash.reader.domain.data.PagerData
 import me.ash.reader.domain.model.article.ArticleFlowItem
 import me.ash.reader.domain.model.article.ArticleWithFeed
@@ -150,6 +152,7 @@ fun FlowPage(
     isTwoPane: Boolean,
     viewModel: ArticleListReaderViewModel,
     onNavigateUp: () -> Unit,
+    navigateToReadingHistory: (Int, String?, String?, Boolean) -> Unit,
     navigateToArticle: (String, Int) -> Unit,
 ) {
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -448,32 +451,20 @@ fun FlowPage(
                         },
                         actions = {
                             RYExtensibleVisibility(
-                                visible =
-                                    !onSearch &&
-                                        (filterUiState.filter.isUnread() ||
-                                            filterUiState.filter.isHistory())
+                                visible = !onSearch && filterUiState.filter.isUnread()
                             ) {
                                 FeedbackIconButton(
-                                    imageVector =
-                                        if (filterUiState.filter.isHistory()) {
-                                            Filter.Unread.iconOutline
-                                        } else {
-                                            Filter.History.iconOutline
-                                        },
-                                    contentDescription =
-                                        stringResource(
-                                            if (filterUiState.filter.isHistory()) {
-                                                R.string.unread
-                                            } else {
-                                                R.string.reading_history
-                                            }
-                                        ),
+                                    imageVector = Icons.Rounded.History,
+                                    contentDescription = stringResource(R.string.reading_history),
                                     tint = MaterialTheme.colorScheme.onSurface,
                                     onClick = {
-                                        markAsRead = false
-                                        viewModel.setReadingHistory(
-                                            filterUiState,
-                                            visible = !filterUiState.filter.isHistory(),
+                                        navigateToReadingHistory(
+                                            filterUiState.feed?.accountId
+                                                ?: filterUiState.group?.accountId
+                                                ?: viewModel.currentAccountId(),
+                                            filterUiState.group?.id,
+                                            filterUiState.feed?.id,
+                                            filterUiState.contentType == ArticleContentType.AUDIO,
                                         )
                                     },
                                 )
@@ -492,9 +483,7 @@ fun FlowPage(
                                 )
                             }
                             RYExtensibleVisibility(
-                                visible =
-                                    !filterUiState.filter.isStarred() &&
-                                        !filterUiState.filter.isHistory()
+                                visible = !filterUiState.filter.isStarred()
                             ) {
                                 FeedbackIconButton(
                                     imageVector = Icons.Rounded.DoneAll,
@@ -592,15 +581,10 @@ fun FlowPage(
                             onSearch = false
                             viewModel.inputSearchContent(null)
                         },
-                        onSave =
-                            if (filterUiState.filter.isHistory()) {
-                                null
-                            } else {
-                                {
-                                    savedSearchName = ""
-                                    saveSearchDialogVisible = true
-                                }
-                            },
+                        onSave = {
+                            savedSearchName = ""
+                            saveSearchDialogVisible = true
+                        },
                         savedSearchCount = savedSearches.size,
                         onShowSaved = { savedSearchesDialogVisible = true },
                     )
@@ -1097,7 +1081,6 @@ private fun EmptyFlowState(filter: Filter, isSearch: Boolean) {
         when {
             isSearch -> stringResource(R.string.no_search_results)
             filter.isUnread() -> stringResource(R.string.no_unread_articles)
-            filter.isHistory() -> stringResource(R.string.no_reading_history)
             filter.isStarred() -> stringResource(R.string.no_starred_articles)
             filter.isHighlighted() -> stringResource(R.string.no_highlighted_articles)
             filter.isReadLater() -> stringResource(R.string.no_read_later_articles)

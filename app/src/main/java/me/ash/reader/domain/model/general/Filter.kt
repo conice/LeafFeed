@@ -8,7 +8,6 @@ import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarOutline
 import androidx.compose.material.icons.rounded.Subject
 import androidx.compose.material.icons.rounded.Highlight
-import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.runtime.Composable
@@ -40,7 +39,6 @@ class Filter private constructor(
     fun isAll(): Boolean = this == All
     fun isHighlighted(): Boolean = this == Highlighted
     fun isReadLater(): Boolean = this == ReadLater
-    fun isHistory(): Boolean = this == History
 
     @Stable
     @Composable
@@ -49,7 +47,6 @@ class Filter private constructor(
         Starred -> stringResource(R.string.starred)
         Highlighted -> stringResource(R.string.highlighted)
         ReadLater -> stringResource(R.string.read_later)
-        History -> stringResource(R.string.reading_history)
         else -> stringResource(R.string.all)
     }
 
@@ -62,7 +59,6 @@ class Filter private constructor(
         All -> pluralStringResource(R.plurals.all_desc, important, important)
         Highlighted -> pluralStringResource(R.plurals.highlighted_desc, important, important)
         ReadLater -> pluralStringResource(R.plurals.read_later_desc, important, important)
-        History -> stringResource(R.string.reading_history)
         else -> error("Unknown filter")
     }
 
@@ -92,11 +88,6 @@ class Filter private constructor(
             index = 4,
             iconOutline = Icons.Outlined.BookmarkBorder,
             iconFilled = Icons.Rounded.Bookmark,
-        )
-        val History = Filter(
-            index = 5,
-            iconOutline = Icons.Rounded.History,
-            iconFilled = Icons.Rounded.History,
         )
         val values = listOf(Starred, Unread, All, ReadLater)
         val articleValues = listOf(Starred, Unread, All, Highlighted, ReadLater)

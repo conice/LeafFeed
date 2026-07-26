@@ -35,6 +35,8 @@ interface ArticleDao {
             AND article.lastOpenedAt IS NOT NULL
             AND (:groupId IS NULL OR feed.groupId = :groupId)
             AND (:feedId IS NULL OR article.feedId = :feedId)
+            AND ((:audioOnly = 1 AND article.audioUrl IS NOT NULL)
+                OR (:audioOnly = 0 AND article.audioUrl IS NULL))
         ORDER BY article.lastOpenedAt DESC
         """
     )
@@ -42,6 +44,7 @@ interface ArticleDao {
         accountId: Int,
         groupId: String?,
         feedId: String?,
+        audioOnly: Boolean,
     ): PagingSource<Int, ArticleWithFeed>
 
     @Transaction
@@ -54,6 +57,8 @@ interface ArticleDao {
             AND article.lastOpenedAt IS NOT NULL
             AND (:groupId IS NULL OR feed.groupId = :groupId)
             AND (:feedId IS NULL OR article.feedId = :feedId)
+            AND ((:audioOnly = 1 AND article.audioUrl IS NOT NULL)
+                OR (:audioOnly = 0 AND article.audioUrl IS NULL))
             AND (
                 article.title LIKE '%' || :text || '%'
                 OR article.shortDescription LIKE '%' || :text || '%'
@@ -67,6 +72,7 @@ interface ArticleDao {
         text: String,
         groupId: String?,
         feedId: String?,
+        audioOnly: Boolean,
     ): PagingSource<Int, ArticleWithFeed>
 
     @Query(

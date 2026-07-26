@@ -221,7 +221,6 @@ abstract class AbstractRssRepository(
         feedId: String?,
         isStarred: Boolean,
         isUnread: Boolean,
-        isHistory: Boolean = false,
         sortAscending: Boolean = false,
     ): PagingSource<Int, ArticleWithFeed> {
         val accountId = accountService.getCurrentAccountId()
@@ -230,7 +229,6 @@ abstract class AbstractRssRepository(
             "pullArticles: accountId: ${accountId}, groupId: ${groupId}, feedId: ${feedId}, isStarred: ${isStarred}, isUnread: ${isUnread}",
         )
         return when {
-            isHistory -> articleDao.queryReadingHistory(accountId, groupId, feedId)
             groupId != null ->
                 when {
                     isStarred ->
@@ -447,7 +445,6 @@ abstract class AbstractRssRepository(
         feedId: String?,
         isStarred: Boolean,
         isUnread: Boolean,
-        isHistory: Boolean = false,
         sortAscending: Boolean = false,
     ): PagingSource<Int, ArticleWithFeed> {
         val accountId = accountService.getCurrentAccountId()
@@ -456,7 +453,6 @@ abstract class AbstractRssRepository(
             "searchArticles: content: ${content}, accountId: ${accountId}, groupId: ${groupId}, feedId: ${feedId}, isStarred: ${isStarred}, isUnread: ${isUnread}",
         )
         return when {
-            isHistory -> articleDao.searchReadingHistory(accountId, content, groupId, feedId)
             groupId != null ->
                 when {
                     isStarred ->

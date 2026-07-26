@@ -17,7 +17,15 @@ sealed interface Route : NavKey {
 
     //    @Serializable data object Flow : Route
 
-    @Serializable enum class ReadingSource { Flow, AiSummary }
+    @Serializable enum class ReadingSource { Flow, AiSummary, History }
+
+    @Serializable
+    data class ReadingHistory(
+        val accountId: Int,
+        val groupId: String? = null,
+        val feedId: String? = null,
+        val audioOnly: Boolean = false,
+    ) : Route
 
     @Serializable
     data class Reading(

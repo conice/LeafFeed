@@ -40,6 +40,7 @@ import me.ash.reader.ui.page.adaptive.ArticleListReaderViewModel
 import me.ash.reader.ui.page.home.feeds.FeedsPage
 import me.ash.reader.ui.page.home.feeds.subscribe.SubscribeViewModel
 import me.ash.reader.ui.page.home.report.SubscriptionReportPage
+import me.ash.reader.ui.page.history.ReadingHistoryPage
 import me.ash.reader.ui.page.nav3.key.Route
 import me.ash.reader.ui.page.nav3.key.Route.ReadingSource
 import me.ash.reader.ui.page.settings.SettingsPage
@@ -183,12 +184,38 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                                 sharedTransitionScope = this@SharedTransitionLayout,
                                 animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                                 viewModel = viewModel,
-                                directArticleBack = key.source == ReadingSource.AiSummary,
+                                directArticleBack = key.source != ReadingSource.Flow,
                                 onBack = onBack,
+                                onNavigateToReadingHistory =
+                                    { accountId, groupId, feedId, audioOnly ->
+                                        backStack.add(
+                                            Route.ReadingHistory(
+                                                accountId = accountId,
+                                                groupId = groupId,
+                                                feedId = feedId,
+                                                audioOnly = audioOnly,
+                                            )
+                                        )
+                                    },
                                 onNavigateToStylePage = { backStack.add(Route.ReadingPageStyle) },
                             )
                         }
                     }
+                    is Route.ReadingHistory ->
+                        NavEntry(key) {
+                            ReadingHistoryPage(
+                                accountId = key.accountId,
+                                groupId = key.groupId,
+                                feedId = key.feedId,
+                                audioOnly = key.audioOnly,
+                                onBack = onBack,
+                                onOpenArticle = { articleId ->
+                                    backStack.add(
+                                        Route.Reading(articleId, ReadingSource.History)
+                                    )
+                                },
+                            )
+                        }
                     //                    is Route.Reading -> {
                     //                        NavEntry(key) {
                     //                            val articleId = key.articleId

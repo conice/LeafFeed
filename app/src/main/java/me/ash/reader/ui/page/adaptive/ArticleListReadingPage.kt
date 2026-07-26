@@ -64,6 +64,7 @@ fun ArticleListReaderPage(
     viewModel: ArticleListReaderViewModel,
     directArticleBack: Boolean = false,
     onBack: () -> Unit,
+    onNavigateToReadingHistory: (Int, String?, String?, Boolean) -> Unit,
     onNavigateToStylePage: () -> Unit,
 ) {
 
@@ -164,6 +165,7 @@ fun ArticleListReaderPage(
                             animatedVisibilityScope = animatedVisibilityScope,
                             viewModel = viewModel,
                             onNavigateUp = onBack,
+                            navigateToReadingHistory = onNavigateToReadingHistory,
                             isTwoPane = isTwoPane,
                             navigateToArticle = { id, index ->
                                 scope.launch {

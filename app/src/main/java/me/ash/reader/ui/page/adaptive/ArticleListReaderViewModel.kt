@@ -445,17 +445,6 @@ constructor(
         )
     }
 
-    fun setReadingHistory(filterState: FilterState, visible: Boolean) {
-        _searchContentInput.value = null
-        filterStateUseCase.updateFilterState(
-            filterState.copy(
-                filter = if (visible) Filter.History else Filter.Unread,
-                searchContent = null,
-                highlightRuleId = null,
-            )
-        )
-    }
-
     fun inputSearchContent(content: String? = null) {
         if (content != _searchContentInput.value) _searchContentInput.value = content
     }
@@ -751,6 +740,8 @@ constructor(
     }
 
     fun hideAiSummary() = _aiSummaryState.update { AiSummaryUiState() }
+
+    fun currentAccountId(): Int = accountService.getCurrentAccountId()
 
     fun summarizeCurrentTitles(forceRefresh: Boolean = false) {
         val filterState = flowUiState.value?.pagerData?.filterState ?: return
