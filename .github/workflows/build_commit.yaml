@@ -18,6 +18,10 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v5
+              env:
+                  GIT_CONFIG_COUNT: 1
+                  GIT_CONFIG_KEY_0: init.defaultBranch
+                  GIT_CONFIG_VALUE_0: main
             - uses: actions/setup-java@v5
               with:
                   distribution: temurin
@@ -53,9 +57,12 @@ jobs:
                       exit 1
                   fi
                   chmod 600 "$LEAFFEED_SIGNING_STORE_FILE"
-                  keytool -list -keystore "$LEAFFEED_SIGNING_STORE_FILE" \
+                  if ! keytool -list -keystore "$LEAFFEED_SIGNING_STORE_FILE" \
                       -storepass "$LEAFFEED_SIGNING_STORE_PASSWORD" \
-                      -alias "$LEAFFEED_SIGNING_KEY_ALIAS" >/dev/null
+                      -alias "$LEAFFEED_SIGNING_KEY_ALIAS" >/dev/null 2>&1; then
+                      echo "::error::The decoded keystore, password, or key alias is invalid."
+                      exit 1
+                  fi
 
             - name: Assemble signed GitHub APK
               env:

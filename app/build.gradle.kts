@@ -152,6 +152,12 @@ android {
     }
     buildFeatures { buildConfig = true }
     packaging {
+        jniLibs.keepDebugSymbols.addAll(
+            setOf(
+                "**/libandroidx.graphics.path.so",
+                "**/libdatastore_shared_counter.so",
+            ),
+        )
         resources.excludes.add("/META-INF/{AL2.0,LGPL2.1}")
         resources.excludes.add("rome-utils-*.jar")
     }
