@@ -95,7 +95,7 @@ interface ArticleCollectionDao {
     @Delete
     suspend fun deleteNote(note: ArticleNote)
 
-    @Query("SELECT * FROM saved_search WHERE accountId = :accountId ORDER BY createdAt")
+    @Query("SELECT * FROM saved_search WHERE accountId = :accountId ORDER BY createdAt DESC")
     fun observeSavedSearches(accountId: Int): Flow<List<SavedSearch>>
 
     @Query("SELECT * FROM saved_search WHERE accountId = :accountId ORDER BY createdAt")

@@ -20,8 +20,11 @@ import me.ash.reader.domain.model.article.AutomationConditionDraft
 import me.ash.reader.domain.model.article.AutomationDraft
 import me.ash.reader.domain.model.article.AutomationField
 import me.ash.reader.domain.model.article.AutomationOperator
+import me.ash.reader.domain.model.article.AutomationRule
 import me.ash.reader.domain.model.article.AutomationScope
 import me.ash.reader.domain.model.article.SavedSearch
+import me.ash.reader.domain.model.feed.Feed
+import me.ash.reader.domain.model.group.Group
 import me.ash.reader.domain.repository.ArticleCollectionDao
 import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.repository.FeedDao
@@ -189,7 +192,6 @@ constructor(
                 }
         val groupsById = groupDao.queryAll(accountId).associateBy { it.id }
         val feedsById = feedDao.queryAll(accountId).associateBy { it.id }
-        val automations = automationRepository.queryRules(accountId)
         val backup =
             ArticleCollectionBackup(
                 tags = tags,
@@ -218,28 +220,48 @@ constructor(
                             feedUrl = search.feedId?.let { feedsById[it]?.url },
                         )
                     },
-                automations = automations.map { rule ->
-                    AutomationBackup(
-                        name = rule.name,
-                        enabled = rule.enabled,
-                        scope = rule.scope.name,
-                        groupName = rule.scopeId.takeIf { rule.scope == AutomationScope.GROUP }?.let { groupsById[it]?.name },
-                        feedUrl = rule.scopeId.takeIf { rule.scope == AutomationScope.FEED }?.let { feedsById[it]?.url },
-                        conditionGroups = rule.groups.map { group ->
-                            group.conditions.map { condition ->
-                                AutomationConditionBackup(
-                                    field = condition.field.name,
-                                    operator = condition.operator.name,
-                                    value = condition.value,
-                                    caseSensitive = condition.caseSensitive,
-                                )
-                            }
-                        },
-                        actions = rule.actions.map { it.name },
-                    )
-                },
             )
         return json.encodeToString(backup.withIntegrityHash(json))
+    }
+
+    suspend fun exportAutomations(): String {
+        val accountId = accountService.getCurrentAccountId()
+        val groupsById = groupDao.queryAll(accountId).associateBy { it.id }
+        val feedsById = feedDao.queryAll(accountId).associateBy { it.id }
+        val backup =
+            AutomationBackupFile(
+                automations =
+                    automationRepository.queryRules(accountId).toBackups(groupsById, feedsById),
+            )
+        return json.encodeToString(backup.withIntegrityHash(json))
+    }
+
+    suspend fun importAutomations(content: String): AutomationImportResult {
+        require(content.isNotBlank()) { "Automation backup is empty" }
+        require(content.length <= MAX_BACKUP_CHARS) { "Automation backup is too large" }
+        val backup = json.decodeFromString<AutomationBackupFile>(content)
+        require(backup.format == AUTOMATION_BACKUP_FORMAT) {
+            "Unsupported automation backup format"
+        }
+        require(backup.version == AUTOMATION_BACKUP_VERSION) {
+            "Unsupported automation backup version"
+        }
+        require(backup.hasValidIntegrityHash(json)) {
+            "Automation backup failed its integrity check"
+        }
+        backup.validate()
+
+        val accountId = accountService.getCurrentAccountId()
+        val groupsByName = groupDao.queryAll(accountId).associateBy { it.name }
+        val feedsByUrl = feedDao.queryAll(accountId).associateBy { it.url }
+        val existingByName = automationRepository.queryRules(accountId).associateBy { it.name }
+        val drafts =
+            backup.automations.toDrafts(groupsByName, feedsByUrl, existingByName)
+        drafts.forEach { automationRepository.save(accountId, it) }
+        return AutomationImportResult(
+            imported = drafts.size,
+            skipped = backup.automations.size - drafts.size,
+        )
     }
 
     suspend fun importBackup(content: String): ArticleCollectionImportResult {
@@ -375,39 +397,8 @@ constructor(
                     isPlayed = state.isPlayed,
                 )
             }.distinctBy { it.articleId }
-        val automationDrafts = backup.automations.mapNotNull { imported ->
-            val scope = parseAutomationEnum<AutomationScope>(imported.scope) ?: return@mapNotNull null
-            val scopeId = when (scope) {
-                AutomationScope.GLOBAL -> ""
-                AutomationScope.GROUP -> imported.groupName?.let { groupsByName[it]?.id } ?: return@mapNotNull null
-                AutomationScope.FEED -> imported.feedUrl?.let { feedsByUrl[it]?.id } ?: return@mapNotNull null
-            }
-            val groups = imported.conditionGroups.map { group ->
-                group.mapNotNull { condition ->
-                    val field = parseAutomationEnum<AutomationField>(condition.field)
-                    val operator = parseAutomationEnum<AutomationOperator>(condition.operator)
-                    if (field == null || operator == null) null else AutomationConditionDraft(
-                        field = field,
-                        operator = operator,
-                        value = condition.value,
-                        caseSensitive = condition.caseSensitive,
-                    )
-                }
-            }
-            val actions = imported.actions.mapNotNull { parseAutomationEnum<AutomationActionType>(it) }.toSet()
-            if (imported.name.isBlank() || groups.isEmpty() || groups.any { it.isEmpty() } || actions.isEmpty()) {
-                return@mapNotNull null
-            }
-            AutomationDraft(
-                id = existingAutomationsByName[imported.name]?.id,
-                name = imported.name,
-                enabled = imported.enabled,
-                scope = scope,
-                scopeId = scopeId,
-                groups = groups,
-                actions = actions,
-            ).takeIf(automationRepository::isValid)
-        }
+        val automationDrafts =
+            backup.automations.toDrafts(groupsByName, feedsByUrl, existingAutomationsByName)
         dao.importCollections(tags, refs, notes, searches)
         articleDao.restoreReadingStates(readingStates)
         automationDrafts.forEach { automationRepository.save(accountId, it) }
@@ -432,6 +423,54 @@ constructor(
         const val MAX_BACKUP_CHARS = 50 * 1024 * 1024
         const val ARTICLE_QUERY_CHUNK_SIZE = 500
     }
+
+    private fun List<AutomationBackup>.toDrafts(
+        groupsByName: Map<String, Group>,
+        feedsByUrl: Map<String, Feed>,
+        existingByName: Map<String, AutomationRule>,
+    ): List<AutomationDraft> =
+        mapNotNull { imported ->
+            val scope = parseAutomationEnum<AutomationScope>(imported.scope) ?: return@mapNotNull null
+            val scopeId =
+                when (scope) {
+                    AutomationScope.GLOBAL -> ""
+                    AutomationScope.GROUP ->
+                        imported.groupName?.let { groupsByName[it]?.id } ?: return@mapNotNull null
+                    AutomationScope.FEED ->
+                        imported.feedUrl?.let { feedsByUrl[it]?.id } ?: return@mapNotNull null
+                }
+            val groups =
+                imported.conditionGroups.map { group ->
+                    group.mapNotNull { condition ->
+                        val field = parseAutomationEnum<AutomationField>(condition.field)
+                        val operator = parseAutomationEnum<AutomationOperator>(condition.operator)
+                        if (field == null || operator == null) {
+                            null
+                        } else {
+                            AutomationConditionDraft(
+                                field = field,
+                                operator = operator,
+                                value = condition.value,
+                                caseSensitive = condition.caseSensitive,
+                            )
+                        }
+                    }
+                }
+            val actions =
+                imported.actions.mapNotNull { parseAutomationEnum<AutomationActionType>(it) }.toSet()
+            if (imported.name.isBlank() || groups.isEmpty() || groups.any { it.isEmpty() } || actions.isEmpty()) {
+                return@mapNotNull null
+            }
+            AutomationDraft(
+                id = existingByName[imported.name]?.id,
+                name = imported.name,
+                enabled = imported.enabled,
+                scope = scope,
+                scopeId = scopeId,
+                groups = groups,
+                actions = actions,
+            ).takeIf(automationRepository::isValid)
+        }
 }
 
 @Serializable
@@ -469,6 +508,14 @@ data class AutomationConditionBackup(
 )
 
 @Serializable
+data class AutomationBackupFile(
+    val format: String = AUTOMATION_BACKUP_FORMAT,
+    val version: Int = AUTOMATION_BACKUP_VERSION,
+    val integritySha256: String? = null,
+    val automations: List<AutomationBackup> = emptyList(),
+)
+
+@Serializable
 data class BackupArticleIdentity(
     val articleId: String,
     val feedUrl: String,
@@ -496,8 +543,42 @@ data class SavedSearchScopeBackup(
 )
 
 internal const val COLLECTION_BACKUP_FORMAT = "leaffeed.collections"
-internal const val COLLECTION_BACKUP_VERSION = 4
+internal const val COLLECTION_BACKUP_VERSION = 5
+internal const val AUTOMATION_BACKUP_FORMAT = "leaffeed.automations"
+internal const val AUTOMATION_BACKUP_VERSION = 1
 private const val MAX_COLLECTION_ENTRIES = 100_000
+
+private fun List<AutomationRule>.toBackups(
+    groupsById: Map<String, Group>,
+    feedsById: Map<String, Feed>,
+): List<AutomationBackup> =
+    map { rule ->
+        AutomationBackup(
+            name = rule.name,
+            enabled = rule.enabled,
+            scope = rule.scope.name,
+            groupName =
+                rule.scopeId
+                    .takeIf { rule.scope == AutomationScope.GROUP }
+                    ?.let { groupsById[it]?.name },
+            feedUrl =
+                rule.scopeId
+                    .takeIf { rule.scope == AutomationScope.FEED }
+                    ?.let { feedsById[it]?.url },
+            conditionGroups =
+                rule.groups.map { group ->
+                    group.conditions.map { condition ->
+                        AutomationConditionBackup(
+                            field = condition.field.name,
+                            operator = condition.operator.name,
+                            value = condition.value,
+                            caseSensitive = condition.caseSensitive,
+                        )
+                    }
+                },
+            actions = rule.actions.map { it.name },
+        )
+    }
 
 internal fun ArticleCollectionBackup.withIntegrityHash(json: Json): ArticleCollectionBackup =
     copy(integritySha256 = canonicalSha256(json))
@@ -556,6 +637,27 @@ private fun ArticleCollectionBackup.validate() {
     }) { "Reading data backup contains an invalid automation" }
 }
 
+internal fun AutomationBackupFile.withIntegrityHash(json: Json): AutomationBackupFile =
+    copy(integritySha256 = canonicalSha256(json))
+
+internal fun AutomationBackupFile.hasValidIntegrityHash(json: Json): Boolean {
+    val expected = integritySha256 ?: return false
+    return MessageDigest.isEqual(
+        expected.toByteArray(Charsets.US_ASCII),
+        canonicalSha256(json).toByteArray(Charsets.US_ASCII),
+    )
+}
+
+private fun AutomationBackupFile.validate() {
+    require(automations.size <= MAX_COLLECTION_ENTRIES) {
+        "Too many automations in automation backup"
+    }
+    require(automations.all { automation ->
+        automation.name.isNotBlank() && automation.conditionGroups.isNotEmpty() &&
+            automation.conditionGroups.all { it.isNotEmpty() } && automation.actions.isNotEmpty()
+    }) { "Automation backup contains an invalid automation" }
+}
+
 private inline fun <reified T : Enum<T>> parseAutomationEnum(value: String): T? =
     enumValues<T>().firstOrNull { it.name == value }
 
@@ -573,6 +675,12 @@ private fun ArticleCollectionBackup.canonicalSha256(json: Json): String =
         .digest(json.encodeToString(copy(integritySha256 = null)).toByteArray(Charsets.UTF_8))
         .toHexString()
 
+@OptIn(ExperimentalStdlibApi::class)
+private fun AutomationBackupFile.canonicalSha256(json: Json): String =
+    MessageDigest.getInstance("SHA-256")
+        .digest(json.encodeToString(copy(integritySha256 = null)).toByteArray(Charsets.UTF_8))
+        .toHexString()
+
 data class ArticleCollectionImportResult(
     val tags: Int,
     val tagRefs: Int,
@@ -581,4 +689,9 @@ data class ArticleCollectionImportResult(
     val readingStates: Int = 0,
     val automations: Int = 0,
     val skipped: Int = 0,
+)
+
+data class AutomationImportResult(
+    val imported: Int,
+    val skipped: Int,
 )

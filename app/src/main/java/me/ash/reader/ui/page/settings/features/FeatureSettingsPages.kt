@@ -70,7 +70,7 @@ fun ReadingOptionsPage(
         toggle("Show read later action", settings.showReadLaterIcon) { write(FeaturePreferenceKeys.showReadLaterIcon, it) }
 
         section("Management")
-        action("Tags, notes and saved searches", "Manage reading data", navigateToCollections)
+        action("Tags and notes", "Manage reading data", navigateToCollections)
         action("Automations", "Conditions, actions and execution history", navigateToAutomations)
     }
 }

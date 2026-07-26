@@ -13,7 +13,7 @@ class ArticleCollectionBackupTest {
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
 
     @Test
-    fun `v4 backup detects changed reading data`() {
+    fun `v5 backup detects changed reading data`() {
         val backup = ArticleCollectionBackup(
             tags = listOf(ArticleTagLabel("tag", 1, "Saved", null)),
             tagRefs = listOf(ArticleTagCrossRef("article", "tag")),
@@ -96,5 +96,36 @@ class ArticleCollectionBackupTest {
         )
         assertTrue(legacy.version in 1..COLLECTION_BACKUP_VERSION)
         assertTrue(legacy.integritySha256 == null)
+    }
+
+    @Test
+    fun `automation backup detects changed rules`() {
+        val backup =
+            AutomationBackupFile(
+                automations =
+                    listOf(
+                        AutomationBackup(
+                            name = "Filter promotions",
+                            scope = "GLOBAL",
+                            conditionGroups =
+                                listOf(
+                                    listOf(
+                                        AutomationConditionBackup(
+                                            "TITLE",
+                                            "CONTAINS",
+                                            "Promotion",
+                                        )
+                                    )
+                                ),
+                            actions = listOf("FILTER"),
+                        )
+                    ),
+            ).withIntegrityHash(json)
+
+        assertTrue(backup.hasValidIntegrityHash(json))
+        assertFalse(
+            backup.copy(automations = backup.automations.map { it.copy(enabled = false) })
+                .hasValidIntegrityHash(json)
+        )
     }
 }

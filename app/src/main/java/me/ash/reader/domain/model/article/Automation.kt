@@ -194,6 +194,8 @@ data class AutomationConditionDraft(
 data class AutomationExecutionSummary(
     @androidx.room.Embedded val execution: AutomationExecutionEntity,
     val ruleName: String,
+    val articleTitle: String?,
+    val feedName: String?,
 )
 
 data class AutomationCandidate(

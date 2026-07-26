@@ -310,6 +310,9 @@
     <string name="export_reading_data">Export reading data</string>
     <string name="import_reading_data">Import reading data</string>
     <string name="reading_data_imported">Imported %1$d tags, %2$d tag links, %3$d notes, %4$d saved searches, %5$d article states, and %6$d automations; skipped %7$d unmatched items</string>
+    <string name="export_automations">Export automations</string>
+    <string name="import_automations">Import automations</string>
+    <string name="automations_imported">Imported %1$d automations; skipped %2$d unmatched or invalid automations</string>
     <string name="touch_to_play_video">Tap to play a video</string>
     <string name="text">Text</string>
     <string name="font_size">Font size</string>

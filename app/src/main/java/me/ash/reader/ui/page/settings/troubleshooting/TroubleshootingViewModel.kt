@@ -23,6 +23,7 @@ import kotlinx.coroutines.withContext
 import me.ash.reader.domain.data.Log
 import me.ash.reader.domain.data.ArticleCollectionRepository
 import me.ash.reader.domain.data.ArticleCollectionImportResult
+import me.ash.reader.domain.data.AutomationImportResult
 import me.ash.reader.domain.data.SyncLogger
 import me.ash.reader.domain.service.AccountService
 import me.ash.reader.domain.service.OpmlService
@@ -168,6 +169,25 @@ constructor(
             val result = runCatching {
                 require(content.size <= 50 * 1024 * 1024) { "Reading data backup is too large" }
                 articleCollectionRepository.importBackup(content.toString(Charsets.UTF_8))
+            }
+            withContext(mainDispatcher) { callback(result) }
+        }
+    }
+
+    fun exportAutomations(callback: (ByteArray) -> Unit) {
+        viewModelScope.launch(ioDispatcher) {
+            callback(articleCollectionRepository.exportAutomations().toByteArray())
+        }
+    }
+
+    fun importAutomations(
+        content: ByteArray,
+        callback: (Result<AutomationImportResult>) -> Unit,
+    ) {
+        viewModelScope.launch(ioDispatcher) {
+            val result = runCatching {
+                require(content.size <= 50 * 1024 * 1024) { "Automation backup is too large" }
+                articleCollectionRepository.importAutomations(content.toString(Charsets.UTF_8))
             }
             withContext(mainDispatcher) { callback(result) }
         }

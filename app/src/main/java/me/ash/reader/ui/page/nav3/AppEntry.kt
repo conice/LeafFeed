@@ -300,7 +300,6 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                     Route.CollectionManager -> NavEntry(key) {
                         CollectionManagerPage(
                             onBack = onBack,
-                            onOpenFlow = { backStack.add(Route.Reading(null)) },
                             onOpenArticle = {
                                 backStack.add(Route.Reading(it, ReadingSource.Flow))
                             },

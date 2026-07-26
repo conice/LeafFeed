@@ -1,21 +1,23 @@
 package me.ash.reader.ui.page.home.flow
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.outlined.BookmarkAdd
-import androidx.compose.material.icons.outlined.Bookmarks
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -28,6 +30,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import me.ash.reader.R
+import me.ash.reader.domain.model.article.SavedSearch
 import me.ash.reader.domain.model.constant.ElevationTokens
 import me.ash.reader.ui.component.base.ExpressiveIconButton
 
@@ -40,12 +43,8 @@ fun SearchBar(
     onValueChange: (String) -> Unit = {},
     onClose: () -> Unit = {},
     onSave: (() -> Unit)? = null,
-    savedSearchCount: Int = 0,
-    onShowSaved: (() -> Unit)? = null,
 ) {
     val focusManager = LocalFocusManager.current
-
-    var input by remember { mutableStateOf(value) }
 
     Surface(
         modifier = Modifier
@@ -85,11 +84,8 @@ fun SearchBar(
                         focusedIndicatorColor = Color.Transparent,
                         unfocusedIndicatorColor = Color.Transparent,
                     ),
-                    value = input,
-                    onValueChange = {
-                        input = it
-                        onValueChange(it)
-                    },
+                    value = value,
+                    onValueChange = onValueChange,
                     placeholder = {
                         Text(
                             modifier = Modifier.alpha(0.7f),
@@ -112,20 +108,11 @@ fun SearchBar(
                     )
                 )
             }
-            if (input.isNotBlank() && onSave != null) {
+            if (value.isNotBlank() && onSave != null) {
                 ExpressiveIconButton(onClick = onSave) {
                     Icon(
                         imageVector = Icons.Outlined.BookmarkAdd,
                         contentDescription = stringResource(R.string.save_search),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            if (savedSearchCount > 0 && onShowSaved != null) {
-                ExpressiveIconButton(onClick = onShowSaved) {
-                    Icon(
-                        imageVector = Icons.Outlined.Bookmarks,
-                        contentDescription = stringResource(R.string.saved_searches),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -135,6 +122,55 @@ fun SearchBar(
                     imageVector = Icons.Rounded.Close,
                     contentDescription = stringResource(R.string.clear),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun SavedSearchRow(
+    searches: List<SavedSearch>,
+    selectedSearchId: String?,
+    onClick: (SavedSearch) -> Unit,
+    onLongClick: (SavedSearch) -> Unit,
+) {
+    LazyRow(
+        modifier = Modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(start = 24.dp, end = 24.dp, bottom = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        items(searches, key = { it.id }) { search ->
+            val selected = search.id == selectedSearchId
+            Surface(
+                modifier = Modifier.combinedClickable(
+                    onClick = { onClick(search) },
+                    onLongClick = { onLongClick(search) },
+                ),
+                shape = RoundedCornerShape(8.dp),
+                color = if (selected) {
+                    MaterialTheme.colorScheme.secondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerHigh
+                },
+                border = BorderStroke(
+                    1.dp,
+                    if (selected) {
+                        MaterialTheme.colorScheme.secondary
+                    } else {
+                        MaterialTheme.colorScheme.outlineVariant
+                    },
+                ),
+            ) {
+                Text(
+                    text = search.query,
+                    modifier = Modifier
+                        .widthIn(max = 280.dp)
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.labelLarge,
                 )
             }
         }

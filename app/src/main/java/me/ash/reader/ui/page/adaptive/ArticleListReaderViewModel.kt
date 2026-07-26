@@ -402,13 +402,20 @@ constructor(
         if (content != _searchContentInput.value) _searchContentInput.value = content
     }
 
-    fun saveCurrentSearch(name: String) {
+    fun saveCurrentSearch() {
         val state = filterStateUseCase.filterStateFlow.value
         val query = _searchContentInput.value?.trim().orEmpty()
-        if (name.isBlank() || query.isBlank()) return
+        if (query.isBlank()) return
+        if (savedSearches.value.any { search ->
+                search.query == query &&
+                    search.filterIndex == state.filter.index &&
+                    search.groupId == state.group?.id &&
+                    search.feedId == state.feed?.id
+            }
+        ) return
         viewModelScope.launch(ioDispatcher) {
             articleCollectionRepository.saveSearch(
-                name = name,
+                name = query,
                 query = query,
                 filterIndex = state.filter.index,
                 groupId = state.group?.id,

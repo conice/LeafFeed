@@ -64,13 +64,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.ash.reader.R
 import me.ash.reader.domain.data.ArticleCollectionRepository
-import me.ash.reader.domain.data.FilterStateUseCase
 import me.ash.reader.domain.model.article.Article
 import me.ash.reader.domain.model.article.ArticleNote
 import me.ash.reader.domain.model.article.ArticleWithFeed
 import me.ash.reader.domain.model.article.ArticleTagLabel
-import me.ash.reader.domain.model.article.SavedSearch
-import me.ash.reader.domain.model.general.Filter
 import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.service.AccountService
 import me.ash.reader.domain.service.RssService
@@ -192,13 +189,10 @@ fun PodcastLibraryPage(
 class CollectionManagerViewModel @Inject constructor(
     private val repository: ArticleCollectionRepository,
     private val rssService: RssService,
-    private val filterStateUseCase: FilterStateUseCase,
 ) : ViewModel() {
     val tags = repository.observeTagGroups()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     val notes = repository.observeAllNotes()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-    val searches = repository.observeSavedSearches()
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
     private val _taggedArticles = MutableStateFlow<List<ArticleWithFeed>?>(null)
     val taggedArticles = _taggedArticles.asStateFlow()
@@ -207,17 +201,6 @@ class CollectionManagerViewModel @Inject constructor(
         viewModelScope.launch { repository.updateTag(tag, name, color) }
     fun delete(tag: ArticleTagLabel) = viewModelScope.launch { repository.deleteTag(tag) }
     fun delete(note: ArticleNote) = viewModelScope.launch { repository.deleteNote(note) }
-    fun delete(search: SavedSearch) = viewModelScope.launch { repository.deleteSearch(search) }
-    fun apply(search: SavedSearch, onComplete: () -> Unit) = viewModelScope.launch {
-        val filter = Filter.articleValues.firstOrNull { it.index == search.filterIndex } ?: Filter.All
-        filterStateUseCase.updateFilterState(
-            group = search.groupId?.let { rssService.get().findGroupById(it) },
-            feed = search.feedId?.let { rssService.get().findFeedById(it) },
-            filter = filter,
-            searchContent = search.query,
-        )
-        onComplete()
-    }
     fun showArticles(tag: ArticleTagLabel) = viewModelScope.launch {
         _taggedArticles.value = repository.queryArticleIdsForTag(tag.id).mapNotNull { id ->
             runCatching { rssService.get().findArticleById(id) }
@@ -231,16 +214,14 @@ class CollectionManagerViewModel @Inject constructor(
 fun CollectionManagerPage(
     onBack: () -> Unit,
     onOpenArticle: (String) -> Unit,
-    onOpenFlow: () -> Unit,
     viewModel: CollectionManagerViewModel = hiltViewModel(),
 ) {
     val tags by viewModel.tags.collectAsStateWithLifecycle()
     val notes by viewModel.notes.collectAsStateWithLifecycle()
-    val searches by viewModel.searches.collectAsStateWithLifecycle()
     val taggedArticles by viewModel.taggedArticles.collectAsStateWithLifecycle()
     var editingTag by remember { mutableStateOf<ArticleTagLabel?>(null) }
 
-    ManagementScaffold("Tags, notes and saved searches", onBack) {
+    ManagementScaffold("Tags and notes", onBack) {
         item { Subtitle(Modifier.padding(horizontal = 24.dp), "Tags") }
         if (tags.isEmpty()) item { EmptyManagerRow("No tags") }
         items(tags, key = { it.tag.id }) { group ->
@@ -279,15 +260,6 @@ fun CollectionManagerPage(
                     IconButton(onClick = { viewModel.delete(note) }) {
                         Icon(Icons.Outlined.Delete, contentDescription = "Delete note")
                     }
-                }
-            }
-        }
-        item { Subtitle(Modifier.padding(horizontal = 24.dp), "Saved searches") }
-        if (searches.isEmpty()) item { EmptyManagerRow("No saved searches") }
-        items(searches, key = { it.id }) { search ->
-            SettingItem(title = search.name, desc = search.query, onClick = { viewModel.apply(search, onOpenFlow) }) {
-                IconButton(onClick = { viewModel.delete(search) }) {
-                    Icon(Icons.Outlined.Delete, contentDescription = "Delete saved search")
                 }
             }
         }

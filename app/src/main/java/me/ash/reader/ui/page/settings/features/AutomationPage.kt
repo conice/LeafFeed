@@ -187,14 +187,22 @@ private fun ExecutionRow(item: AutomationExecutionSummary) {
     val actionText = enumValueOrNull<AutomationActionType>(item.execution.actionType)?.displayName()
         ?: item.execution.actionType.displayEnumName()
     SettingItem(
-        title = "${item.ruleName} - $actionText",
+        title = item.articleTitle?.takeIf { it.isNotBlank() } ?: item.execution.articleId,
         desc = buildString {
+            append(item.ruleName)
+            append(" - ")
+            append(actionText)
+            item.feedName?.takeIf { it.isNotBlank() }?.let {
+                append("\n")
+                append(it)
+            }
+            append("\n")
             append(statusText)
             append(" - ")
             append(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(item.execution.executedAt))
             item.execution.message?.takeIf { it.isNotBlank() }?.let { append("\n"); append(it) }
         },
-        descMaxLines = 2,
+        descMaxLines = 4,
         onClick = {},
     )
 }

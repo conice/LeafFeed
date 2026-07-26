@@ -116,9 +116,14 @@ interface AutomationDao {
 
     @Query(
         """
-        SELECT e.*, r.name AS ruleName
+        SELECT e.*,
+            r.name AS ruleName,
+            a.title AS articleTitle,
+            f.name AS feedName
         FROM automation_execution AS e
         INNER JOIN automation_rule AS r ON r.id = e.ruleId
+        LEFT JOIN article AS a ON a.id = e.articleId AND a.accountId = r.accountId
+        LEFT JOIN feed AS f ON f.id = a.feedId
         WHERE r.accountId = :accountId
         ORDER BY e.executedAt DESC
         LIMIT :limit

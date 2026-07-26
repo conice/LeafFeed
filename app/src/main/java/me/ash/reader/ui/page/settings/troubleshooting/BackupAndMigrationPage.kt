@@ -124,6 +124,38 @@ fun BackupAndMigrationPage(
                 }
             }
         }
+    val exportAutomations =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(MimeType.JSON)) {
+            uri ->
+            uri?.let {
+                viewModel.exportAutomations { data ->
+                    context.contentResolver.openOutputStream(it)?.use { output ->
+                        output.write(data)
+                    }
+                }
+            }
+        }
+    val importAutomations =
+        rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+            uri?.let {
+                context.contentResolver.openInputStream(it)?.use { input ->
+                    viewModel.importAutomations(input.readBytes()) { result ->
+                        val message =
+                            result.fold(
+                                onSuccess = { imported ->
+                                    context.getString(
+                                        R.string.automations_imported,
+                                        imported.imported,
+                                        imported.skipped,
+                                    )
+                                },
+                                onFailure = { context.getString(R.string.import_failed) },
+                            )
+                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
 
     RYScaffold(
         containerColor =
@@ -160,6 +192,20 @@ fun BackupAndMigrationPage(
                         onClick = {
                             exportReadingData.launch(
                                 "LeafFeed-reading-${Date().toString(DateFormat.YYYYMMDD_DASH_HHMM)}.json"
+                            )
+                        },
+                    ) {}
+                    Spacer(Modifier.height(24.dp))
+                    Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = "Automations")
+                    SettingItem(
+                        title = stringResource(R.string.import_automations),
+                        onClick = { importAutomations.launch(arrayOf(MimeType.JSON)) },
+                    ) {}
+                    SettingItem(
+                        title = stringResource(R.string.export_automations),
+                        onClick = {
+                            exportAutomations.launch(
+                                "LeafFeed-automations-${Date().toString(DateFormat.YYYYMMDD_DASH_HHMM)}.json"
                             )
                         },
                     ) {}

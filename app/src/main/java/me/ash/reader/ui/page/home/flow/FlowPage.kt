@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -33,25 +32,22 @@ import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -205,9 +201,7 @@ fun FlowPage(
     val focusRequester = remember { FocusRequester() }
     var markAsRead by remember { mutableStateOf(false) }
     var onSearch by rememberSaveable { mutableStateOf(false) }
-    var saveSearchDialogVisible by remember { mutableStateOf(false) }
-    var savedSearchesDialogVisible by remember { mutableStateOf(false) }
-    var savedSearchName by remember { mutableStateOf("") }
+    var selectedSavedSearchId by rememberSaveable { mutableStateOf<String?>(null) }
 
     var currentPullToLoadState: PullToLoadState? by remember { mutableStateOf(null) }
     var currentLoadAction: LoadAction? by remember { mutableStateOf(null) }
@@ -272,8 +266,15 @@ fun FlowPage(
 
     LaunchedEffect(onSearch) {
         if (!onSearch) {
+            selectedSavedSearchId = null
             keyboardController?.hide()
             viewModel.inputSearchContent(null)
+        }
+    }
+
+    LaunchedEffect(savedSearches, selectedSavedSearchId) {
+        if (selectedSavedSearchId != null && savedSearches.none { it.id == selectedSavedSearchId }) {
+            selectedSavedSearchId = null
         }
     }
 
@@ -444,8 +445,21 @@ fun FlowPage(
                             }
                         },
                         actions = {
+                            if (selectedSavedSearchId != null) {
+                                FeedbackIconButton(
+                                    imageVector = Icons.Outlined.Delete,
+                                    contentDescription = stringResource(R.string.delete),
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    onClick = {
+                                        savedSearches.firstOrNull { it.id == selectedSavedSearchId }
+                                            ?.let(viewModel::deleteSavedSearch)
+                                        selectedSavedSearchId = null
+                                    },
+                                )
+                            }
                             RYExtensibleVisibility(
-                                visible = !onSearch && filterUiState.filter.isUnread()
+                                visible = selectedSavedSearchId == null &&
+                                    !onSearch && filterUiState.filter.isUnread()
                             ) {
                                 FeedbackIconButton(
                                     imageVector = Icons.Rounded.History,
@@ -465,7 +479,7 @@ fun FlowPage(
                             }
                             RYExtensibleVisibility(
                                 visible =
-                                    !onSearch &&
+                                    selectedSavedSearchId == null && !onSearch &&
                                         (filterUiState.filter.isUnread() ||
                                             filterUiState.filter.isAll())
                             ) {
@@ -477,7 +491,8 @@ fun FlowPage(
                                 )
                             }
                             RYExtensibleVisibility(
-                                visible = !filterUiState.filter.isStarred()
+                                visible = selectedSavedSearchId == null &&
+                                    !filterUiState.filter.isStarred()
                             ) {
                                 FeedbackIconButton(
                                     imageVector = Icons.Rounded.DoneAll,
@@ -505,33 +520,35 @@ fun FlowPage(
                                     }
                                 }
                             }
-                            FeedbackIconButton(
-                                imageVector = Icons.Rounded.Search,
-                                contentDescription = stringResource(R.string.search),
-                                tint =
+                            RYExtensibleVisibility(visible = selectedSavedSearchId == null) {
+                                FeedbackIconButton(
+                                    imageVector = Icons.Rounded.Search,
+                                    contentDescription = stringResource(R.string.search),
+                                    tint =
+                                        if (onSearch) {
+                                            MaterialTheme.colorScheme.primary
+                                        } else {
+                                            MaterialTheme.colorScheme.onSurface
+                                        },
+                                ) {
                                     if (onSearch) {
-                                        MaterialTheme.colorScheme.primary
+                                        onSearch = false
                                     } else {
-                                        MaterialTheme.colorScheme.onSurface
-                                    },
-                            ) {
-                                if (onSearch) {
-                                    onSearch = false
-                                } else {
-                                    scope
-                                        .launch {
-                                            if (listState.firstVisibleItemIndex != 0) {
-                                                listState.animateScrollToItem(0)
+                                        scope
+                                            .launch {
+                                                if (listState.firstVisibleItemIndex != 0) {
+                                                    listState.animateScrollToItem(0)
+                                                }
                                             }
-                                        }
-                                        .invokeOnCompletion {
-                                            scope.launch {
-                                                onSearch = true
-                                                markAsRead = false
-                                                delay(100)
-                                                focusRequester.requestFocus()
+                                            .invokeOnCompletion {
+                                                scope.launch {
+                                                    onSearch = true
+                                                    markAsRead = false
+                                                    delay(100)
+                                                    focusRequester.requestFocus()
+                                                }
                                             }
-                                        }
+                                    }
                                 }
                             }
                         },
@@ -544,44 +561,61 @@ fun FlowPage(
             },
             content = {
                 RYExtensibleVisibility(modifier = Modifier.zIndex(1f), visible = onSearch) {
-                    BackHandler(onSearch) { onSearch = false }
-                    SearchBar(
-                        value = searchContentInput ?: "",
-                        placeholder =
-                            when {
-                                filterUiState.group != null ->
-                                    stringResource(
-                                        R.string.search_for_in,
-                                        filterUiState.filter.toName(),
-                                        filterUiState.group.name,
-                                    )
+                    BackHandler(onSearch) {
+                        if (selectedSavedSearchId != null) selectedSavedSearchId = null
+                        else onSearch = false
+                    }
+                    Column {
+                        SearchBar(
+                            value = searchContentInput ?: "",
+                            placeholder =
+                                when {
+                                    filterUiState.group != null ->
+                                        stringResource(
+                                            R.string.search_for_in,
+                                            filterUiState.filter.toName(),
+                                            filterUiState.group.name,
+                                        )
 
-                                filterUiState.feed != null ->
-                                    stringResource(
-                                        R.string.search_for_in,
-                                        filterUiState.filter.toName(),
-                                        filterUiState.feed.name,
-                                    )
+                                    filterUiState.feed != null ->
+                                        stringResource(
+                                            R.string.search_for_in,
+                                            filterUiState.filter.toName(),
+                                            filterUiState.feed.name,
+                                        )
 
-                                else ->
-                                    stringResource(
-                                        R.string.search_for,
-                                        filterUiState.filter.toName(),
-                                    )
+                                    else ->
+                                        stringResource(
+                                            R.string.search_for,
+                                            filterUiState.filter.toName(),
+                                        )
+                                },
+                            focusRequester = focusRequester,
+                            onValueChange = { viewModel.inputSearchContent(it) },
+                            onClose = {
+                                onSearch = false
+                                viewModel.inputSearchContent(null)
                             },
-                        focusRequester = focusRequester,
-                        onValueChange = { viewModel.inputSearchContent(it) },
-                        onClose = {
-                            onSearch = false
-                            viewModel.inputSearchContent(null)
-                        },
-                        onSave = {
-                            savedSearchName = ""
-                            saveSearchDialogVisible = true
-                        },
-                        savedSearchCount = savedSearches.size,
-                        onShowSaved = { savedSearchesDialogVisible = true },
-                    )
+                            onSave = viewModel::saveCurrentSearch,
+                        )
+                        if (savedSearches.isNotEmpty()) {
+                            SavedSearchRow(
+                                searches = savedSearches,
+                                selectedSearchId = selectedSavedSearchId,
+                                onClick = { search ->
+                                    if (selectedSavedSearchId == null) {
+                                        viewModel.applySavedSearch(search)
+                                    } else {
+                                        selectedSavedSearchId = search.id
+                                    }
+                                },
+                                onLongClick = { search ->
+                                    keyboardController?.hide()
+                                    selectedSavedSearchId = search.id
+                                },
+                            )
+                        }
+                    }
                 }
 
                 RYExtensibleVisibility(markAsRead) {
@@ -925,67 +959,6 @@ fun FlowPage(
                 titleSummaryState.loading,
             message = stringResource(R.string.ai_summary),
             topPadding = if (syncIndicatorRunning || syncIndicatorResult != null) 128.dp else 72.dp,
-        )
-    }
-    if (saveSearchDialogVisible) {
-        AlertDialog(
-            onDismissRequest = { saveSearchDialogVisible = false },
-            title = { Text(stringResource(R.string.save_search)) },
-            text = {
-                OutlinedTextField(
-                    value = savedSearchName,
-                    onValueChange = { savedSearchName = it },
-                    label = { Text(stringResource(R.string.search_name)) },
-                    singleLine = true,
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = savedSearchName.isNotBlank(),
-                    onClick = {
-                        viewModel.saveCurrentSearch(savedSearchName)
-                        saveSearchDialogVisible = false
-                    },
-                ) { Text(stringResource(R.string.save)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { saveSearchDialogVisible = false }) {
-                    Text(stringResource(R.string.cancel))
-                }
-            },
-        )
-    }
-    if (savedSearchesDialogVisible) {
-        AlertDialog(
-            onDismissRequest = { savedSearchesDialogVisible = false },
-            title = { Text(stringResource(R.string.saved_searches)) },
-            text = {
-                Column(
-                    Modifier.fillMaxWidth()
-                        .heightIn(max = 420.dp)
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    savedSearches.forEach { search ->
-                        Row(Modifier.fillMaxWidth()) {
-                            TextButton(
-                                modifier = Modifier.weight(1f),
-                                onClick = {
-                                    viewModel.applySavedSearch(search)
-                                    savedSearchesDialogVisible = false
-                                },
-                            ) { Text(search.name) }
-                            TextButton(onClick = { viewModel.deleteSavedSearch(search) }) {
-                                Text(stringResource(R.string.delete))
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { savedSearchesDialogVisible = false }) {
-                    Text(stringResource(R.string.close))
-                }
-            },
         )
     }
     AiSummaryDialog(
