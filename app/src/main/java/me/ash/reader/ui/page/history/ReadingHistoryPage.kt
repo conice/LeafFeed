@@ -116,7 +116,8 @@ constructor(
             }
             .map { pagingData ->
                 pagingData.map { articleWithFeed ->
-                    ArticleFlowItem.Article(articleWithFeed)
+                    val item: ArticleFlowItem = ArticleFlowItem.Article(articleWithFeed)
+                    item
                 }
             }
             .cachedIn(viewModelScope)

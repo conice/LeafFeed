@@ -1,180 +1,140 @@
 <div align="center">
-    <img width="200" height="200" style="display: block; border: 1px solid #f5f5f5; border-radius: 9999px;" src="fastlane/metadata/android/en-US/images/icon.png" alt="LeafFeed icon">
+  <a href="https://github.com/conice/LeafFeed">
+    <img src="fastlane/metadata/android/en-US/images/icon.png" alt="LeafFeed Logo" width="80" height="80">
+  </a>
+
+  <h3>LeafFeed</h3>
+  <p>A quiet, modern, and user-controlled RSS reader for Android</p>
+
+  <p>
+    <a href="https://github.com/conice/LeafFeed/stargazers"><img src="https://img.shields.io/github/stars/conice/LeafFeed?style=flat-square&logo=github&label=Stars&labelColor=black&color=ffcb47" alt="GitHub Stars"></a>
+    <a href="https://github.com/conice/LeafFeed/graphs/contributors"><img src="https://img.shields.io/github/contributors/conice/LeafFeed?style=flat-square&logo=github&label=Contributors&labelColor=black" alt="Contributors"></a>
+    <a href="https://github.com/conice/LeafFeed/releases"><img src="https://img.shields.io/github/downloads/conice/LeafFeed/total?style=flat-square&logo=github&label=Downloads&labelColor=black&color=369eff" alt="Downloads"></a>
+    <a href="https://github.com/conice/LeafFeed/releases/latest"><img src="https://img.shields.io/github/v/release/conice/LeafFeed?style=flat-square&logo=android&label=Release&labelColor=black&color=3ddc84" alt="Latest Release"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/conice/LeafFeed?style=flat-square&labelColor=black" alt="License"></a>
+    <br />
+    <img src="https://img.shields.io/badge/Android-8.0%2B-3ddc84?style=flat-square&logo=android&logoColor=white&labelColor=black" alt="Android 8.0+">
+    <img src="https://img.shields.io/badge/Material-You-6750a4?style=flat-square&logo=materialdesign&logoColor=white&labelColor=black" alt="Material You">
+    <img src="https://img.shields.io/badge/Ads-None-2ea44f?style=flat-square&labelColor=black" alt="No Ads">
+    <br />
+    <br />
+    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/feeds.png" width="30%" alt="Feeds">
+    &nbsp;&nbsp;
+    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/flow.png" width="30%" alt="Article list">
+    &nbsp;&nbsp;
+    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/read.png" width="30%" alt="Reader">
+  </p>
 </div>
 
-<br>
-<br>
-<br>
+Your information feed should not force you to chase an algorithm. LeafFeed keeps subscriptions, articles, podcasts, and reading data on your own device and services, presenting them in a clear timeline focused on what you actually want to read.
 
-<div align="center">
-    <a href="LICENSE">
-        <img alt="License" src="https://img.shields.io/github/license/conice/LeafFeed?color=c3e7ff&style=flat-square">
-    </a>
-    <a href="https://github.com/conice/LeafFeed/releases">
-        <img alt="Version" src="https://img.shields.io/github/v/release/conice/LeafFeed?color=c3e7ff&label=version&style=flat-square">
-    </a>
-    <a href="https://github.com/conice/LeafFeed/commits">
-        <img alt="Last commit" src="https://img.shields.io/github/last-commit/conice/LeafFeed?color=c3e7ff&style=flat-square">
-    </a>
-</div>
+## Getting Started
 
-<div align="center">
-    <h1>LeafFeed</h1>
-    <p>An open-source Android feed reader built with <a href="https://m3.material.io/">Material 3</a> and adaptive layouts.</p>
-    <p>RSS reading, content organization, cross-device synchronization, and podcast playback in one app.</p>
-    <br>
-    <br>
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/startup.png" width="19.2%" alt="LeafFeed startup screen">
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/feeds.png" width="19.2%" alt="Feed list">
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/flow.png" width="19.2%" alt="Article list">
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/read.png" width="19.2%" alt="Reading screen">
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/settings.png" width="19.2%" alt="Settings screen">
-    <br>
-    <br>
-</div>
+LeafFeed is under active development. Feedback and bug reports are welcome in [GitHub Issues](https://github.com/conice/LeafFeed/issues).
 
-> **Project note:** LeafFeed is a vibe-coded project, developed through intent-driven iteration with substantial AI assistance.
+| Platform | Requirement | Source |
+| :--- | :--- | :--- |
+| Android | Android 8.0 / API 26 or later | [![GitHub Release](https://img.shields.io/badge/GitHub-Release-181717?style=for-the-badge&logo=github)](https://github.com/conice/LeafFeed/releases/latest) |
+| Android | Latest CI test build | [![GitHub Actions](https://img.shields.io/badge/GitHub-Actions-2088ff?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/conice/LeafFeed/actions) |
+| Source | Kotlin / Jetpack Compose | [![Source Code](https://img.shields.io/badge/Source-Code-ffcb47?style=for-the-badge&logo=git&logoColor=black)](https://github.com/conice/LeafFeed) |
+
+> [!IMPORTANT]
+>
+> Android only permits an APK to update an installed app when both use the same package name and signing certificate. To keep receiving in-place updates, always install builds from the same release channel. If a version signed with a different certificate is already installed, back up your data before uninstalling it.
+
+Star the repository to keep track of new versions and release notes.
 
 ## Features
 
-LeafFeed currently provides:
+### Your Own Information Hub
 
-- [x] RSS and Atom subscriptions organized into groups
-- [x] OPML subscription import and export
-- [x] Scheduled background synchronization, with Wi-Fi-only, charging-only, and sync-on-start options
-- [x] Unread, starred, read-later, and highlighted filters, plus search and bulk mark-as-read actions
-- [x] RSS content reading, full-page content extraction, and adjustable reading styles
-- [x] Tags, notes, saved searches, filtering rules, and highlighting rules
-- [x] System text-to-speech support
-- [x] Notifications for new articles and podcast episodes
-- [x] Podcast playback, downloads, queues, sleep timers, and transcripts
-- [x] Title and article summaries through a user-selected OpenAI-compatible service
-- [x] Article-list and single-article home-screen widgets
-- [x] Import and export for reading data, rules, and application preferences
+Subscribe to RSS and Atom feeds, then organize content with groups, unread status, stars, Read Later, and highlight rules. LeafFeed supports OPML migration, local accounts, and services compatible with the Fever or Google Reader APIs.
 
-## Integrations
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/feeds.png" width="32%" alt="Subscription management">
+  &nbsp;&nbsp;
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/flow.png" width="32%" alt="Article timeline">
+</p>
 
-In addition to local accounts that remain entirely on the device, LeafFeed can connect to the following synchronization services:
+### Focused, Complete Reading
 
-- [x] Fever
-- [x] Google Reader API
-- [x] FreshRSS
-- [x] Feedly
-- [x] Inoreader
+Parse full articles and customize fonts, text size, line height, alignment, images, and reading themes. Reading history, full-text search, saved searches, tags, excerpts, notes, and text-to-speech make information easy to revisit and organize.
 
-Availability may depend on the server API, account permissions, and network environment.
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/read.png" width="36%" alt="Article reader">
+</p>
 
-## Download
+### AI When You Need It
 
-<a href="https://github.com/conice/LeafFeed/releases">
-    <img alt="Download from GitHub Releases" src="https://img.shields.io/badge/GitHub-Releases-c3e7ff?logo=github&logoColor=1f2328&style=for-the-badge" height="56">
-</a>
+Use an OpenAI-compatible service of your choice to summarize groups of headlines, individual articles, and subscription reports. Models, prompts, request timeouts, content scope, and whether article links are included remain under your control.
 
-LeafFeed supports Android 8.0 (API 26) and later. Packages from different distribution sources may use different signing certificates. Android cannot install one package directly over another when their certificates differ, so export important data before switching distributions.
+### More Than Text
 
-## Data and Privacy
+LeafFeed supports background podcast playback, queues, playback speed, skip controls, progress tracking, automatic downloads, cache management, and transcripts, together with lock-screen, headset, and Android Auto media controls.
 
-Subscriptions, articles, account information, and preferences are stored locally on the device. LeafFeed does not operate advertising or analytics services.
+### Data You Can Take With You
 
-The following actions send the required data to external services:
+Export and import preferences, tags, notes, saved searches, and article reading state. Subscriptions use OPML, while article rules have a separate backup format. Reading-data backups include integrity verification and remain compatible with older formats.
 
-- Retrieving feeds or full web content sends requests to the corresponding websites.
-- Using a synchronized account communicates with the service selected or configured by the user.
-- Using AI summaries sends the selected titles or article content directly to the OpenAI-compatible service configured by the user.
-
-Review a third-party service's privacy policy before enabling it. Preference backups exclude API keys by default. If you choose to export API keys, they are written to the file as plain text and must be stored securely.
-
-## Build
-
-LeafFeed is a native Android application built with Kotlin, Jetpack Compose, and Material 3.
-
-The build environment requires JDK 17 and Android SDK Platform 36. The repository includes the Gradle Wrapper, so a separate Gradle installation is not required. The first build requires network access to download build tools and dependencies.
-
-1. Clone the repository and enter the project directory.
-
-   ```bash
-   git clone https://github.com/conice/LeafFeed.git
-   cd LeafFeed
-   ```
-
-2. Open the project in the latest version of Android Studio and wait for Gradle synchronization to finish.
-
-3. Select a device or an emulator running API 26 or later, then run the `githubDebug` variant. You can also build it from the command line:
-
-   ```bash
-   ./gradlew :app:assembleGithubDebug
-   ```
-
-The project defines three distribution flavors: `github`, `fdroid`, and `googlePlay`. Replace `Github` in a task name with `Fdroid` or `GooglePlay` to build the corresponding variant. The Google Play variant uses a separate application ID suffix.
-
-### Testing
-
-```bash
-# JVM unit tests
-./gradlew :app:testGithubDebugUnitTest
-
-# Android Lint
-./gradlew :app:lintGithubDebug
-
-# Requires a connected device or emulator
-./gradlew :app:connectedGithubDebugAndroidTest
-```
-
-### Release Signing
-
-Release builds read the following properties from `signature/keystore_release.properties` or `signature/keystore.properties`:
-
-```properties
-storeFile=/path/to/keystore
-storePassword=...
-keyAlias=...
-keyPassword=...
-```
-
-Do not commit keystores or real credentials to the repository.
-
-Pull-request workflows use the `githubDebug` variant so untrusted changes can be validated without
-access to signing secrets. Main-branch push and tagged build artifacts use the `githubRelease`
-variant, a stable signing certificate, and an increasing CI `versionCode`, so consecutive push
-artifacts and tagged releases can update one another. The first switch from an older ephemeral
-Debug-signed artifact still requires uninstalling it once. Main-branch push and tagged builds
-require these GitHub Actions secrets:
-`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`,
-and `ANDROID_KEY_PASSWORD`. The keystore secret is the single-line base64
-encoding of the release keystore (for example, `base64 -w 0 release.keystore`
-on Linux).
-
-## Project Structure
-
-LeafFeed is currently a single-module Android application. Its source code is divided into three main layers:
-
-```text
-app/src/main/java/me/ash/reader/
-|-- domain/          Domain models, database interfaces, synchronization, and business services
-|-- infrastructure/ Room, networking, RSS, AI, audio, preferences, and dependency injection
-`-- ui/              Compose screens, components, themes, adaptive navigation, and widgets
-```
-
-The main technologies include Jetpack Compose, Room, DataStore, Paging 3, WorkManager, Hilt, OkHttp, Retrofit, ROME, Readability4J, Coil, Media3, and Glance.
-
-Additional engineering constraints are documented in:
-
-- [`docs/architecture-roadmap.md`](docs/architecture-roadmap.md)
-- [`docs/design-language.md`](docs/design-language.md)
-- [`docs/performance.md`](docs/performance.md)
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/settings.png" width="36%" alt="Settings and data management">
+</p>
 
 ## Contributing
 
-Use [Issues](https://github.com/conice/LeafFeed/issues) to report reproducible problems or propose features. [Pull requests](https://github.com/conice/LeafFeed/pulls) are also welcome.
+Issues and pull requests are welcome. Changes should account for local accounts, third-party accounts, background synchronization, data migration, and the Android lifecycle.
 
-Before submitting a change, run at least the unit tests and Lint checks for the affected variant. Database changes must include the corresponding updated Room schema in `app/schemas/`. Changes involving synchronization, reading, media, or navigation should also be checked against the relevant scenarios in the performance document.
+<details>
+  <summary><strong>Development and builds</strong></summary>
 
-New UI must cover loading, empty, offline, error, and populated states. It should also be checked in dark mode, with large text, in right-to-left layouts, and on expanded windows.
+The development environment requires JDK 17, Android SDK with Compile SDK 36, and the Gradle Wrapper included in this repository.
+
+```bash
+# GitHub-channel debug APK
+./gradlew assembleGithubDebug
+
+# Unit tests and Android Lint
+./gradlew testGithubDebugUnitTest lintGithubDebug
+```
+
+Release builds require a persistent signing certificate configured through these environment variables:
+
+```text
+LEAFFEED_SIGNING_STORE_FILE
+LEAFFEED_SIGNING_STORE_PASSWORD
+LEAFFEED_SIGNING_KEY_ALIAS
+LEAFFEED_SIGNING_KEY_PASSWORD
+```
+
+```bash
+./gradlew assembleGithubRelease
+```
+
+Never commit keystores, passwords, API keys, or backups containing sensitive information.
+
+</details>
+
+## Code Signing Policy
+
+GitHub Release APKs are signed with a persistent certificate held by the project maintainer. The keystore and passwords are supplied to GitHub Actions through Repository Secrets and are never stored in the repository. The workflow validates the keystore, alias, and credentials before packaging.
+
+Anyone producing an independent build is responsible for signing it and safeguarding the certificate. APKs signed with different certificates cannot update one another, even when their package names and versions are identical.
+
+## Privacy
+
+LeafFeed contains no advertising or built-in analytics service. Accounts, subscriptions, articles, and preferences are stored locally by default.
+
+- When synchronization is enabled, subscription and reading-state data is sent to the service configured by the user.
+- When an AI feature is used, selected headlines or article content is sent directly to the configured OpenAI-compatible service.
+- Background synchronization, notifications, and podcast playback may use the network, wake locks, and foreground services.
+- Users should review the privacy policies of their content sources, synchronization services, and AI providers.
 
 ## License
 
-GNU GPL v3.0 &copy; [LeafFeed](LICENSE)
+LeafFeed is distributed under the [GNU General Public License v3.0](LICENSE). Distributions of modified versions must comply with the source-availability and license-preservation requirements of GPL-3.0. Third-party components and assets remain subject to their respective licenses.
 
-## Upstream
+## Upstream Acknowledgement
 
-LeafFeed is an open-source Android RSS reader. Thanks to the maintainers and contributors of the upstream project that provided the foundation on which this project is built.
+LeafFeed is a derivative project based on [Read You](https://github.com/Ashinch/ReadYou). We thank Read You author Ashinch and every upstream contributor for the design, code, and open-source foundation on which this project builds.
+
+LeafFeed is not an official Read You release and is not affiliated with or endorsed by the upstream project or its maintainers. Issues caused by LeafFeed-specific features or modifications should be reported to [LeafFeed Issues](https://github.com/conice/LeafFeed/issues); upstream maintainers should not be expected to support this fork. Copyright in the original code and subsequent modifications remains with the respective contributors, and the project continues to be distributed under GPL-3.0.
