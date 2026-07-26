@@ -80,7 +80,7 @@ android {
         // CI uses a monotonically increasing value so APKs signed by the same certificate can be
         // installed as updates. Local builds keep the stable development fallback.
         versionCode = ciVersionCode ?: 1
-        versionName = "0.1.0"
+        versionName = "0.1.1"
 
         buildConfigField(
             "String",

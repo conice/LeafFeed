@@ -69,7 +69,7 @@ fun SettingsPage(
     var searchVisible by rememberSaveable { mutableStateOf(false) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
 
-    val accountTitle = stringResource(R.string.settings_accounts_sync_title)
+    val accountTitle = stringResource(R.string.settings_accounts_title)
     val accountDesc = stringResource(R.string.settings_accounts_sync_desc)
     val readingTitle = stringResource(R.string.settings_reading_title)
     val readingDesc = stringResource(R.string.settings_reading_desc)

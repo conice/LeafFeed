@@ -54,6 +54,7 @@ sealed interface Route : NavKey {
     @Serializable data object NotificationSettings : Route
     @Serializable data object DataPrivacySettings : Route
     @Serializable data object BackupAndMigration : Route
+    // Retained only to restore navigation state saved before diagnostics moved.
     @Serializable data object SyncStatus : Route
     @Serializable data object PodcastLibrary : Route
     @Serializable data object CollectionManager : Route

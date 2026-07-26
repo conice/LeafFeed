@@ -176,6 +176,7 @@ fun NotificationSettingsPage(onBack: () -> Unit) {
 fun DataPrivacySettingsPage(
     onBack: () -> Unit,
     navigateToBackupAndMigration: () -> Unit,
+    navigateToDiagnosticDetails: () -> Unit,
 ) {
     val context = LocalContext.current
     val viewModel: CacheSettingsViewModel = hiltViewModel()
@@ -217,6 +218,11 @@ fun DataPrivacySettingsPage(
         )
 
         section("Diagnostics")
+        action(
+            "Diagnostic details",
+            "Worker information, errors and repair tools",
+            navigateToDiagnosticDetails,
+        )
         toggle("Include feed addresses in diagnostics", settings.diagnosticIncludeFeedUrls) { write(FeaturePreferenceKeys.diagnosticIncludeFeedUrls, it) }
     }
     if (confirmClearAi) {

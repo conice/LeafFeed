@@ -31,7 +31,6 @@ fun AccountsPage(
     onBack: () -> Unit,
     navigateToAddAccount: () -> Unit,
     navigateToAccountDetails: (Int) -> Unit,
-    navigateToSyncAndDiagnostics: () -> Unit,
 ) {
     val context = LocalContext.current
     val uiState = viewModel.accountUiState.collectAsStateValue()
@@ -51,7 +50,7 @@ fun AccountsPage(
             LazyColumn {
                 item {
                     DisplayText(
-                        text = stringResource(R.string.settings_accounts_sync_title),
+                        text = stringResource(R.string.settings_accounts_title),
                         desc = "",
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -92,11 +91,6 @@ fun AccountsPage(
                         icon = Icons.Outlined.PersonAdd,
                         onClick = navigateToAddAccount,
                     ) {}
-                    SettingItem(
-                        title = "Sync and diagnostics",
-                        desc = "Latest synchronization, retry and diagnostic details",
-                        onClick = navigateToSyncAndDiagnostics,
-                    ) {}
                 }
                 item {
                     Spacer(modifier = Modifier.height(24.dp))
@@ -114,6 +108,5 @@ fun AccountsPreview() {
         onBack = {},
         navigateToAddAccount = {},
         navigateToAccountDetails = {},
-        navigateToSyncAndDiagnostics = {},
     )
 }

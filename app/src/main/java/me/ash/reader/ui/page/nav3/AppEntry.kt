@@ -71,7 +71,6 @@ import me.ash.reader.ui.page.settings.languages.LanguagesPage
 import me.ash.reader.ui.page.settings.tips.LicenseListPage
 import me.ash.reader.ui.page.settings.tips.TipsAndSupportPage
 import me.ash.reader.ui.page.settings.troubleshooting.TroubleshootingPage
-import me.ash.reader.ui.page.settings.troubleshooting.SyncStatusPage
 import me.ash.reader.ui.page.settings.troubleshooting.BackupAndMigrationPage
 import me.ash.reader.ui.page.startup.StartupPage
 import me.ash.reader.infrastructure.audio.PodcastPlayer
@@ -282,16 +281,15 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                             navigateToBackupAndMigration = {
                                 backStack.add(Route.BackupAndMigration)
                             },
+                            navigateToDiagnosticDetails = {
+                                backStack.add(Route.Troubleshooting)
+                            },
                         )
                     }
                     Route.BackupAndMigration ->
                         NavEntry(key) { BackupAndMigrationPage(onBack = onBack) }
-                    Route.SyncStatus -> NavEntry(key) {
-                        SyncStatusPage(
-                            onBack = onBack,
-                            navigateToLogs = { backStack.add(Route.Troubleshooting) },
-                        )
-                    }
+                    Route.SyncStatus ->
+                        NavEntry(key) { TroubleshootingPage(onBack = onBack) }
                     Route.PodcastLibrary -> NavEntry(key) {
                         PodcastLibraryPage(
                             onBack = onBack,
@@ -326,9 +324,6 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                                 navigateToAddAccount = { backStack.add(Route.AddAccounts) },
                                 navigateToAccountDetails = {
                                     backStack.add(Route.AccountDetails(it))
-                                },
-                                navigateToSyncAndDiagnostics = {
-                                    backStack.add(Route.SyncStatus)
                                 },
                             )
                         }
