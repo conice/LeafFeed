@@ -33,8 +33,6 @@ import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.BasicText
@@ -48,7 +46,6 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LocalContentColor
@@ -94,7 +91,6 @@ import me.ash.reader.domain.data.ArticleContentType
 import me.ash.reader.domain.data.PagerData
 import me.ash.reader.domain.model.article.ArticleFlowItem
 import me.ash.reader.domain.model.article.ArticleWithFeed
-import me.ash.reader.domain.model.article.RuleScope
 import me.ash.reader.domain.model.general.Filter
 import me.ash.reader.domain.model.general.MarkAsReadConditions
 import me.ash.reader.infrastructure.preference.LocalFlowArticleListDateStickyHeader
@@ -137,8 +133,6 @@ private data class FlowContentKey(
     val filterIndex: Int,
     val groupId: String?,
     val feedId: String?,
-    val highlightRuleId: String?,
-    val highlightUnreadOnly: Boolean,
 )
 
 @OptIn(
@@ -619,8 +613,6 @@ fun FlowPage(
                             filterIndex = state.filter.index,
                             groupId = state.group?.id,
                             feedId = state.feed?.id,
-                            highlightRuleId = state.highlightRuleId,
-                            highlightUnreadOnly = state.highlightUnreadOnly,
                         )
                     },
                     transitionSpec = {
@@ -878,42 +870,6 @@ fun FlowPage(
             floatingActionButtonPosition = FabPosition.Center,
             bottomBar = {
                 Column {
-                    if (filterUiState.filter.isHighlighted()) {
-                        LazyRow(
-                            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 16.dp),
-                        ) {
-                            item {
-                                FilterChip(
-                                    selected = filterUiState.highlightRuleId == null,
-                                    onClick = {
-                                        viewModel.changeFilter(filterUiState.copy(highlightRuleId = null))
-                                    },
-                                    label = { Text(stringResource(R.string.all)) },
-                                )
-                            }
-                            items(flowUiState.highlightRules, key = { it.id }) { rule ->
-                                FilterChip(
-                                    modifier = Modifier.animateItem(
-                                        fadeInSpec = MaterialTheme.motionScheme.slowEffectsSpec(),
-                                        placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-                                        fadeOutSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
-                                    ),
-                                    selected = filterUiState.highlightRuleId == rule.id,
-                                    onClick = {
-                                        viewModel.changeFilter(filterUiState.copy(highlightRuleId = rule.id))
-                                    },
-                                    label = {
-                                        Text(
-                                            text = (if (rule.scope == RuleScope.GLOBAL) "🌐 " else "") +
-                                                (if (rule.isRegex) "/${rule.pattern}/" else rule.pattern),
-                                            maxLines = 1,
-                                        )
-                                    },
-                                )
-                            }
-                        }
-                    }
                     FilterBar(
                         modifier =
                             with(sharedTransitionScope) {
@@ -927,29 +883,13 @@ fun FlowPage(
                         filterBarFilled = true,
                         filterBarPadding = filterBarPadding.dp,
                         filterBarTonalElevation = filterBarTonalElevation.value.dp,
-                        filters = listOf(Filter.Starred, Filter.Unread, Filter.All, Filter.Highlighted, Filter.ReadLater),
+                        filters = Filter.articleValues,
                     ) {
-                        val nextFilter = if (it == Filter.Highlighted && filterUiState.filter.isHighlighted()) {
-                            viewModel.changeFilter(
-                                filterUiState.copy(
-                                    highlightUnreadOnly = !filterUiState.highlightUnreadOnly,
-                                )
-                            )
-                            null
-                        } else if (it == Filter.Highlighted) {
-                            viewModel.changeFilter(
-                                filterUiState.copy(filter = it, highlightUnreadOnly = true),
-                            )
-                            null
-                        } else {
-                            it
-                        }
+                        val nextFilter = it
                         if (nextFilter != null && filterUiState.filter != nextFilter) {
                             viewModel.changeFilter(
                                 filterUiState.copy(
                                     filter = nextFilter,
-                                    highlightUnreadOnly = if (nextFilter.isHighlighted()) true
-                                    else filterUiState.highlightUnreadOnly,
                                 )
                             )
                         } else if (nextFilter != null) {
@@ -1082,7 +1022,6 @@ private fun EmptyFlowState(filter: Filter, isSearch: Boolean) {
             isSearch -> stringResource(R.string.no_search_results)
             filter.isUnread() -> stringResource(R.string.no_unread_articles)
             filter.isStarred() -> stringResource(R.string.no_starred_articles)
-            filter.isHighlighted() -> stringResource(R.string.no_highlighted_articles)
             filter.isReadLater() -> stringResource(R.string.no_read_later_articles)
             else -> stringResource(R.string.no_articles)
         }
@@ -1145,8 +1084,6 @@ private fun PagerData.listStateKey(): String =
                 filter.index.toString(),
                 group?.id.orEmpty(),
                 feed?.id.orEmpty(),
-                highlightRuleId.orEmpty(),
-                highlightUnreadOnly.toString(),
                 searchContent.orEmpty(),
             )
             .joinToString(separator = "|") { value -> "${value.length}:$value" }

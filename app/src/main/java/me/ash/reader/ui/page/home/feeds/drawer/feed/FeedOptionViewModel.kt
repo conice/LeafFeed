@@ -11,11 +11,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
-import me.ash.reader.domain.data.ArticleRuleRepository
-import me.ash.reader.domain.model.article.RuleScope
-import me.ash.reader.domain.model.article.RuleType
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.ash.reader.domain.model.feed.Feed
@@ -37,9 +32,7 @@ constructor(
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val rssHelper: RssHelper,
     private val feedDao: FeedDao,
-    private val articleRuleRepository: ArticleRuleRepository,
 ) : ViewModel() {
-    val articleRules = articleRuleRepository.rules.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _feedOptionUiState = MutableStateFlow(FeedOptionUiState())
     val feedOptionUiState: StateFlow<FeedOptionUiState> = _feedOptionUiState.asStateFlow()
@@ -226,48 +219,6 @@ constructor(
         }
     }
 
-    fun showRuleDialog(type: RuleType) = _feedOptionUiState.update { it.copy(ruleDialogType = type) }
-    fun hideRuleDialog() = _feedOptionUiState.update { it.copy(ruleDialogType = null) }
-    fun addRule(pattern: String, isRegex: Boolean, caseSensitive: Boolean, isGlobal: Boolean) {
-        val feed = _feedOptionUiState.value.feed ?: return
-        val type = _feedOptionUiState.value.ruleDialogType ?: return
-        val scope = if (isGlobal) RuleScope.GLOBAL else RuleScope.FEED
-        viewModelScope.launch {
-            articleRuleRepository.add(
-                feed.accountId,
-                scope,
-                if (isGlobal) "" else feed.id,
-                type,
-                pattern,
-                isRegex,
-                caseSensitive,
-            )
-        }
-    }
-    fun editRule(
-        id: String,
-        pattern: String,
-        isRegex: Boolean,
-        caseSensitive: Boolean,
-        isGlobal: Boolean,
-    ) {
-        val feed = _feedOptionUiState.value.feed ?: return
-        viewModelScope.launch {
-            articleRuleRepository.edit(
-                id,
-                if (isGlobal) RuleScope.GLOBAL else RuleScope.FEED,
-                if (isGlobal) "" else feed.id,
-                pattern,
-                isRegex,
-                caseSensitive,
-            )
-        }
-    }
-    fun reorderRules(ids: List<String>) {
-        viewModelScope.launch { articleRuleRepository.reorder(ids) }
-    }
-
-    fun deleteRule(id: String) { viewModelScope.launch { articleRuleRepository.delete(id) } }
 }
 
 data class FeedOptionUiState(
@@ -282,5 +233,4 @@ data class FeedOptionUiState(
     val renameDialogVisible: Boolean = false,
     val newUrl: String = "",
     val changeUrlDialogVisible: Boolean = false,
-    val ruleDialogType: RuleType? = null,
 )

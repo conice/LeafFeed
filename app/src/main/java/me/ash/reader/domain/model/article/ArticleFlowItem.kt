@@ -4,6 +4,7 @@ import androidx.paging.PagingData
 import androidx.paging.insertSeparators
 import androidx.paging.map
 import me.ash.reader.infrastructure.android.AndroidStringsHelper
+import me.ash.reader.domain.data.AutomationMatcher
 
 /**
  * Provide paginated and inserted separator data types for article list view.
@@ -35,12 +36,12 @@ sealed class ArticleFlowItem {
  */
 fun PagingData<ArticleWithFeed>.mapPagingFlowItem(
     androidStringsHelper: AndroidStringsHelper,
-    rules: List<ArticleRule> = emptyList(),
+    matcher: AutomationMatcher = AutomationMatcher(emptyList()),
 ): PagingData<ArticleFlowItem> =
     mapPagingArticleItems(
-            androidStringsHelper = androidStringsHelper,
-            matcher = ArticleHighlightMatcher.from(rules),
-        )
+        androidStringsHelper = androidStringsHelper,
+        matcher = matcher,
+    )
         .insertDateSeparators(androidStringsHelper)
 
 /**
@@ -48,25 +49,18 @@ fun PagingData<ArticleWithFeed>.mapPagingFlowItem(
  */
 fun PagingData<ArticleWithFeed>.mapPagingArticleItems(
     androidStringsHelper: AndroidStringsHelper,
-    rules: List<ArticleRule> = emptyList(),
-): PagingData<ArticleFlowItem.Article> =
-    mapPagingArticleItems(
-        androidStringsHelper = androidStringsHelper,
-        matcher = ArticleHighlightMatcher.from(rules),
-    )
-
-/** Maps articles using a matcher compiled once for the lifetime of this paging stream. */
-internal fun PagingData<ArticleWithFeed>.mapPagingArticleItems(
-    androidStringsHelper: AndroidStringsHelper,
-    matcher: ArticleHighlightMatcher,
+    matcher: AutomationMatcher = AutomationMatcher(emptyList()),
 ): PagingData<ArticleFlowItem.Article> =
     map {
-        ArticleFlowItem.Article(it.apply {
-            article.dateString = androidStringsHelper.formatAsString(
-                date = article.date,
-                onlyHourMinute = true
-            )
-        }, matcher.ranges(it))
+        ArticleFlowItem.Article(
+            articleWithFeed = it.apply {
+                article.dateString = androidStringsHelper.formatAsString(
+                    date = article.date,
+                    onlyHourMinute = true,
+                )
+            },
+            highlightRanges = matcher.highlightRanges(it),
+        )
     }
 
 /** Inserts date separators for the articles that remain in this paging stream. */

@@ -20,7 +20,6 @@ import androidx.compose.material.icons.outlined.Label
 import androidx.compose.material.icons.outlined.NoteAdd
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.outlined.Rule
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.MenuOpen
@@ -74,7 +73,6 @@ fun TopBar(
     onAiSummary: () -> Unit = {},
     onAddNote: () -> Unit = {},
     onManageTags: () -> Unit = {},
-    onExplainRules: () -> Unit = {},
     onNavigateToStylePage: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -171,11 +169,6 @@ fun TopBar(
                                     onClick = { menuExpanded = false; onAddNote() },
                                 )
                             }
-                            DropdownMenuItem(
-                                text = { Text("Explain article rules") },
-                                leadingIcon = { Icon(Icons.Outlined.Rule, null) },
-                                onClick = { menuExpanded = false; onExplainRules() },
-                            )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.style)) },
                                 leadingIcon = { Icon(Icons.Outlined.Palette, null) },

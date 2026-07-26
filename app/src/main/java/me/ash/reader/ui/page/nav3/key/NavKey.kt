@@ -57,7 +57,7 @@ sealed interface Route : NavKey {
     @Serializable data object SyncStatus : Route
     @Serializable data object PodcastLibrary : Route
     @Serializable data object CollectionManager : Route
-    @Serializable data object RuleManager : Route
+    @Serializable data object Automations : Route
 
     // Accounts
     @Serializable data object Accounts : Route

@@ -9,11 +9,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.stateIn
-import me.ash.reader.domain.data.ArticleRuleRepository
-import me.ash.reader.domain.model.article.RuleScope
-import me.ash.reader.domain.model.article.RuleType
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.ash.reader.domain.model.group.Group
@@ -32,9 +27,7 @@ class GroupOptionViewModel @Inject constructor(
     private val ioDispatcher: CoroutineDispatcher,
     @ApplicationScope
     private val applicationScope: CoroutineScope,
-    private val articleRuleRepository: ArticleRuleRepository,
 ) : ViewModel() {
-    val articleRules = articleRuleRepository.rules.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
     private val _groupOptionUiState = MutableStateFlow(GroupOptionUiState())
     val groupOptionUiState: StateFlow<GroupOptionUiState> = _groupOptionUiState.asStateFlow()
@@ -214,48 +207,6 @@ class GroupOptionViewModel @Inject constructor(
     fun inputNewName(content: String) {
         _groupOptionUiState.update { it.copy(newName = content) }
     }
-    fun showRuleDialog(type: RuleType) = _groupOptionUiState.update { it.copy(ruleDialogType = type) }
-    fun hideRuleDialog() = _groupOptionUiState.update { it.copy(ruleDialogType = null) }
-    fun addRule(pattern: String, isRegex: Boolean, caseSensitive: Boolean, isGlobal: Boolean) {
-        val group = _groupOptionUiState.value.group ?: return
-        val type = _groupOptionUiState.value.ruleDialogType ?: return
-        val scope = if (isGlobal) RuleScope.GLOBAL else RuleScope.GROUP
-        viewModelScope.launch {
-            articleRuleRepository.add(
-                group.accountId,
-                scope,
-                if (isGlobal) "" else group.id,
-                type,
-                pattern,
-                isRegex,
-                caseSensitive,
-            )
-        }
-    }
-    fun editRule(
-        id: String,
-        pattern: String,
-        isRegex: Boolean,
-        caseSensitive: Boolean,
-        isGlobal: Boolean,
-    ) {
-        val group = _groupOptionUiState.value.group ?: return
-        viewModelScope.launch {
-            articleRuleRepository.edit(
-                id,
-                if (isGlobal) RuleScope.GLOBAL else RuleScope.GROUP,
-                if (isGlobal) "" else group.id,
-                pattern,
-                isRegex,
-                caseSensitive,
-            )
-        }
-    }
-    fun reorderRules(ids: List<String>) {
-        viewModelScope.launch { articleRuleRepository.reorder(ids) }
-    }
-
-    fun deleteRule(id: String) { viewModelScope.launch { articleRuleRepository.delete(id) } }
 }
 
 data class GroupOptionUiState(
@@ -270,5 +221,4 @@ data class GroupOptionUiState(
     val clearDialogVisible: Boolean = false,
     val newName: String = "",
     val renameDialogVisible: Boolean = false,
-    val ruleDialogType: RuleType? = null,
 )

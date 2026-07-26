@@ -46,8 +46,6 @@ constructor(
         filter: Filter = filterState.filter,
         contentType: ArticleContentType = filterState.contentType,
         searchContent: String? = filterState.searchContent,
-        highlightRuleId: String? = filterState.highlightRuleId,
-        highlightUnreadOnly: Boolean = filterState.highlightUnreadOnly,
     ) {
         _filterUiState.update {
             it.copy(
@@ -56,8 +54,6 @@ constructor(
                 searchContent = searchContent,
                 filter = filter,
                 contentType = contentType,
-                highlightRuleId = if (filter.isHighlighted()) highlightRuleId else null,
-                highlightUnreadOnly = highlightUnreadOnly,
             )
         }
     }
@@ -170,8 +166,6 @@ data class FilterState(
     val filter: Filter = Filter.All,
     val contentType: ArticleContentType = ArticleContentType.ARTICLE,
     val searchContent: String? = null,
-    val highlightRuleId: String? = null,
-    val highlightUnreadOnly: Boolean = true,
 )
 
 enum class ArticleContentType {

@@ -237,10 +237,6 @@ sealed interface PreferencesKey {
                     FeaturePreferenceKeys.markReadAtEnd,
                 ),
                 BooleanKey(
-                    FeaturePreferenceKeys.showHighlightMatches.name,
-                    FeaturePreferenceKeys.showHighlightMatches,
-                ),
-                BooleanKey(
                     FeaturePreferenceKeys.showArticleTags.name,
                     FeaturePreferenceKeys.showArticleTags,
                 ),
@@ -263,27 +259,6 @@ sealed interface PreferencesKey {
                 IntKey(
                     FeaturePreferenceKeys.aiTimeoutSeconds.name,
                     FeaturePreferenceKeys.aiTimeoutSeconds,
-                ),
-                // Rules
-                BooleanKey(
-                    FeaturePreferenceKeys.filterRulesEnabled.name,
-                    FeaturePreferenceKeys.filterRulesEnabled,
-                ),
-                BooleanKey(
-                    FeaturePreferenceKeys.highlightRulesEnabled.name,
-                    FeaturePreferenceKeys.highlightRulesEnabled,
-                ),
-                BooleanKey(
-                    FeaturePreferenceKeys.ruleMatchDescription.name,
-                    FeaturePreferenceKeys.ruleMatchDescription,
-                ),
-                IntKey(
-                    FeaturePreferenceKeys.ruleFailureMode.name,
-                    FeaturePreferenceKeys.ruleFailureMode,
-                ),
-                IntKey(
-                    FeaturePreferenceKeys.ruleConflictMode.name,
-                    FeaturePreferenceKeys.ruleConflictMode,
                 ),
                 // Podcasts
                 FloatKey(
@@ -350,14 +325,6 @@ sealed interface PreferencesKey {
                 BooleanKey(
                     FeaturePreferenceKeys.notificationOpenArticle.name,
                     FeaturePreferenceKeys.notificationOpenArticle,
-                ),
-                BooleanKey(
-                    FeaturePreferenceKeys.notificationHighlightsOnly.name,
-                    FeaturePreferenceKeys.notificationHighlightsOnly,
-                ),
-                BooleanKey(
-                    FeaturePreferenceKeys.notificationExcludeFiltered.name,
-                    FeaturePreferenceKeys.notificationExcludeFiltered,
                 ),
                 BooleanKey(
                     FeaturePreferenceKeys.notificationPodcastEpisodes.name,

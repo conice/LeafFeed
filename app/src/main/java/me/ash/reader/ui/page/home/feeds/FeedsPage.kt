@@ -538,22 +538,13 @@ fun FeedsPage(
                         )
                     },
                 filter = filterState.filter,
-                filters = listOf(Filter.Starred, Filter.Unread, Filter.All, Filter.Highlighted, Filter.ReadLater),
+                filters = Filter.articleValues,
                 filterBarStyle = filterBarStyle.value,
                 filterBarFilled = true,
                 filterBarPadding = filterBarPadding.dp,
                 filterBarTonalElevation = filterBarTonalElevation.value.dp,
             ) {
-                val nextState = when {
-                    it == Filter.Highlighted && filterState.filter.isHighlighted() ->
-                        filterState.copy(
-                            highlightUnreadOnly = !filterState.highlightUnreadOnly,
-                        )
-                    it == Filter.Highlighted ->
-                        filterState.copy(filter = it, highlightUnreadOnly = true)
-                    else -> filterState.copy(filter = it)
-                }
-                feedsViewModel.changeFilter(nextState)
+                feedsViewModel.changeFilter(filterState.copy(filter = it))
             }
         },
     )

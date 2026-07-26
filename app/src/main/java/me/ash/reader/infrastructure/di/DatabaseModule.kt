@@ -9,6 +9,7 @@ import dagger.hilt.components.SingletonComponent
 import me.ash.reader.domain.repository.AccountDao
 import me.ash.reader.domain.repository.ArticleCollectionDao
 import me.ash.reader.domain.repository.ArticleDao
+import me.ash.reader.domain.repository.AutomationDao
 import me.ash.reader.domain.repository.FeedDao
 import me.ash.reader.domain.repository.GroupDao
 import me.ash.reader.infrastructure.db.AndroidDatabase
@@ -36,6 +37,11 @@ object DatabaseModule {
     @Singleton
     fun provideArticleCollectionDao(database: ArticleCollectionDatabase): ArticleCollectionDao =
         database.articleCollectionDao()
+
+    @Provides
+    @Singleton
+    fun provideAutomationDao(database: ArticleCollectionDatabase): AutomationDao =
+        database.automationDao()
 
     @Provides
     @Singleton

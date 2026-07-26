@@ -113,6 +113,7 @@ fun BackupAndMigrationPage(
                                         imported.notes,
                                         imported.savedSearches,
                                         imported.readingStates,
+                                        imported.automations,
                                         imported.skipped,
                                     )
                                 },

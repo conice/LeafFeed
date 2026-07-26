@@ -25,12 +25,10 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Download
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material.icons.outlined.OpenInNew
 import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,7 +43,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.Color
@@ -63,41 +60,30 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.ash.reader.R
 import me.ash.reader.domain.data.ArticleCollectionRepository
-import me.ash.reader.domain.data.ArticleRuleRepository
 import me.ash.reader.domain.data.FilterStateUseCase
 import me.ash.reader.domain.model.article.Article
 import me.ash.reader.domain.model.article.ArticleNote
-import me.ash.reader.domain.model.article.ArticleRule
 import me.ash.reader.domain.model.article.ArticleWithFeed
 import me.ash.reader.domain.model.article.ArticleTagLabel
-import me.ash.reader.domain.model.article.RuleScope
-import me.ash.reader.domain.model.article.RuleType
 import me.ash.reader.domain.model.article.SavedSearch
 import me.ash.reader.domain.model.general.Filter
 import me.ash.reader.domain.repository.ArticleDao
-import me.ash.reader.domain.repository.FeedDao
-import me.ash.reader.domain.repository.GroupDao
 import me.ash.reader.domain.service.AccountService
 import me.ash.reader.domain.service.RssService
 import me.ash.reader.infrastructure.audio.PodcastDownloadRepository
 import me.ash.reader.infrastructure.audio.PodcastDownloadWorker
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
 import me.ash.reader.infrastructure.preference.SettingsProvider
-import me.ash.reader.infrastructure.preference.FeatureSettings
-import me.ash.reader.infrastructure.preference.toFeatureSettings
 import me.ash.reader.ui.component.base.DisplayText
 import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.component.base.RYScaffold
 import me.ash.reader.ui.component.base.Subtitle
 import me.ash.reader.ui.page.settings.SettingItem
 import me.ash.reader.ui.theme.palette.onLight
-import me.ash.reader.ui.ext.collectAsStateValue
-import me.ash.reader.ui.ext.dataStore
 
 private enum class PodcastLibraryFilter { ALL, UNPLAYED, DOWNLOADED }
 
@@ -392,152 +378,13 @@ fun CollectionManagerPage(
     }
 }
 
-@HiltViewModel
-class RuleManagerViewModel @Inject constructor(
-    accountService: AccountService,
-    private val repository: ArticleRuleRepository,
-    private val feedDao: FeedDao,
-    private val groupDao: GroupDao,
-) : ViewModel() {
-    val rules = accountService.currentAccountIdFlow.filterNotNull()
-        .flatMapLatest { accountId ->
-            repository.rules.map { rules -> rules.filter { it.accountId == accountId } }
-        }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
-
-    /** Resolves scope ids once for the visible rules so rows can show the actual feed/group name. */
-    val scopeNames = rules.mapLatest { visibleRules ->
-        val feedIds = visibleRules.filter { it.scope == RuleScope.FEED }.map { it.scopeId }.distinct()
-        val groupIds = visibleRules.filter { it.scope == RuleScope.GROUP }.map { it.scopeId }.distinct()
-        buildMap {
-            feedDao.queryByIds(feedIds).forEach { put("feed:${it.id}", it.name) }
-            groupDao.queryByIds(groupIds).forEach { put("group:${it.id}", it.name) }
-        }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
-
-    fun delete(rule: ArticleRule) = viewModelScope.launch { repository.delete(rule.id) }
-    fun update(rule: ArticleRule, pattern: String, regex: Boolean, caseSensitive: Boolean) =
-        viewModelScope.launch {
-            repository.edit(
-                id = rule.id,
-                scope = rule.scope,
-                scopeId = rule.scopeId,
-                pattern = pattern,
-                isRegex = regex,
-                caseSensitive = caseSensitive,
-            )
-        }
-}
-
 @Composable
-fun RuleManagerPage(onBack: () -> Unit, viewModel: RuleManagerViewModel = hiltViewModel()) {
-    val rules by viewModel.rules.collectAsStateWithLifecycle()
-    val scopeNames by viewModel.scopeNames.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-    val settings = context.dataStore.data.map { it.toFeatureSettings() }
-        .collectAsStateValue(FeatureSettings())
-    var editingRule by remember { mutableStateOf<ArticleRule?>(null) }
-    ManagementScaffold("Article rules", onBack) {
-        item {
-            Text(
-                "Rules are created from a feed or group menu. This page provides one account-wide view.",
-                Modifier.padding(horizontal = 24.dp),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Spacer(Modifier.height(12.dp))
-        }
-        if (rules.isEmpty()) item { EmptyManagerRow("No rules") }
-        items(rules, key = { it.id }) { rule ->
-            val invalid = rule.isRegex && runCatching { Regex(rule.pattern) }.isFailure
-            SettingItem(
-                title = rule.pattern,
-                desc = buildString {
-                    append(rule.type.name.lowercase().replaceFirstChar(Char::uppercaseChar))
-                    if (rule.isRegex) append(" · Regex")
-                    if (rule.caseSensitive) append(" · Case sensitive")
-                    append("\nScope: ")
-                    append(scopeLabel(rule, scopeNames))
-                },
-                descMaxLines = 2,
-                onClick = { editingRule = rule },
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (invalid && settings.ruleFailureMode == 1) {
-                        Icon(
-                            Icons.Outlined.ErrorOutline,
-                            contentDescription = "Invalid regular expression",
-                            tint = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                    IconButton(onClick = { editingRule = rule }) {
-                        Icon(Icons.Outlined.Edit, contentDescription = "Edit rule")
-                    }
-                    IconButton(onClick = { viewModel.delete(rule) }) {
-                        Icon(Icons.Outlined.Delete, contentDescription = "Delete rule")
-                    }
-                }
-            }
-        }
-    }
-
-    editingRule?.let { rule ->
-        var pattern by remember(rule.id) { mutableStateOf(rule.pattern) }
-        var regex by remember(rule.id) { mutableStateOf(rule.isRegex) }
-        var caseSensitive by remember(rule.id) { mutableStateOf(rule.caseSensitive) }
-        val valid = pattern.isNotBlank() && (!regex || runCatching { Regex(pattern) }.isSuccess)
-        AlertDialog(
-            onDismissRequest = { editingRule = null },
-            title = { Text("Edit rule") },
-            text = {
-                Column {
-                    OutlinedTextField(
-                        value = pattern,
-                        onValueChange = { pattern = it },
-                        label = { Text("Keyword or regular expression") },
-                        singleLine = true,
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(checked = regex, onCheckedChange = { regex = it })
-                        Text("Regular expression")
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = caseSensitive,
-                            onCheckedChange = { caseSensitive = it },
-                        )
-                        Text("Case sensitive")
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = valid,
-                    onClick = {
-                        viewModel.update(rule, pattern, regex, caseSensitive)
-                        editingRule = null
-                    },
-                ) { Text("Save") }
-            },
-            dismissButton = {
-                TextButton(onClick = { editingRule = null }) { Text("Cancel") }
-            },
-        )
-    }
-}
-
-private fun scopeLabel(rule: ArticleRule, scopeNames: Map<String, String>): String = when (rule.scope) {
-    RuleScope.GLOBAL -> "Global · All feeds"
-    RuleScope.GROUP -> "Group · ${scopeNames["group:${rule.scopeId}"] ?: rule.scopeId}"
-    RuleScope.FEED -> "Feed · ${scopeNames["feed:${rule.scopeId}"] ?: rule.scopeId}"
-}
-
-@Composable
-private fun EmptyManagerRow(text: String) {
+fun EmptyManagerRow(text: String) {
     Text(text, Modifier.padding(horizontal = 24.dp, vertical = 12.dp))
 }
 
 @Composable
-private fun ManagementScaffold(
+fun ManagementScaffold(
     title: String,
     onBack: () -> Unit,
     content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,

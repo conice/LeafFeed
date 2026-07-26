@@ -32,9 +32,6 @@ import me.ash.reader.R
 import me.ash.reader.domain.data.ArticleContentType
 import me.ash.reader.domain.model.group.Group
 import me.ash.reader.ui.component.RenameDialog
-import me.ash.reader.ui.component.ArticleRuleDialog
-import me.ash.reader.domain.model.article.RuleScope
-import me.ash.reader.domain.model.article.RuleType
 import me.ash.reader.ui.component.base.BottomDrawer
 import me.ash.reader.ui.component.base.RYSelectionChip
 import me.ash.reader.ui.component.base.Subtitle
@@ -122,12 +119,6 @@ fun GroupOptionDrawer(
                         viewModel = viewModel,
                         group = group,
                         context = context,
-                        filterRulesOnClick = {
-                            viewModel.showRuleDialog(RuleType.FILTER)
-                        },
-                        highlightRulesOnClick = {
-                            viewModel.showRuleDialog(RuleType.HIGHLIGHT)
-                        },
                     )
 
                     if (viewModel.rssService.get().moveSubscription && groupOptionUiState.groups.size != 1) {
@@ -183,19 +174,6 @@ fun GroupOptionDrawer(
             context.showToast(toastString)
         }
     )
-    ArticleRuleDialog(
-        visible = groupOptionUiState.ruleDialogType != null,
-        title = stringResource(if (groupOptionUiState.ruleDialogType == RuleType.FILTER) R.string.filter_rules else R.string.highlight_rules),
-        rules = viewModel.articleRules.collectAsStateValue().filter {
-            ((it.scope == RuleScope.GROUP && it.scopeId == group?.id) || it.scope == RuleScope.GLOBAL) &&
-                it.accountId == group?.accountId && it.type == groupOptionUiState.ruleDialogType
-        },
-        onDismiss = viewModel::hideRuleDialog,
-        onAdd = viewModel::addRule,
-        onEdit = viewModel::editRule,
-        onReorder = viewModel::reorderRules,
-        onDelete = viewModel::deleteRule,
-    )
 }
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -204,8 +182,6 @@ private fun Preset(
     viewModel: GroupOptionViewModel,
     group: Group?,
     context: Context,
-    filterRulesOnClick: () -> Unit,
-    highlightRulesOnClick: () -> Unit,
 ) {
     FlowRow(
         horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.Start),
@@ -278,16 +254,6 @@ private fun Preset(
                 viewModel.showDeleteDialog()
             }
         }
-        RYSelectionChip(
-            content = stringResource(R.string.filter_rules),
-            selected = false,
-            onClick = filterRulesOnClick,
-        )
-        RYSelectionChip(
-            content = stringResource(R.string.highlight_rules),
-            selected = false,
-            onClick = highlightRulesOnClick,
-        )
     }
 }
 

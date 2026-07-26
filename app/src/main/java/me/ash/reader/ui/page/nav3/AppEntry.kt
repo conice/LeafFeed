@@ -51,7 +51,7 @@ import me.ash.reader.ui.page.settings.features.PodcastSettingsPage
 import me.ash.reader.ui.page.settings.features.ReadingOptionsPage
 import me.ash.reader.ui.page.settings.features.PodcastLibraryPage
 import me.ash.reader.ui.page.settings.features.CollectionManagerPage
-import me.ash.reader.ui.page.settings.features.RuleManagerPage
+import me.ash.reader.ui.page.settings.features.AutomationPage
 import me.ash.reader.ui.page.settings.accounts.AccountDetailsPage
 import me.ash.reader.ui.page.settings.accounts.AccountViewModel
 import me.ash.reader.ui.page.settings.accounts.AccountsPage
@@ -260,7 +260,7 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                             onBack = onBack,
                             navigateToAiSettings = { backStack.add(Route.AiSettings) },
                             navigateToCollections = { backStack.add(Route.CollectionManager) },
-                            navigateToRules = { backStack.add(Route.RuleManager) },
+                            navigateToAutomations = { backStack.add(Route.Automations) },
                         )
                     }
                     Route.PodcastSettings -> NavEntry(key) {
@@ -306,7 +306,7 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                             },
                         )
                     }
-                    Route.RuleManager -> NavEntry(key) { RuleManagerPage(onBack = onBack) }
+                    Route.Automations -> NavEntry(key) { AutomationPage(onBack = onBack) }
                     Route.Accounts ->
                         NavEntry(key) {
                             AccountsPage(

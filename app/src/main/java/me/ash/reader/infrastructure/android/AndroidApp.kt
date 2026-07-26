@@ -14,7 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.ash.reader.BuildConfig
-import me.ash.reader.domain.data.ArticleFilterProcessor
+import me.ash.reader.domain.data.AutomationProcessor
 import me.ash.reader.domain.data.DiffMapHolder
 import me.ash.reader.domain.service.AccountService
 import me.ash.reader.domain.service.AppService
@@ -88,7 +88,7 @@ class AndroidApp : Application(), Configuration.Provider {
 
     @Inject lateinit var diffMapHolder: DiffMapHolder
 
-    @Inject lateinit var articleFilterProcessor: ArticleFilterProcessor
+    @Inject lateinit var automationProcessor: AutomationProcessor
 
     /**
      * When the application startup.
@@ -103,7 +103,7 @@ class AndroidApp : Application(), Configuration.Provider {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
-        articleFilterProcessor.start()
+        automationProcessor.start()
         applicationScope.launch {
             accountInit()
             workerInit()

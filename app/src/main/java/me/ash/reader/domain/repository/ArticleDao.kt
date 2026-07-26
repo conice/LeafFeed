@@ -12,7 +12,6 @@ import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 import me.ash.reader.domain.model.article.Article
-import me.ash.reader.domain.model.article.ArticleFilterCandidate
 import me.ash.reader.domain.model.article.ArticleBackupIdentityRow
 import me.ash.reader.domain.model.article.ArticleMeta
 import me.ash.reader.domain.model.article.ArticleReadingStateRow
@@ -208,67 +207,30 @@ interface ArticleDao {
         SELECT article.id AS articleId,
             article.accountId AS accountId,
             article.title AS title,
-            CASE WHEN :includeDescription THEN article.rawDescription ELSE '' END AS rawDescription,
+            article.rawDescription AS description,
+            article.author AS author,
+            article.link AS articleUrl,
             article.feedId AS feedId,
+            feed.name AS feedName,
+            feed.url AS feedUrl,
             feed.groupId AS groupId,
             article.isUnread AS isUnread,
-            article.audioUrl AS audioUrl
+            article.isStarred AS isStarred,
+            article.isReadLater AS isReadLater,
+            article.audioUrl AS audioUrl,
+            article.audioLength AS mediaSize,
+            article.durationSeconds AS mediaDuration
         FROM article
         INNER JOIN feed ON feed.id = article.feedId
-        WHERE article.accountId = :accountId
-            AND feed.accountId = :accountId
-            AND article.isUnread = 1
+        WHERE article.accountId = :accountId AND feed.accountId = :accountId
+        ORDER BY article.date DESC
+        LIMIT :limit
         """
     )
-    fun queryUnreadFilterCandidates(
+    fun queryAutomationCandidates(
         accountId: Int,
-        includeDescription: Boolean,
-    ): Flow<List<ArticleFilterCandidate>>
-
-    @Query(
-        """
-        SELECT article.id AS articleId,
-            article.accountId AS accountId,
-            article.title AS title,
-            '' AS rawDescription,
-            article.feedId AS feedId,
-            feed.groupId AS groupId,
-            article.isUnread AS isUnread,
-            article.audioUrl AS audioUrl
-        FROM article
-        INNER JOIN feed ON feed.id = article.feedId
-        WHERE article.accountId = :accountId
-            AND feed.accountId = :accountId
-            AND article.isUnread = 1
-            AND article.date < :before
-            AND (:groupId IS NULL OR feed.groupId = :groupId)
-            AND (:feedId IS NULL OR article.feedId = :feedId)
-        """
-    )
-    suspend fun queryUnreadHighlightCandidates(
-        accountId: Int,
-        groupId: String?,
-        feedId: String?,
-        before: Date,
-    ): List<ArticleFilterCandidate>
-
-    @Query(
-        """
-        SELECT article.id AS articleId,
-            article.accountId AS accountId,
-            article.title AS title,
-            '' AS rawDescription,
-            article.feedId AS feedId,
-            feed.groupId AS groupId,
-            article.isUnread AS isUnread,
-            article.audioUrl AS audioUrl
-        FROM article
-        INNER JOIN feed ON feed.id = article.feedId
-        WHERE article.accountId = :accountId
-            AND feed.accountId = :accountId
-        """
-    )
-    fun queryHighlightCandidates(accountId: Int): Flow<List<ArticleFilterCandidate>>
+        limit: Int = 1000,
+    ): Flow<List<me.ash.reader.domain.model.article.AutomationCandidate>>
 
     @Query(
         """

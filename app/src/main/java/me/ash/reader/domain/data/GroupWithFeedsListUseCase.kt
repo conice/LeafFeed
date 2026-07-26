@@ -36,7 +36,6 @@ class GroupWithFeedsListUseCase @Inject constructor(
     private val filterStateUseCase: FilterStateUseCase,
     private val diffMapHolder: DiffMapHolder,
     private val accountService: AccountService,
-    private val highlightedArticleCountUseCase: HighlightedArticleCountUseCase,
 ) {
 
     private var currentJob: Job? = null
@@ -60,39 +59,10 @@ class GroupWithFeedsListUseCase @Inject constructor(
                 currentJob = when (it.filter) {
                     Filter.Unread -> pullUnreadFeeds()
                     Filter.Starred -> pullStarredFeeds()
-                    Filter.Highlighted -> pullHighlightedFeeds(it)
                     Filter.ReadLater -> pullReadLaterFeeds()
                     else -> pullAllFeeds()
                 }
             }
-        }
-    }
-
-    private fun pullHighlightedFeeds(filterState: FilterState): Job {
-        val accountId = accountService.getCurrentAccountId()
-        val countFlow = highlightedArticleCountUseCase.invoke(
-            accountId = accountId,
-            ruleId = filterState.highlightRuleId,
-            highlightUnreadOnly = filterState.highlightUnreadOnly,
-        )
-        return applicationScope.launch {
-            combine(
-                feedsFlow,
-                countFlow,
-            ) { groups, counts ->
-                val result = mutableListOf<GroupWithFeed>()
-                for (groupItem in groups) {
-                    val feeds = groupItem.feeds.map { feed ->
-                        feed.copy(important = countFor(feed, counts.articles, counts.audio))
-                    }
-                    val visibleFeeds =
-                        if (hideEmptyGroups) feeds.filter { it.important > 0 } else feeds
-                    if (hideEmptyGroups && visibleFeeds.isEmpty()) continue
-                    if (groupItem.group.id == defaultGroupId && visibleFeeds.isEmpty()) continue
-                    result += groupItem.copy(feeds = visibleFeeds.toMutableList())
-                }
-                result
-            }.flowOn(ioDispatcher).collect { _groupWithFeedsListFlow.value = it }
         }
     }
 

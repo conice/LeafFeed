@@ -13,7 +13,7 @@ class ArticleCollectionBackupTest {
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
 
     @Test
-    fun `v3 backup detects changed reading state`() {
+    fun `v4 backup detects changed reading data`() {
         val backup = ArticleCollectionBackup(
             tags = listOf(ArticleTagLabel("tag", 1, "Saved", null)),
             tagRefs = listOf(ArticleTagCrossRef("article", "tag")),
@@ -47,6 +47,16 @@ class ArticleCollectionBackupTest {
                         feedUrl = "https://example.com/feed.xml",
                     )
                 ),
+            automations = listOf(
+                AutomationBackup(
+                    name = "Filter promotions",
+                    scope = "GLOBAL",
+                    conditionGroups = listOf(
+                        listOf(AutomationConditionBackup("TITLE", "CONTAINS", "Promotion"))
+                    ),
+                    actions = listOf("FILTER"),
+                )
+            ),
         ).withIntegrityHash(json)
 
         assertTrue(backup.hasValidIntegrityHash(json))
@@ -56,6 +66,10 @@ class ArticleCollectionBackupTest {
                     readingStates =
                         backup.readingStates.map { it.copy(playbackPositionMs = 201L) }
                 )
+                .hasValidIntegrityHash(json)
+        )
+        assertFalse(
+            backup.copy(automations = backup.automations.map { it.copy(enabled = false) })
                 .hasValidIntegrityHash(json)
         )
     }

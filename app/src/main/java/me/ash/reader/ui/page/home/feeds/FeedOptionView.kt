@@ -53,8 +53,6 @@ fun FeedOptionView(
     onAddNewGroup: () -> Unit = {},
     onFeedUrlClick: () -> Unit = {},
     onFeedUrlLongClick: () -> Unit = {},
-    filterRulesOnClick: () -> Unit = {},
-    highlightRulesOnClick: () -> Unit = {},
 ) {
 
     Column(modifier = modifier.verticalScroll(rememberScrollState())) {
@@ -72,8 +70,6 @@ fun FeedOptionView(
             openInBrowserPresetOnClick = openInBrowserPresetOnClick,
             clearArticlesOnClick = clearArticlesOnClick,
             unsubscribeOnClick = unsubscribeOnClick,
-            filterRulesOnClick = filterRulesOnClick,
-            highlightRulesOnClick = highlightRulesOnClick,
         )
 
         if (showGroup) {
@@ -122,8 +118,6 @@ private fun Preset(
     openInBrowserPresetOnClick: () -> Unit = {},
     clearArticlesOnClick: () -> Unit = {},
     unsubscribeOnClick: () -> Unit = {},
-    filterRulesOnClick: () -> Unit = {},
-    highlightRulesOnClick: () -> Unit = {},
 ) {
     Subtitle(text = stringResource(R.string.reading_page))
     Spacer(modifier = Modifier.height(10.dp))
@@ -203,16 +197,6 @@ private fun Preset(
                     unsubscribeOnClick()
                 }
             }
-            RYSelectionChip(
-                content = stringResource(R.string.filter_rules),
-                selected = false,
-                onClick = filterRulesOnClick,
-            )
-            RYSelectionChip(
-                content = stringResource(R.string.highlight_rules),
-                selected = false,
-                onClick = highlightRulesOnClick,
-            )
         }
     }
 }

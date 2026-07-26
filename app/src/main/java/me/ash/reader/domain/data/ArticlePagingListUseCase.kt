@@ -11,7 +11,6 @@ import androidx.paging.PagingDataEvent
 import androidx.paging.PagingDataPresenter
 import androidx.paging.cachedIn
 import androidx.paging.filter
-import androidx.paging.map
 import javax.inject.Inject
 import kotlin.text.trim
 import kotlinx.coroutines.CoroutineDispatcher
@@ -20,22 +19,16 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.ash.reader.domain.model.article.ArticleFlowItem
-import me.ash.reader.domain.model.article.ArticleHighlightMatcher
-import me.ash.reader.domain.model.article.ArticleRule
-import me.ash.reader.domain.model.article.RuleType
-import me.ash.reader.domain.model.article.insertDateSeparators
-import me.ash.reader.domain.model.article.mapPagingArticleItems
 import me.ash.reader.domain.model.article.mapPagingFlowItem
 import me.ash.reader.domain.service.AccountService
 import me.ash.reader.domain.service.RssService
@@ -43,7 +36,6 @@ import me.ash.reader.infrastructure.android.AndroidStringsHelper
 import me.ash.reader.infrastructure.di.ApplicationScope
 import me.ash.reader.infrastructure.di.IODispatcher
 import me.ash.reader.infrastructure.preference.SettingsProvider
-import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
 
 private fun emptyArticleSnapshot() =
     ItemSnapshotList<ArticleFlowItem>(
@@ -62,7 +54,7 @@ constructor(
     private val settingsProvider: SettingsProvider,
     private val filterStateUseCase: FilterStateUseCase,
     private val accountService: AccountService,
-    private val articleRuleRepository: ArticleRuleRepository,
+    private val automationRepository: AutomationRepository,
 ) {
 
     private val mutablePagerFlow =
@@ -70,13 +62,6 @@ constructor(
             PagerData(filterState = filterStateUseCase.filterStateFlow.value)
         )
     val pagerFlow: StateFlow<PagerData> = mutablePagerFlow
-    val highlightRules: StateFlow<List<ArticleRule>> =
-        accountService.currentAccountIdFlow.filterNotNull()
-            .combine(articleRuleRepository.rules) { accountId, rules ->
-                rules.filter { it.accountId == accountId && it.type == RuleType.HIGHLIGHT }
-            }
-            .stateIn(applicationScope, SharingStarted.Eagerly, emptyList())
-
     var itemSnapshotList by
         mutableStateOf(emptyArticleSnapshot())
         private set
@@ -92,29 +77,14 @@ constructor(
 
     init {
         applicationScope.launch(ioDispatcher) {
+            val accountRules = accountService.currentAccountIdFlow.filterNotNull()
+                .flatMapLatest { accountId ->
+                    automationRepository.observeRules(accountId).map { rules -> accountId to rules }
+                }
             filterStateUseCase.filterStateFlow
-                .combine(accountService.currentAccountIdFlow) { filterState, accountId ->
-                    filterState to accountId
-                }
-                .combine(articleRuleRepository.rules) { (filterState, accountId), rules ->
-                    filterState to
-                        rules.filter {
-                            it.accountId == accountId && it.type == RuleType.HIGHLIGHT
-                        }
-                }
-                .combine(settingsProvider.preferencesFlow) { (filterState, rules), preferences ->
-                    Triple(
-                        filterState,
-                        if (preferences[FeaturePreferenceKeys.highlightRulesEnabled] != false) {
-                            rules
-                        } else {
-                            emptyList()
-                        },
-                        preferences[FeaturePreferenceKeys.showHighlightMatches] != false,
-                    )
-                }
+                .combine(accountRules) { filterState, (_, rules) -> filterState to rules }
                 .distinctUntilChanged()
-                .collect { (filterState, rules, showHighlightMatches) ->
+                .collect { (filterState, rules) ->
                     val searchContent = filterState.searchContent
                     pagerCacheJob?.cancel()
                     itemSnapshotList = emptyArticleSnapshot()
@@ -136,8 +106,7 @@ constructor(
                                                 groupId = filterState.group?.id,
                                                 feedId = filterState.feed?.id,
                                                 isStarred = filterState.filter.isStarred(),
-                                                isUnread = filterState.filter.isUnread() ||
-                                                    (filterState.filter.isHighlighted() && filterState.highlightUnreadOnly),
+                                                isUnread = filterState.filter.isUnread(),
                                                 sortAscending =
                                                     settingsProvider.settings.flowSortUnreadArticles
                                                         .value,
@@ -149,8 +118,7 @@ constructor(
                                                 groupId = filterState.group?.id,
                                                 feedId = filterState.feed?.id,
                                                 isStarred = filterState.filter.isStarred(),
-                                                isUnread = filterState.filter.isUnread() ||
-                                                    (filterState.filter.isHighlighted() && filterState.highlightUnreadOnly),
+                                                isUnread = filterState.filter.isUnread(),
                                                 sortAscending =
                                                     settingsProvider.settings.flowSortUnreadArticles
                                                         .value,
@@ -171,35 +139,10 @@ constructor(
                                     } else pagingData
                                 }
                                 .map { pagingData ->
-                                    if (filterState.filter.isHighlighted()) {
-                                        val selectedRule = rules.firstOrNull {
-                                            it.id == filterState.highlightRuleId &&
-                                                it.type == RuleType.HIGHLIGHT
-                                        }
-                                        val applicableRules =
-                                            when {
-                                                filterState.highlightRuleId == null -> rules
-                                                selectedRule != null -> listOf(selectedRule)
-                                                else -> emptyList()
-                                            }
-                                        val matcher =
-                                            ArticleHighlightMatcher.from(applicableRules)
-                                        val matchedItems = pagingData
-                                            .mapPagingArticleItems(androidStringsHelper, matcher)
-                                            .filter { item -> item.highlightRanges.isNotEmpty() }
-                                        (if (showHighlightMatches) {
-                                            matchedItems
-                                        } else {
-                                            matchedItems.map { item ->
-                                                ArticleFlowItem.Article(item.articleWithFeed)
-                                            }
-                                        }).insertDateSeparators(androidStringsHelper)
-                                    } else {
-                                        pagingData.mapPagingFlowItem(
-                                            androidStringsHelper,
-                                            if (showHighlightMatches) rules else emptyList(),
-                                        )
-                                    }
+                                    val matcher = AutomationMatcher(rules)
+                                    pagingData
+                                        .filter { !matcher.isFiltered(it) }
+                                        .mapPagingFlowItem(androidStringsHelper, matcher)
                                 }
                                 .cachedIn(pagerCacheScope),
                             filterState = filterState,

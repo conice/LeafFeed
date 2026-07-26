@@ -62,8 +62,6 @@ import me.ash.reader.ui.component.base.RadioDialogOption
 import me.ash.reader.ui.component.base.Subtitle
 import me.ash.reader.ui.component.base.TextFieldDialog
 import me.ash.reader.ui.component.base.Tips
-import me.ash.reader.ui.component.RuleTypeSelectionDialog
-import me.ash.reader.domain.model.article.RuleType
 import me.ash.reader.domain.model.account.CapabilitySupport
 import me.ash.reader.domain.model.account.SyncCapability
 import me.ash.reader.domain.model.account.SyncServiceCapabilities
@@ -102,8 +100,6 @@ fun AccountDetailsPage(
     var syncIntervalDialogVisible by remember { mutableStateOf(false) }
     var keepArchivedDialogVisible by remember { mutableStateOf(false) }
     var exportOPMLModeDialogVisible by remember { mutableStateOf(false) }
-    var exportRulesDialogVisible by remember { mutableStateOf(false) }
-    var selectedRuleTypes by remember { mutableStateOf(setOf(RuleType.FILTER, RuleType.HIGHLIGHT)) }
 
     val launcher =
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(MimeType.ANY)) {
@@ -112,18 +108,6 @@ fun AccountDetailsPage(
                 result?.let { uri ->
                     context.contentResolver.openOutputStream(uri)?.use { outputStream ->
                         outputStream.write(string.toByteArray())
-                    }
-                }
-            }
-        }
-
-    val rulesLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(MimeType.JSON)) { uri ->
-            val accountId = selectedAccount?.id
-            if (uri != null && accountId != null) {
-                viewModel.exportRules(accountId, selectedRuleTypes) { content ->
-                    context.contentResolver.openOutputStream(uri)?.use { stream ->
-                        stream.write(content.toByteArray())
                     }
                 }
             }
@@ -271,10 +255,6 @@ fun AccountDetailsPage(
                         onClick = { exportOPMLModeDialogVisible = true },
                     ) {}
                     SettingItem(
-                        title = stringResource(R.string.export_rules),
-                        onClick = { exportRulesDialogVisible = true },
-                    ) {}
-                    SettingItem(
                         title = stringResource(R.string.clear_all_articles),
                         onClick = { viewModel.showClearDialog() },
                     ) {}
@@ -326,20 +306,6 @@ fun AccountDetailsPage(
     ) {
         syncIntervalDialogVisible = false
     }
-
-    RuleTypeSelectionDialog(
-        visible = exportRulesDialogVisible,
-        title = stringResource(R.string.export_rules),
-        selected = selectedRuleTypes,
-        onSelectedChange = { selectedRuleTypes = it },
-        onConfirm = {
-            exportRulesDialogVisible = false
-            rulesLauncher.launch(
-                "LeafFeed-rules-${Date().toString(DateFormat.YYYYMMDD_DASH_HHMM)}.json"
-            )
-        },
-        onDismiss = { exportRulesDialogVisible = false },
-    )
 
     if (keepArchivedDialogVisible) {
         val textFieldState =

@@ -11,9 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -50,7 +47,6 @@ import kotlinx.coroutines.flow.first
 import me.ash.reader.R
 import me.ash.reader.domain.model.article.ArticleNote
 import me.ash.reader.domain.model.article.ArticleTagLabel
-import me.ash.reader.domain.model.article.ArticleRuleDiagnostic
 import me.ash.reader.infrastructure.android.TextToSpeechManager
 import me.ash.reader.infrastructure.preference.LocalPullToSwitchArticle
 import me.ash.reader.infrastructure.preference.LocalReadingAutoHideToolbar
@@ -96,7 +92,6 @@ fun ReadingPage(
     var tagDialogVisible by remember { mutableStateOf(false) }
     var tagText by remember { mutableStateOf("") }
     var tags by remember { mutableStateOf<List<ArticleTagLabel>>(emptyList()) }
-    var ruleDiagnostics by remember { mutableStateOf<List<ArticleRuleDiagnostic>?>(null) }
     var showFullScreenImageViewer by remember { mutableStateOf(false) }
     var transcriptSheetUrl by remember { mutableStateOf<String?>(null) }
 
@@ -167,9 +162,6 @@ fun ReadingPage(
                         onManageTags = {
                             tagText = ""
                             tagDialogVisible = true
-                        },
-                        onExplainRules = {
-                            viewModel.diagnoseCurrentArticle { ruleDiagnostics = it }
                         },
                         onNavigateToStylePage = onNavigateToStylePage,
                     )
@@ -504,40 +496,6 @@ fun ReadingPage(
         )
     }
 
-    ruleDiagnostics?.let { diagnostics ->
-        AlertDialog(
-            onDismissRequest = { ruleDiagnostics = null },
-            title = { Text("Article rule diagnostics") },
-            text = {
-                if (diagnostics.isEmpty()) {
-                    Text("No rules apply to this article.")
-                } else {
-                    LazyColumn(Modifier.heightIn(max = 400.dp)) {
-                        items(diagnostics, key = { it.rule.id }) { diagnostic ->
-                            Text(
-                                buildString {
-                                    append(if (diagnostic.matched) "Matched: " else "Not matched: ")
-                                    append(diagnostic.rule.pattern)
-                                    append(" (")
-                                    append(diagnostic.rule.type.name.lowercase())
-                                    append(")")
-                                },
-                                color = if (diagnostic.matched) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant
-                                },
-                                modifier = Modifier.padding(vertical = 4.dp),
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { ruleDiagnostics = null }) { Text("Close") }
-            },
-        )
-    }
     if (showFullScreenImageViewer) {
 
         ReaderImageViewer(

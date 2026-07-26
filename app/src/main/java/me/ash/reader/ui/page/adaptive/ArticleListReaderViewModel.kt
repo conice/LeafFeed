@@ -35,12 +35,10 @@ import me.ash.reader.domain.model.general.OperationFailure
 import me.ash.reader.domain.model.general.OperationFailureKind
 import me.ash.reader.domain.model.general.toOperationFailure
 import me.ash.reader.domain.data.ArticleCollectionRepository
-import me.ash.reader.domain.data.ArticleRuleRepository
 import me.ash.reader.domain.data.DiffMapHolder
 import me.ash.reader.domain.data.FilterState
 import me.ash.reader.domain.data.FilterStateUseCase
 import me.ash.reader.domain.data.GroupWithFeedsListUseCase
-import me.ash.reader.domain.data.HighlightedArticleReadUseCase
 import me.ash.reader.domain.data.PagerData
 import me.ash.reader.domain.model.article.Article
 import me.ash.reader.domain.model.article.ArticleNote
@@ -48,10 +46,6 @@ import me.ash.reader.domain.model.article.ArticleTagLabel
 import me.ash.reader.domain.model.article.ArticleFlowItem
 import me.ash.reader.domain.model.article.ArticleWithFeed
 import me.ash.reader.domain.model.article.SavedSearch
-import me.ash.reader.domain.model.article.ArticleRule
-import me.ash.reader.domain.model.article.ArticleRuleDiagnostic
-import me.ash.reader.domain.model.article.diagnose
-import me.ash.reader.domain.model.article.RuleScope
 import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.model.general.MarkAsReadConditions
 import me.ash.reader.domain.model.general.Filter
@@ -102,28 +96,12 @@ constructor(
     private val podcastTranscriptRepository: PodcastTranscriptRepository,
     private val imageDownloader: AndroidImageDownloader,
     private val articleListUseCase: ArticlePagingListUseCase,
-    private val highlightedArticleReadUseCase: HighlightedArticleReadUseCase,
     private val articleDao: ArticleDao,
     private val accountService: AccountService,
     private val aiSummaryService: AiSummaryService,
     private val workManager: WorkManager,
     private val articleCollectionRepository: ArticleCollectionRepository,
-    private val articleRuleRepository: ArticleRuleRepository,
 ) : ViewModel() {
-
-    fun diagnoseCurrentArticle(onComplete: (List<ArticleRuleDiagnostic>) -> Unit) {
-        val item = readingUiState.value.articleWithFeed ?: return onComplete(emptyList())
-        viewModelScope.launch {
-            val diagnostics = articleRuleRepository.currentRules(item.article.accountId).diagnose(
-                accountId = item.article.accountId,
-                groupId = item.feed.groupId,
-                feedId = item.feed.id,
-                title = item.article.title,
-                description = item.article.rawDescription,
-            )
-            onComplete(diagnostics)
-        }
-    }
 
     fun downloadPodcast(article: Article, onComplete: (Result<Unit>) -> Unit = {}) {
         val wifiOnly = settingsProvider.get<Boolean>(FeaturePreferenceKeys.podcastWifiOnly) ?: true
@@ -149,79 +127,60 @@ constructor(
         combine(
             articleListUseCase.pagerFlow,
             groupWithFeedsListUseCase.groupWithFeedListFlow,
-            articleListUseCase.highlightRules,
-        ) { pagerData, groupWithFeedsList, highlightRules ->
-                val filterState = pagerData.filterState
-                var nextFilterState: FilterState? = null
-                if (filterState.group != null) {
-                    val groupList = groupWithFeedsList.map { it.group }
-                    val visibleGroupIds = groupList.mapTo(mutableSetOf()) { it.id }
-                    val index = groupList.indexOfFirst { it.id == filterState.group.id }
-                    if (index != -1) {
-                        val nextGroup = groupList.getOrNull(index + 1)
+        ) { pagerData, groupWithFeedsList ->
+            val filterState = pagerData.filterState
+            var nextFilterState: FilterState? = null
+            if (filterState.group != null) {
+                val groupList = groupWithFeedsList.map { it.group }
+                val visibleGroupIds = groupList.mapTo(mutableSetOf()) { it.id }
+                val index = groupList.indexOfFirst { it.id == filterState.group.id }
+                if (index != -1) {
+                    val nextGroup = groupList.getOrNull(index + 1)
+                    if (nextGroup != null) {
+                        nextFilterState = filterState.copy(group = nextGroup)
+                    }
+                } else {
+                    val allGroupList =
+                        rssService.get().queryAllGroupWithFeeds().map { it.group }
+                    val allIndex = allGroupList.indexOfFirst { it.id == filterState.group.id }
+                    if (allIndex != -1) {
+                        val nextGroup =
+                            allGroupList.subList(allIndex, allGroupList.size).fastFirstOrNull {
+                                it.id in visibleGroupIds
+                            }
                         if (nextGroup != null) {
                             nextFilterState = filterState.copy(group = nextGroup)
                         }
-                    } else {
-                        val allGroupList =
-                            rssService.get().queryAllGroupWithFeeds().map { it.group }
-                        val index = allGroupList.indexOfFirst { it.id == filterState.group.id }
-                        if (index != -1) {
-                            val nextGroup =
-                                allGroupList.subList(index, allGroupList.size).fastFirstOrNull {
-                                    it.id in visibleGroupIds
-                                }
-                            if (nextGroup != null) {
-                                nextFilterState = filterState.copy(group = nextGroup)
-                            }
-                        }
                     }
-                } else if (filterState.feed != null) {
-                    val feedList = groupWithFeedsList.flatMap { it.feeds }
-                    val visibleFeedIds = feedList.mapTo(mutableSetOf()) { it.id }
-                    val index = feedList.indexOfFirst { it.id == filterState.feed.id }
-                    if (index != -1) {
-                        val nextFeed = feedList.getOrNull(index + 1)
+                }
+            } else if (filterState.feed != null) {
+                val feedList = groupWithFeedsList.flatMap { it.feeds }
+                val visibleFeedIds = feedList.mapTo(mutableSetOf()) { it.id }
+                val index = feedList.indexOfFirst { it.id == filterState.feed.id }
+                if (index != -1) {
+                    val nextFeed = feedList.getOrNull(index + 1)
+                    if (nextFeed != null) {
+                        nextFilterState = filterState.copy(feed = nextFeed)
+                    }
+                } else {
+                    val allFeedList =
+                        rssService.get().queryAllGroupWithFeeds().flatMap { it.feeds }
+                    val allIndex = allFeedList.indexOfFirst { it.id == filterState.feed.id }
+                    if (allIndex != -1) {
+                        val nextFeed =
+                            allFeedList.subList(allIndex, allFeedList.size).fastFirstOrNull {
+                                it.id in visibleFeedIds
+                            }
                         if (nextFeed != null) {
                             nextFilterState = filterState.copy(feed = nextFeed)
                         }
-                    } else {
-                        val allFeedList =
-                            rssService.get().queryAllGroupWithFeeds().flatMap { it.feeds }
-                        val index = allFeedList.indexOfFirst { it.id == filterState.feed.id }
-                        if (index != -1) {
-                            val nextFeed =
-                                allFeedList.subList(index, allFeedList.size).fastFirstOrNull {
-                                    it.id in visibleFeedIds
-                                }
-                            if (nextFeed != null) {
-                                nextFilterState = filterState.copy(feed = nextFeed)
-                            }
-                        }
                     }
                 }
-                val feedIds = filterState.group?.id?.let { groupId ->
-                    groupWithFeedsList.firstOrNull { it.group.id == groupId }
-                        ?.feeds?.mapTo(mutableSetOf()) { it.id }
-                }.orEmpty()
-                val availableHighlightRules = highlightRules.filter { rule ->
-                    when {
-                        filterState.feed != null ->
-                            rule.scope == RuleScope.GLOBAL ||
-                                rule.scope == RuleScope.FEED && rule.scopeId == filterState.feed.id ||
-                                rule.scope == RuleScope.GROUP && rule.scopeId == filterState.feed.groupId
-                        filterState.group != null ->
-                            rule.scope == RuleScope.GLOBAL ||
-                                rule.scope == RuleScope.GROUP && rule.scopeId == filterState.group.id ||
-                                rule.scope == RuleScope.FEED && rule.scopeId in feedIds
-                        else -> true
-                    }
-                }
-                FlowUiState(
-                    nextFilterState = nextFilterState,
-                    pagerData = pagerData,
-                    highlightRules = availableHighlightRules,
-                )
+            }
+            FlowUiState(
+                nextFilterState = nextFilterState,
+                pagerData = pagerData,
+            )
         }
             .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
@@ -269,10 +228,6 @@ constructor(
         isUnread: Boolean,
     ) {
         applicationScope.launch(ioDispatcher) {
-            if (filterState.filter.isHighlighted() && articleId == null && !isUnread) {
-                highlightedArticleReadUseCase(filterState, conditions.toDate())
-                return@launch
-            }
             rssService
                 .get()
                 .markAsRead(
@@ -440,8 +395,6 @@ constructor(
             filterState.feed,
             filterState.group,
             filterState.filter,
-            highlightRuleId = filterState.highlightRuleId,
-            highlightUnreadOnly = filterState.highlightUnreadOnly,
         )
     }
 
@@ -901,7 +854,6 @@ constructor(
 data class FlowUiState(
     val pagerData: PagerData,
     val nextFilterState: FilterState? = null,
-    val highlightRules: List<ArticleRule> = emptyList(),
 )
 
 data class ReadingUiState(

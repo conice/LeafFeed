@@ -15,6 +15,12 @@ import me.ash.reader.domain.model.article.ArticleReadingStateUpdate
 import me.ash.reader.domain.model.article.ArticleTagCrossRef
 import me.ash.reader.domain.model.article.ArticleTagLabel
 import me.ash.reader.domain.model.article.ArticleTagGroup
+import me.ash.reader.domain.model.article.AutomationActionType
+import me.ash.reader.domain.model.article.AutomationConditionDraft
+import me.ash.reader.domain.model.article.AutomationDraft
+import me.ash.reader.domain.model.article.AutomationField
+import me.ash.reader.domain.model.article.AutomationOperator
+import me.ash.reader.domain.model.article.AutomationScope
 import me.ash.reader.domain.model.article.SavedSearch
 import me.ash.reader.domain.repository.ArticleCollectionDao
 import me.ash.reader.domain.repository.ArticleDao
@@ -33,6 +39,7 @@ constructor(
     private val feedDao: FeedDao,
     private val groupDao: GroupDao,
     private val accountService: AccountService,
+    private val automationRepository: AutomationRepository,
 ) {
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
     fun observeTags(): Flow<List<ArticleTagLabel>> =
@@ -182,6 +189,7 @@ constructor(
                 }
         val groupsById = groupDao.queryAll(accountId).associateBy { it.id }
         val feedsById = feedDao.queryAll(accountId).associateBy { it.id }
+        val automations = automationRepository.queryRules(accountId)
         val backup =
             ArticleCollectionBackup(
                 tags = tags,
@@ -210,6 +218,26 @@ constructor(
                             feedUrl = search.feedId?.let { feedsById[it]?.url },
                         )
                     },
+                automations = automations.map { rule ->
+                    AutomationBackup(
+                        name = rule.name,
+                        enabled = rule.enabled,
+                        scope = rule.scope.name,
+                        groupName = rule.scopeId.takeIf { rule.scope == AutomationScope.GROUP }?.let { groupsById[it]?.name },
+                        feedUrl = rule.scopeId.takeIf { rule.scope == AutomationScope.FEED }?.let { feedsById[it]?.url },
+                        conditionGroups = rule.groups.map { group ->
+                            group.conditions.map { condition ->
+                                AutomationConditionBackup(
+                                    field = condition.field.name,
+                                    operator = condition.operator.name,
+                                    value = condition.value,
+                                    caseSensitive = condition.caseSensitive,
+                                )
+                            }
+                        },
+                        actions = rule.actions.map { it.name },
+                    )
+                },
             )
         return json.encodeToString(backup.withIntegrityHash(json))
     }
@@ -303,6 +331,7 @@ constructor(
         val groupsByName = groupsById.values.associateBy { it.name }
         val feedsById = feedDao.queryAll(accountId).associateBy { it.id }
         val feedsByUrl = feedsById.values.associateBy { it.url }
+        val existingAutomationsByName = automationRepository.queryRules(accountId).associateBy { it.name }
         val scopesBySearchId = backup.savedSearchScopes.associateBy { it.searchId }
         val existingSearchIds =
             dao.querySavedSearches(accountId).mapTo(mutableSetOf()) { it.id }
@@ -346,19 +375,55 @@ constructor(
                     isPlayed = state.isPlayed,
                 )
             }.distinctBy { it.articleId }
+        val automationDrafts = backup.automations.mapNotNull { imported ->
+            val scope = parseAutomationEnum<AutomationScope>(imported.scope) ?: return@mapNotNull null
+            val scopeId = when (scope) {
+                AutomationScope.GLOBAL -> ""
+                AutomationScope.GROUP -> imported.groupName?.let { groupsByName[it]?.id } ?: return@mapNotNull null
+                AutomationScope.FEED -> imported.feedUrl?.let { feedsByUrl[it]?.id } ?: return@mapNotNull null
+            }
+            val groups = imported.conditionGroups.map { group ->
+                group.mapNotNull { condition ->
+                    val field = parseAutomationEnum<AutomationField>(condition.field)
+                    val operator = parseAutomationEnum<AutomationOperator>(condition.operator)
+                    if (field == null || operator == null) null else AutomationConditionDraft(
+                        field = field,
+                        operator = operator,
+                        value = condition.value,
+                        caseSensitive = condition.caseSensitive,
+                    )
+                }
+            }
+            val actions = imported.actions.mapNotNull { parseAutomationEnum<AutomationActionType>(it) }.toSet()
+            if (imported.name.isBlank() || groups.isEmpty() || groups.any { it.isEmpty() } || actions.isEmpty()) {
+                return@mapNotNull null
+            }
+            AutomationDraft(
+                id = existingAutomationsByName[imported.name]?.id,
+                name = imported.name,
+                enabled = imported.enabled,
+                scope = scope,
+                scopeId = scopeId,
+                groups = groups,
+                actions = actions,
+            ).takeIf(automationRepository::isValid)
+        }
         dao.importCollections(tags, refs, notes, searches)
         articleDao.restoreReadingStates(readingStates)
+        automationDrafts.forEach { automationRepository.save(accountId, it) }
         val skipped =
             (backup.tagRefs.size - refs.size) +
                 (backup.notes.size - notes.size) +
                 (backup.savedSearches.size - searches.size) +
-                (backup.readingStates.size - readingStates.size)
+                (backup.readingStates.size - readingStates.size) +
+                (backup.automations.size - automationDrafts.size)
         return ArticleCollectionImportResult(
             tags = tags.size,
             tagRefs = refs.size,
             notes = notes.size,
             savedSearches = searches.size,
             readingStates = readingStates.size,
+            automations = automationDrafts.size,
             skipped = skipped,
         )
     }
@@ -381,6 +446,26 @@ data class ArticleCollectionBackup(
     val articles: List<BackupArticleIdentity> = emptyList(),
     val readingStates: List<ArticleReadingStateBackup> = emptyList(),
     val savedSearchScopes: List<SavedSearchScopeBackup> = emptyList(),
+    val automations: List<AutomationBackup> = emptyList(),
+)
+
+@Serializable
+data class AutomationBackup(
+    val name: String,
+    val enabled: Boolean = true,
+    val scope: String,
+    val groupName: String? = null,
+    val feedUrl: String? = null,
+    val conditionGroups: List<List<AutomationConditionBackup>> = emptyList(),
+    val actions: List<String> = emptyList(),
+)
+
+@Serializable
+data class AutomationConditionBackup(
+    val field: String,
+    val operator: String,
+    val value: String,
+    val caseSensitive: Boolean = false,
 )
 
 @Serializable
@@ -411,7 +496,7 @@ data class SavedSearchScopeBackup(
 )
 
 internal const val COLLECTION_BACKUP_FORMAT = "leaffeed.collections"
-internal const val COLLECTION_BACKUP_VERSION = 3
+internal const val COLLECTION_BACKUP_VERSION = 4
 private const val MAX_COLLECTION_ENTRIES = 100_000
 
 internal fun ArticleCollectionBackup.withIntegrityHash(json: Json): ArticleCollectionBackup =
@@ -441,6 +526,9 @@ private fun ArticleCollectionBackup.validate() {
     require(savedSearchScopes.size <= MAX_COLLECTION_ENTRIES) {
         "Too many saved search scopes in reading data backup"
     }
+    require(automations.size <= MAX_COLLECTION_ENTRIES) {
+        "Too many automations in reading data backup"
+    }
     require(tags.all { it.id.isNotBlank() && it.name.isNotBlank() }) {
         "Reading data backup contains an invalid tag"
     }
@@ -462,7 +550,14 @@ private fun ArticleCollectionBackup.validate() {
     require(savedSearchScopes.all { it.searchId.isNotBlank() }) {
         "Reading data backup contains an invalid saved search scope"
     }
+    require(automations.all { automation ->
+        automation.name.isNotBlank() && automation.conditionGroups.isNotEmpty() &&
+            automation.conditionGroups.all { it.isNotEmpty() } && automation.actions.isNotEmpty()
+    }) { "Reading data backup contains an invalid automation" }
 }
+
+private inline fun <reified T : Enum<T>> parseAutomationEnum(value: String): T? =
+    enumValues<T>().firstOrNull { it.name == value }
 
 private fun BackupArticleIdentity.portableKey(): Pair<String, String> = feedUrl to articleLink
 
@@ -484,5 +579,6 @@ data class ArticleCollectionImportResult(
     val notes: Int,
     val savedSearches: Int,
     val readingStates: Int = 0,
+    val automations: Int = 0,
     val skipped: Int = 0,
 )

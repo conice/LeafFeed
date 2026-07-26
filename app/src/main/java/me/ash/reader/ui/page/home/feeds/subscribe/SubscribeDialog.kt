@@ -22,10 +22,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
@@ -44,9 +40,6 @@ import me.ash.reader.ui.ext.MimeType
 import me.ash.reader.ui.ext.collectAsStateValue
 import me.ash.reader.ui.ext.roundClick
 import me.ash.reader.ui.page.home.feeds.FeedOptionView
-import me.ash.reader.ui.component.RuleTypeSelectionDialog
-import me.ash.reader.domain.model.article.RuleType
-import me.ash.reader.ui.ext.showToast
 
 @OptIn(
     androidx.compose.ui.ExperimentalComposeUiApi::class,
@@ -62,8 +55,6 @@ fun SubscribeDialog(
     val subscribeUiState = subscribeViewModel.subscribeUiState.collectAsStateValue()
     val subscribeState = subscribeViewModel.subscribeState.collectAsStateValue()
     val motionScheme = MaterialTheme.motionScheme
-    var importRulesDialogVisible by remember { mutableStateOf(false) }
-    var selectedRuleTypes by remember { mutableStateOf(setOf(RuleType.FILTER, RuleType.HIGHLIGHT)) }
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
         it?.let { uri ->
@@ -72,21 +63,6 @@ fun SubscribeDialog(
             }
         }
     }
-    val rulesLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) {
-        it?.let { uri ->
-            context.contentResolver.openInputStream(uri)?.let { inputStream ->
-                subscribeViewModel.importRules(inputStream, selectedRuleTypes) { result ->
-                    context.showToast(
-                        result.fold(
-                            onSuccess = { count -> context.getString(R.string.rules_imported, count) },
-                            onFailure = { error -> error.message ?: context.getString(R.string.import_failed) },
-                        )
-                    )
-                }
-            }
-        }
-    }
-
     if (subscribeState is SubscribeState.Visible) {
 
         DisposableEffect(Unit) {
@@ -231,11 +207,6 @@ fun SubscribeDialog(
                 if (subscribeState is SubscribeState.Idle && subscribeState.importFromOpmlEnabled) {
                     Row {
                         TextButton(
-                            onClick = { importRulesDialogVisible = true }
-                        ) {
-                            Text(text = stringResource(R.string.import_rules))
-                        }
-                        TextButton(
                             onClick = {
                                 focusManager.clearFocus()
                                 launcher.launch(arrayOf(MimeType.ANY))
@@ -287,18 +258,6 @@ fun SubscribeDialog(
             onConfirm = {
                 subscribeViewModel.addNewGroup()
             }
-        )
-        RuleTypeSelectionDialog(
-            visible = importRulesDialogVisible,
-            title = stringResource(R.string.import_rules),
-            selected = selectedRuleTypes,
-            onSelectedChange = { selectedRuleTypes = it },
-            onConfirm = {
-                importRulesDialogVisible = false
-                rulesLauncher.launch(arrayOf(MimeType.JSON, MimeType.ANY))
-                subscribeViewModel.hideDrawer()
-            },
-            onDismiss = { importRulesDialogVisible = false },
         )
     }
 }

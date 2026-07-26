@@ -30,8 +30,6 @@ import me.ash.reader.domain.service.OpmlImportProgress
 import me.ash.reader.domain.service.OpmlImportResult
 import me.ash.reader.domain.service.RssService
 import me.ash.reader.domain.service.SyncWorker
-import me.ash.reader.domain.data.ArticleRuleRepository
-import me.ash.reader.domain.model.article.RuleType
 import me.ash.reader.infrastructure.android.AndroidStringsHelper
 import me.ash.reader.infrastructure.di.ApplicationScope
 import me.ash.reader.infrastructure.rss.RssHelper
@@ -45,7 +43,6 @@ constructor(
     val rssService: RssService,
     private val rssHelper: RssHelper,
     private val androidStringsHelper: AndroidStringsHelper,
-    private val articleRuleRepository: ArticleRuleRepository,
     private val workManager: WorkManager,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val accountService: AccountService,
@@ -170,15 +167,6 @@ constructor(
                     it
                 }
             }
-        }
-    }
-
-    fun importRules(inputStream: InputStream, types: Set<RuleType>, callback: (Result<Int>) -> Unit = {}) {
-        viewModelScope.launch {
-            val result = runCatching {
-                articleRuleRepository.importRules(accountService.getCurrentAccountId(), inputStream.bufferedReader().use { it.readText() }, types)
-            }
-            callback(result)
         }
     }
 

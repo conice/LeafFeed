@@ -155,11 +155,15 @@ interface ArticleCollectionDao {
     @Query("DELETE FROM saved_search WHERE accountId = :accountId")
     suspend fun deleteSavedSearchesByAccount(accountId: Int)
 
+    @Query("DELETE FROM automation_rule WHERE accountId = :accountId")
+    suspend fun deleteAutomationsByAccount(accountId: Int)
+
     @Transaction
     suspend fun deleteByAccount(accountId: Int) {
         deleteTagRefsByAccount(accountId)
         deleteTagsByAccount(accountId)
         deleteNotesByAccount(accountId)
         deleteSavedSearchesByAccount(accountId)
+        deleteAutomationsByAccount(accountId)
     }
 }

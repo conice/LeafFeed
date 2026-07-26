@@ -18,8 +18,6 @@ import me.ash.reader.domain.model.account.Account
 import me.ash.reader.domain.service.AccountService
 import me.ash.reader.domain.service.OpmlService
 import me.ash.reader.domain.service.RssService
-import me.ash.reader.domain.data.ArticleRuleRepository
-import me.ash.reader.domain.model.article.RuleType
 import me.ash.reader.infrastructure.ai.AiSummaryCache
 import me.ash.reader.infrastructure.di.ApplicationScope
 import me.ash.reader.infrastructure.di.DefaultDispatcher
@@ -32,7 +30,6 @@ class AccountViewModel @Inject constructor(
     private val accountService: AccountService,
     private val rssService: RssService,
     private val opmlService: OpmlService,
-    private val articleRuleRepository: ArticleRuleRepository,
     private val aiSummaryCache: AiSummaryCache,
     @IODispatcher
     private val ioDispatcher: CoroutineDispatcher,
@@ -67,10 +64,6 @@ class AccountViewModel @Inject constructor(
             callback(opmlService.saveToString(accountId,
                 _accountUiState.value.exportOPMLMode == ExportOPMLMode.ATTACH_INFO))
         }
-    }
-
-    fun exportRules(accountId: Int, types: Set<RuleType>, callback: (String) -> Unit) {
-        viewModelScope.launch(defaultDispatcher) { callback(articleRuleRepository.export(accountId, types)) }
     }
 
     fun hideDeleteDialog() {

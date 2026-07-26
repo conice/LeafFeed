@@ -13,21 +13,10 @@
         <item quantity="other">%1$d unread items</item>
     </plurals>
     <string name="starred">Starred</string>
-    <string name="highlighted">Highlighted</string>
-    <plurals name="highlighted_desc">
-        <item quantity="one">%1$d highlighted item</item>
-        <item quantity="other">%1$d highlighted items</item>
-    </plurals>
     <plurals name="read_later_desc">
         <item quantity="one">%1$d item to read later</item>
         <item quantity="other">%1$d items to read later</item>
     </plurals>
-    <string name="filter_rules">Filter</string>
-    <string name="highlight_rules">Highlight</string>
-    <string name="keyword_or_regex">Keyword or regular expression</string>
-    <string name="regular_expression">Regular expression</string>
-    <string name="case_sensitive">Case-sensitive matching</string>
-    <string name="global_rule">Global (all feeds)</string>
     <string name="ai_settings">AI</string>
     <string name="ai_title_summary">Title summary</string>
     <string name="ai_article_summary_settings">Article summary</string>
@@ -51,9 +40,6 @@
     <string name="ai_summary_error_unknown">AI summary failed due to an unexpected error</string>
     <string name="mark_summarized_as_read">Mark summarized as read</string>
     <string name="ai_summary_article">Summarize article</string>
-    <string name="export_rules">Export rules</string>
-    <string name="import_rules">Import rules</string>
-    <string name="rules_imported">Imported %1$d rules</string>
     <string name="import_failed">Import failed</string>
     <string name="ai_settings_desc">Configure an OpenAI-compatible service</string>
     <string name="ai_url">URL</string>
@@ -323,7 +309,7 @@
     <string name="saved_searches">Saved searches</string>
     <string name="export_reading_data">Export reading data</string>
     <string name="import_reading_data">Import reading data</string>
-    <string name="reading_data_imported">Imported %1$d tags, %2$d tag links, %3$d notes, %4$d saved searches, and %5$d article states; skipped %6$d unmatched items</string>
+    <string name="reading_data_imported">Imported %1$d tags, %2$d tag links, %3$d notes, %4$d saved searches, %5$d article states, and %6$d automations; skipped %7$d unmatched items</string>
     <string name="touch_to_play_video">Tap to play a video</string>
     <string name="text">Text</string>
     <string name="font_size">Font size</string>
@@ -508,7 +494,6 @@
     <string name="no_articles">No articles yet</string>
     <string name="no_subscriptions">No subscriptions yet</string>
     <string name="no_starred_articles">No starred articles</string>
-    <string name="no_highlighted_articles">No highlighted articles</string>
     <string name="no_read_later_articles">No articles saved for later</string>
     <string name="no_search_results">No matching articles</string>
     <string name="articles_load_failed">Could not load articles</string>

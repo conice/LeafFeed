@@ -29,9 +29,6 @@ import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.infrastructure.preference.LocalOpenLink
 import me.ash.reader.infrastructure.preference.LocalOpenLinkSpecificBrowser
 import me.ash.reader.ui.component.ChangeUrlDialog
-import me.ash.reader.ui.component.ArticleRuleDialog
-import me.ash.reader.domain.model.article.RuleScope
-import me.ash.reader.domain.model.article.RuleType
 import me.ash.reader.ui.component.FeedIcon
 import me.ash.reader.ui.component.RenameDialog
 import me.ash.reader.ui.component.base.BottomDrawer
@@ -145,8 +142,6 @@ fun FeedOptionDrawer(
                             feedOptionViewModel.showFeedUrlDialog()
                         }
                     },
-                    filterRulesOnClick = { feedOptionViewModel.showRuleDialog(RuleType.FILTER) },
-                    highlightRulesOnClick = { feedOptionViewModel.showRuleDialog(RuleType.HIGHLIGHT) },
                 )
             }
         }
@@ -208,18 +203,5 @@ fun FeedOptionDrawer(
             feedOptionViewModel.changeFeedUrl()
             onDismissRequest()
         }
-    )
-    ArticleRuleDialog(
-        visible = feedOptionUiState.ruleDialogType != null,
-        title = stringResource(if (feedOptionUiState.ruleDialogType == RuleType.FILTER) R.string.filter_rules else R.string.highlight_rules),
-        rules = feedOptionViewModel.articleRules.collectAsStateValue().filter {
-            ((it.scope == RuleScope.FEED && it.scopeId == feed?.id) || it.scope == RuleScope.GLOBAL) &&
-                it.accountId == feed?.accountId && it.type == feedOptionUiState.ruleDialogType
-        },
-        onDismiss = feedOptionViewModel::hideRuleDialog,
-        onAdd = feedOptionViewModel::addRule,
-        onEdit = feedOptionViewModel::editRule,
-        onReorder = feedOptionViewModel::reorderRules,
-        onDelete = feedOptionViewModel::deleteRule,
     )
 }

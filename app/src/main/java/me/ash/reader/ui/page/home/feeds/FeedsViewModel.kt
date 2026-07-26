@@ -166,7 +166,6 @@ class FeedsViewModel @Inject constructor(
                     val plural = when (filter) {
                         Filter.Unread -> R.plurals.unread_desc
                         Filter.Starred -> R.plurals.starred_desc
-                        Filter.Highlighted -> R.plurals.highlighted_desc
                         Filter.ReadLater -> R.plurals.read_later_desc
                         else -> R.plurals.all_desc
                     }

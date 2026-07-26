@@ -53,7 +53,7 @@ fun ReadingOptionsPage(
     onBack: () -> Unit,
     navigateToAiSettings: () -> Unit,
     navigateToCollections: () -> Unit,
-    navigateToRules: () -> Unit,
+    navigateToAutomations: () -> Unit,
 ) {
     FeatureSettingsPage(title = "Reading and articles", onBack = onBack) { settings, write ->
         section("AI")
@@ -65,25 +65,13 @@ fun ReadingOptionsPage(
         toggle("Prefer parsed full content", settings.preferFullContent) { write(FeaturePreferenceKeys.preferFullContent, it) }
 
         section("Article controls")
-        toggle("Show highlight matches", settings.showHighlightMatches) { write(FeaturePreferenceKeys.showHighlightMatches, it) }
         toggle("Show article tags", settings.showArticleTags) { write(FeaturePreferenceKeys.showArticleTags, it) }
         toggle("Show notes action", settings.showNotesAction) { write(FeaturePreferenceKeys.showNotesAction, it) }
         toggle("Show read later action", settings.showReadLaterIcon) { write(FeaturePreferenceKeys.showReadLaterIcon, it) }
 
         section("Management")
         action("Tags, notes and saved searches", "Manage reading data", navigateToCollections)
-        action("Article rules", "Review all rules for this account", navigateToRules)
-
-        section("Rules and highlights")
-        toggle("Enable filter rules", settings.filterRulesEnabled) { write(FeaturePreferenceKeys.filterRulesEnabled, it) }
-        toggle("Enable highlight rules", settings.highlightRulesEnabled) { write(FeaturePreferenceKeys.highlightRulesEnabled, it) }
-        toggle("Match article descriptions", settings.ruleMatchDescription) { write(FeaturePreferenceKeys.ruleMatchDescription, it) }
-        choice("Invalid rule handling", settings.ruleFailureMode, listOf("Ignore and continue", "Show warning")) {
-            write(FeaturePreferenceKeys.ruleFailureMode, it)
-        }
-        choice("Import conflicts", settings.ruleConflictMode, listOf("Replace", "Skip", "Keep both")) {
-            write(FeaturePreferenceKeys.ruleConflictMode, it)
-        }
+        action("Automations", "Conditions, actions and execution history", navigateToAutomations)
     }
 }
 
@@ -170,8 +158,6 @@ fun NotificationSettingsPage(onBack: () -> Unit) {
         toggle("Open the article directly", settings.notificationOpenArticle) { write(FeaturePreferenceKeys.notificationOpenArticle, it) }
 
         section("Content selection")
-        toggle("Notify highlighted articles only", settings.notificationHighlightsOnly) { write(FeaturePreferenceKeys.notificationHighlightsOnly, it) }
-        toggle("Exclude filtered articles", settings.notificationExcludeFiltered) { write(FeaturePreferenceKeys.notificationExcludeFiltered, it) }
         toggle("Notify new podcast episodes", settings.notificationPodcastEpisodes) { write(FeaturePreferenceKeys.notificationPodcastEpisodes, it) }
 
         section("System controls")

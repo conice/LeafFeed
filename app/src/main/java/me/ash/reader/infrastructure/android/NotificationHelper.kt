@@ -19,9 +19,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.ash.reader.R
 import me.ash.reader.domain.model.article.Article
-import me.ash.reader.domain.data.ArticleRuleRepository
-import me.ash.reader.domain.model.article.RuleScope
-import me.ash.reader.domain.model.article.RuleType
 import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.model.feed.FeedWithArticle
 import me.ash.reader.infrastructure.di.ApplicationScope
@@ -39,7 +36,6 @@ constructor(
     @IODispatcher private val ioDispatcher: CoroutineDispatcher,
     @ApplicationScope private val coroutineScope: CoroutineScope,
     private val settingsProvider: SettingsProvider,
-    private val articleRuleRepository: ArticleRuleRepository,
 ) {
     private companion object {
         const val MAX_ARTICLE_NOTIFICATIONS = 5
@@ -62,38 +58,10 @@ constructor(
         if (articles.isEmpty()) return
         if (!feed.isNotification) return
         coroutineScope.launch {
-            val rules = articleRuleRepository.currentRules(feed.accountId)
-            val includeDescription =
-                settingsProvider.get(FeaturePreferenceKeys.ruleMatchDescription) != false
-            val filterRulesEnabled =
-                settingsProvider.get(FeaturePreferenceKeys.filterRulesEnabled) != false
-            val highlightRulesEnabled =
-                settingsProvider.get(FeaturePreferenceKeys.highlightRulesEnabled) != false
-            fun Article.matches(type: RuleType): Boolean {
-                val text =
-                    if (includeDescription) "$title\n$rawDescription" else title
-                return rules.any { rule ->
-                    rule.type == type &&
-                        when (rule.scope) {
-                            RuleScope.GLOBAL -> true
-                            RuleScope.GROUP -> rule.scopeId == feed.groupId
-                            RuleScope.FEED -> rule.scopeId == feed.id
-                        } && rule.matches(text)
-                }
-            }
-
             val selectedArticles = articles.asSequence()
                 .filter {
                     settingsProvider.get(FeaturePreferenceKeys.notificationPodcastEpisodes) !=
                         false || it.audioUrl == null
-                }
-                .filter {
-                    settingsProvider.get(FeaturePreferenceKeys.notificationExcludeFiltered) !=
-                        true || !filterRulesEnabled || !it.matches(RuleType.FILTER)
-                }
-                .filter {
-                    settingsProvider.get(FeaturePreferenceKeys.notificationHighlightsOnly) !=
-                        true || highlightRulesEnabled && it.matches(RuleType.HIGHLIGHT)
                 }
                 .toList()
             if (selectedArticles.isEmpty()) return@launch
@@ -169,5 +137,31 @@ constructor(
 
     fun notify(feedWithArticle: FeedWithArticle) {
         notify(feedWithArticle.feed, feedWithArticle.articles)
+    }
+
+    suspend fun notifyAutomation(feed: Feed, article: Article, ruleId: String, ruleName: String) {
+        if (!notificationManager.areNotificationsEnabled()) return
+        val intent = Intent(context, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra(ExtraName.ARTICLE_ID, article.id)
+        }
+        notificationManager.notify(
+            ("automation:${article.id}:$ruleId").hashCode(),
+            NotificationCompat.Builder(context, NotificationGroupName.ARTICLE_UPDATE)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setSubText(ruleName)
+                .setContentTitle(article.title)
+                .setContentText(feed.name)
+                .setAutoCancel(true)
+                .setContentIntent(
+                    PendingIntent.getActivity(
+                        context,
+                        ("automation:${article.id}:$ruleId").hashCode(),
+                        intent,
+                        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                    )
+                )
+                .build(),
+        )
     }
 }

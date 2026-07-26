@@ -7,7 +7,6 @@ import androidx.compose.material.icons.rounded.FiberManualRecord
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarOutline
 import androidx.compose.material.icons.rounded.Subject
-import androidx.compose.material.icons.rounded.Highlight
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.runtime.Composable
@@ -37,7 +36,6 @@ class Filter private constructor(
     fun isStarred(): Boolean = this == Starred
     fun isUnread(): Boolean = this == Unread
     fun isAll(): Boolean = this == All
-    fun isHighlighted(): Boolean = this == Highlighted
     fun isReadLater(): Boolean = this == ReadLater
 
     @Stable
@@ -45,7 +43,6 @@ class Filter private constructor(
     fun toName(): String = when (this) {
         Unread -> stringResource(R.string.unread)
         Starred -> stringResource(R.string.starred)
-        Highlighted -> stringResource(R.string.highlighted)
         ReadLater -> stringResource(R.string.read_later)
         else -> stringResource(R.string.all)
     }
@@ -57,7 +54,6 @@ class Filter private constructor(
         Starred -> pluralStringResource(R.plurals.starred_desc, important, important)
         Unread -> pluralStringResource(R.plurals.unread_desc, important, important)
         All -> pluralStringResource(R.plurals.all_desc, important, important)
-        Highlighted -> pluralStringResource(R.plurals.highlighted_desc, important, important)
         ReadLater -> pluralStringResource(R.plurals.read_later_desc, important, important)
         else -> error("Unknown filter")
     }
@@ -79,17 +75,12 @@ class Filter private constructor(
             iconOutline = Icons.AutoMirrored.Rounded.Subject,
             iconFilled = Icons.AutoMirrored.Rounded.Subject,
         )
-        val Highlighted = Filter(
-            index = 3,
-            iconOutline = Icons.Rounded.Highlight,
-            iconFilled = Icons.Rounded.Highlight,
-        )
         val ReadLater = Filter(
             index = 4,
             iconOutline = Icons.Outlined.BookmarkBorder,
             iconFilled = Icons.Rounded.Bookmark,
         )
         val values = listOf(Starred, Unread, All, ReadLater)
-        val articleValues = listOf(Starred, Unread, All, Highlighted, ReadLater)
+        val articleValues = values
     }
 }
