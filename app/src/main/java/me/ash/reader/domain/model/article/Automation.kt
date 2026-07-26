@@ -41,7 +41,7 @@ enum class AutomationActionType {
     FETCH_FULL_CONTENT,
 }
 
-enum class AutomationExecutionStatus { RUNNING, SUCCEEDED, FAILED }
+enum class AutomationExecutionStatus { RUNNING, SUCCEEDED, FAILED, INTERRUPTED }
 
 @Entity(tableName = "automation_rule", indices = [Index("accountId"), Index(value = ["accountId", "position"])])
 data class AutomationRuleEntity(
@@ -116,7 +116,7 @@ data class AutomationActionEntity(
 )
 
 @Entity(
-    tableName = "automation_execution",
+    tableName = "automation_action_claim",
     primaryKeys = ["articleId", "ruleId", "actionType"],
     foreignKeys = [
         ForeignKey(
@@ -126,14 +126,40 @@ data class AutomationActionEntity(
             onDelete = ForeignKey.CASCADE,
         )
     ],
-    indices = [Index("ruleId"), Index("executedAt")],
+    indices = [Index("ruleId"), Index("updatedAt")],
 )
-data class AutomationExecutionEntity(
+data class AutomationActionClaimEntity(
     val articleId: String,
     val ruleId: String,
     val actionType: String,
     val status: String,
-    val executedAt: Long = System.currentTimeMillis(),
+    val attemptCount: Int = 1,
+    val updatedAt: Long = System.currentTimeMillis(),
+    val nextRetryAt: Long? = null,
+    val lastError: String? = null,
+)
+
+@Entity(
+    tableName = "automation_execution",
+    foreignKeys = [
+        ForeignKey(
+            entity = AutomationRuleEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["ruleId"],
+            onDelete = ForeignKey.CASCADE,
+        )
+    ],
+    indices = [Index("ruleId"), Index("startedAt"), Index("status")],
+)
+data class AutomationExecutionEntity(
+    @PrimaryKey val id: String = UUID.randomUUID().toString(),
+    val articleId: String,
+    val ruleId: String,
+    val actionType: String,
+    val status: String,
+    val attempt: Int = 1,
+    val startedAt: Long = System.currentTimeMillis(),
+    val completedAt: Long? = null,
     val message: String? = null,
 )
 

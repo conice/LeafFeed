@@ -305,7 +305,16 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                             },
                         )
                     }
-                    Route.Automations -> NavEntry(key) { AutomationPage(onBack = onBack) }
+                    Route.Automations -> NavEntry(key) {
+                        AutomationPage(
+                            onBack = onBack,
+                            onOpenArticle = { articleId ->
+                                backStack.add(
+                                    Route.Reading(articleId, ReadingSource.Automation)
+                                )
+                            },
+                        )
+                    }
                     Route.Accounts ->
                         NavEntry(key) {
                             AccountsPage(

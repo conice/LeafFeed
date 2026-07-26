@@ -54,6 +54,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.text.DateFormat
+import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.filterNotNull
@@ -118,15 +119,35 @@ class AutomationViewModel @Inject constructor(
         viewModelScope.launch { repository.setEnabled(rule.id, enabled) }
 
     fun delete(rule: AutomationRule) = viewModelScope.launch { repository.delete(rule.id) }
+
+    fun clearHistory() {
+        val id = accountId.value ?: return
+        viewModelScope.launch { repository.clearHistory(id) }
+    }
 }
 
 @Composable
-fun AutomationPage(onBack: () -> Unit, viewModel: AutomationViewModel = hiltViewModel()) {
+fun AutomationPage(
+    onBack: () -> Unit,
+    onOpenArticle: (String) -> Unit,
+    viewModel: AutomationViewModel = hiltViewModel(),
+) {
     val rules by viewModel.rules.collectAsStateWithLifecycle()
     val executions by viewModel.executions.collectAsStateWithLifecycle()
     val options by viewModel.scopeOptions.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<AutomationRule?>(null) }
     var creating by remember { mutableStateOf(false) }
+    var failedActivityOnly by remember { mutableStateOf(false) }
+    var showAllActivity by remember { mutableStateOf(false) }
+    var confirmClearHistory by remember { mutableStateOf(false) }
+    val activityGroups = remember(executions, failedActivityOnly) {
+        executions.toActivityGroups().filter { group ->
+            !failedActivityOnly || group.executions.any {
+                it.execution.status == AutomationExecutionStatus.FAILED.name ||
+                    it.execution.status == AutomationExecutionStatus.INTERRUPTED.name
+            }
+        }
+    }
 
     if (creating || editing != null) {
         val closeEditor = { creating = false; editing = null }
@@ -176,48 +197,136 @@ fun AutomationPage(onBack: () -> Unit, viewModel: AutomationViewModel = hiltView
         }
         item {
             Spacer(Modifier.height(16.dp))
-            Text(
-                "Recent executions",
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.titleMedium,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 24.dp, end = 16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Recent activity", style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+                if (executions.isNotEmpty()) {
+                    TextButton(onClick = { confirmClearHistory = true }) { Text("Clear") }
+                }
+            }
         }
-        if (executions.isEmpty()) item { EmptyManagerRow("No executions yet") }
-        items(executions.take(50), key = {
-            "${it.execution.articleId}:${it.execution.ruleId}:${it.execution.actionType}"
-        }) { item ->
-            ExecutionRow(item)
+        if (executions.isNotEmpty()) {
+            item {
+                FlowRow(
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    FilterChip(
+                        selected = !failedActivityOnly,
+                        onClick = { failedActivityOnly = false },
+                        label = { Text("All") },
+                    )
+                    FilterChip(
+                        selected = failedActivityOnly,
+                        onClick = { failedActivityOnly = true },
+                        label = { Text("Failed") },
+                    )
+                }
+            }
         }
+        if (activityGroups.isEmpty()) {
+            item { EmptyManagerRow(if (failedActivityOnly) "No failed activity" else "No activity yet") }
+        }
+        items(
+            if (showAllActivity) activityGroups else activityGroups.take(10),
+            key = { it.key },
+        ) { group ->
+            ActivityRow(group, onOpenArticle)
+        }
+        if (activityGroups.size > 10) {
+            item {
+                TextButton(
+                    onClick = { showAllActivity = !showAllActivity },
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                ) { Text(if (showAllActivity) "Show less" else "Show more") }
+            }
+        }
+    }
+
+    if (confirmClearHistory) {
+        AlertDialog(
+            onDismissRequest = { confirmClearHistory = false },
+            title = { Text("Clear activity history?") },
+            text = { Text("This removes activity logs only. It will not run actions again.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmClearHistory = false
+                    viewModel.clearHistory()
+                }) { Text("Clear") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmClearHistory = false }) { Text("Cancel") }
+            },
+        )
     }
 
 }
 
 @Composable
-private fun ExecutionRow(item: AutomationExecutionSummary) {
-    val status = enumValueOrNull<AutomationExecutionStatus>(item.execution.status)
-    val statusText = status?.displayName() ?: item.execution.status
-    val actionText = enumValueOrNull<AutomationActionType>(item.execution.actionType)?.displayName()
-        ?: item.execution.actionType.displayEnumName()
+private fun ActivityRow(
+    group: AutomationActivityGroup,
+    onOpenArticle: (String) -> Unit,
+) {
+    val item = group.executions.first()
+    val articleExists = item.articleTitle != null
     SettingItem(
+        enabled = articleExists,
         title = item.articleTitle?.takeIf { it.isNotBlank() } ?: item.execution.articleId,
         desc = buildString {
             append(item.ruleName)
-            append(" - ")
-            append(actionText)
             item.feedName?.takeIf { it.isNotBlank() }?.let {
-                append("\n")
+                append(" - ")
                 append(it)
             }
             append("\n")
-            append(statusText)
-            append(" - ")
-            append(DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(item.execution.executedAt))
-            item.execution.message?.takeIf { it.isNotBlank() }?.let { append("\n"); append(it) }
+            append(
+                group.executions.joinToString(" - ") { execution ->
+                    val action = enumValueOrNull<AutomationActionType>(execution.execution.actionType)
+                        ?.displayName() ?: execution.execution.actionType.displayEnumName()
+                    val status = enumValueOrNull<AutomationExecutionStatus>(execution.execution.status)
+                        ?.displayName() ?: execution.execution.status.displayEnumName()
+                    val attempt = execution.execution.attempt
+                    "$action: $status${if (attempt > 1) " (attempt $attempt)" else ""}"
+                }
+            )
+            append("\n")
+            append(
+                DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT)
+                    .format(Date(group.startedAt))
+            )
+            group.executions.firstNotNullOfOrNull { it.execution.message?.takeIf(String::isNotBlank) }
+                ?.let { append("\n"); append(it) }
         },
         descMaxLines = 4,
-        onClick = {},
+        onClick = { if (articleExists) onOpenArticle(item.execution.articleId) },
     )
 }
+
+private data class AutomationActivityGroup(
+    val key: String,
+    val startedAt: Long,
+    val executions: List<AutomationExecutionSummary>,
+)
+
+private fun List<AutomationExecutionSummary>.toActivityGroups(): List<AutomationActivityGroup> =
+    groupBy { summary ->
+        val execution = summary.execution
+        Triple(
+            execution.articleId,
+            execution.ruleId,
+            execution.startedAt / ACTIVITY_GROUP_WINDOW_MILLIS,
+        )
+    }.map { (_, executions) ->
+        AutomationActivityGroup(
+            key = executions.minOf { it.execution.id },
+            startedAt = executions.maxOf { it.execution.startedAt },
+            executions = executions.sortedBy { it.execution.actionType },
+        )
+    }.sortedByDescending { it.startedAt }
+
+private const val ACTIVITY_GROUP_WINDOW_MILLIS = 60_000L
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable

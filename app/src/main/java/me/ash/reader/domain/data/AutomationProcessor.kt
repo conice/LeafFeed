@@ -6,10 +6,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import me.ash.reader.domain.model.account.Account
 import me.ash.reader.domain.model.article.AutomationActionType
 import me.ash.reader.domain.model.article.AutomationCandidate
@@ -48,11 +50,12 @@ class AutomationProcessor @Inject constructor(
         job = applicationScope.launch(ioDispatcher) {
             accountService.currentAccountFlow.filterNotNull().collectLatest { account ->
                 val accountId = account.id ?: return@collectLatest
+                repository.recoverStaleExecutions(accountId)
                 combine(
                     repository.observeRules(accountId),
                     articleDao.queryAutomationCandidates(accountId),
                 ) { rules, candidates ->
-                    ProcessorInput(account, rules, candidates)
+                    ProcessorInput(accountId, account, rules, candidates)
                 }.collect(::process)
             }
         }
@@ -70,20 +73,18 @@ class AutomationProcessor @Inject constructor(
                     .filterNot { it == AutomationActionType.FILTER || it == AutomationActionType.HIGHLIGHT }
                     .forEach actionLoop@ { action ->
                         val startedAt = System.currentTimeMillis()
-                        val claimed = repository.claim(
-                            AutomationExecutionEntity(
-                                articleId = candidate.articleId,
-                                ruleId = rule.id,
-                                actionType = action.name,
-                                status = AutomationExecutionStatus.RUNNING.name,
-                                executedAt = startedAt,
-                            )
+                        val execution = repository.claim(
+                            articleId = candidate.articleId,
+                            ruleId = rule.id,
+                            actionType = action.name,
+                            startedAt = startedAt,
                         )
-                        if (!claimed) return@actionLoop
-                        execute(input.account, candidate, rule, action, startedAt)
+                        if (execution == null) return@actionLoop
+                        execute(input.account, candidate, rule, action, execution)
                     }
             }
         }
+        repository.trimHistory(input.accountId)
     }
 
     private suspend fun execute(
@@ -91,35 +92,41 @@ class AutomationProcessor @Inject constructor(
         candidate: AutomationCandidate,
         rule: AutomationRule,
         action: AutomationActionType,
-        startedAt: Long,
+        execution: AutomationExecutionEntity,
     ) {
         try {
             perform(account, candidate, rule, action)
-            repository.record(
-                AutomationExecutionEntity(
-                    articleId = candidate.articleId,
-                    ruleId = rule.id,
-                    actionType = action.name,
-                    status = AutomationExecutionStatus.SUCCEEDED.name,
-                    executedAt = startedAt,
-                )
-            )
         } catch (throwable: Throwable) {
             if (throwable is CancellationException) {
-                repository.release(candidate.articleId, rule.id, action.name)
+                withContext(NonCancellable) { repository.interrupt(execution) }
                 throw throwable
             }
             Timber.e(throwable, "Automation action %s failed", action.name)
-            repository.record(
-                AutomationExecutionEntity(
-                    articleId = candidate.articleId,
-                    ruleId = rule.id,
-                    actionType = action.name,
-                    status = AutomationExecutionStatus.FAILED.name,
-                    executedAt = startedAt,
-                    message = throwable.message ?: throwable.javaClass.simpleName,
-                )
+            completeSafely(
+                execution = execution,
+                status = AutomationExecutionStatus.FAILED,
+                message = throwable.message ?: throwable.javaClass.simpleName,
+                retryable = throwable !is PermanentAutomationException,
             )
+            return
+        }
+        completeSafely(
+            execution = execution,
+            status = AutomationExecutionStatus.SUCCEEDED,
+        )
+    }
+
+    private suspend fun completeSafely(
+        execution: AutomationExecutionEntity,
+        status: AutomationExecutionStatus,
+        message: String? = null,
+        retryable: Boolean = false,
+    ) {
+        try {
+            repository.complete(execution, status, message, retryable)
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) throw throwable
+            Timber.e(throwable, "Unable to persist automation execution %s", execution.id)
         }
     }
 
@@ -140,7 +147,8 @@ class AutomationProcessor @Inject constructor(
                 service.syncReadStatus(setOf(candidate.articleId), isUnread)
             }
             AutomationActionType.NOTIFY -> {
-                val article = articleDao.queryById(candidate.articleId) ?: error("Article no longer exists")
+                val article = articleDao.queryById(candidate.articleId)
+                    ?: throw PermanentAutomationException("Article no longer exists")
                 notificationHelper.notifyAutomation(
                     article.feed,
                     article.article,
@@ -150,14 +158,16 @@ class AutomationProcessor @Inject constructor(
             }
             AutomationActionType.DOWNLOAD_PODCAST -> {
                 val article = articleDao.queryById(candidate.articleId)?.article
-                    ?: error("Article no longer exists")
-                if (article.audioUrl == null) error("Article has no podcast audio")
+                    ?: throw PermanentAutomationException("Article no longer exists")
+                if (article.audioUrl == null) {
+                    throw PermanentAutomationException("Article has no podcast audio")
+                }
                 val wifiOnly = settingsProvider.get(FeaturePreferenceKeys.podcastWifiOnly) != false
                 podcastDownloadRepository.enqueue(article, wifiOnly).getOrThrow()
             }
             AutomationActionType.FETCH_FULL_CONTENT -> {
                 val article = articleDao.queryById(candidate.articleId)?.article
-                    ?: error("Article no longer exists")
+                    ?: throw PermanentAutomationException("Article no longer exists")
                 check(readerCacheHelper.checkOrFetchFullContent(article, account.id!!)) {
                     "Unable to fetch full content"
                 }
@@ -166,8 +176,11 @@ class AutomationProcessor @Inject constructor(
     }
 
     private data class ProcessorInput(
+        val accountId: Int,
         val account: Account,
         val rules: List<AutomationRule>,
         val candidates: List<AutomationCandidate>,
     )
+
+    private class PermanentAutomationException(message: String) : Exception(message)
 }

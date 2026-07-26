@@ -20,6 +20,7 @@ import me.ash.reader.domain.model.article.AutomationConditionGroupEntity
 import me.ash.reader.domain.model.article.AutomationConditionDraft
 import me.ash.reader.domain.model.article.AutomationDraft
 import me.ash.reader.domain.model.article.AutomationExecutionEntity
+import me.ash.reader.domain.model.article.AutomationExecutionStatus
 import me.ash.reader.domain.model.article.AutomationExecutionSummary
 import me.ash.reader.domain.model.article.AutomationField
 import me.ash.reader.domain.model.article.AutomationRule
@@ -143,16 +144,49 @@ class AutomationRepository @Inject constructor(
 
     suspend fun delete(ruleId: String) = dao.deleteRule(ruleId)
 
-    suspend fun record(execution: AutomationExecutionEntity) = dao.upsertExecution(execution)
-
-    suspend fun claim(execution: AutomationExecutionEntity): Boolean =
+    suspend fun claim(
+        articleId: String,
+        ruleId: String,
+        actionType: String,
+        startedAt: Long,
+    ): AutomationExecutionEntity? =
         dao.claimExecution(
-            execution,
+            articleId = articleId,
+            ruleId = ruleId,
+            actionType = actionType,
+            startedAt = startedAt,
             staleBefore = System.currentTimeMillis() - STALE_EXECUTION_MILLIS,
+            maxAttempts = MAX_EXECUTION_ATTEMPTS,
         )
 
-    suspend fun release(articleId: String, ruleId: String, actionType: String) =
-        dao.deleteRunningExecution(articleId, ruleId, actionType)
+    suspend fun complete(
+        execution: AutomationExecutionEntity,
+        status: AutomationExecutionStatus,
+        message: String? = null,
+        retryable: Boolean = false,
+    ) {
+        val completedAt = System.currentTimeMillis()
+        val nextRetryAt =
+            if (status == AutomationExecutionStatus.FAILED && retryable &&
+                execution.attempt < MAX_EXECUTION_ATTEMPTS
+            ) {
+                completedAt + RETRY_BASE_DELAY_MILLIS * (1L shl (execution.attempt - 1))
+            } else null
+        dao.completeExecution(execution, status, completedAt, message, nextRetryAt)
+    }
+
+    suspend fun interrupt(execution: AutomationExecutionEntity) =
+        dao.interruptAndRelease(execution, System.currentTimeMillis())
+
+    suspend fun clearHistory(accountId: Int) = dao.clearExecutionHistory(accountId)
+
+    suspend fun trimHistory(accountId: Int) =
+        dao.trimExecutionHistory(accountId, EXECUTION_HISTORY_LIMIT)
+
+    suspend fun recoverStaleExecutions(accountId: Int) {
+        val now = System.currentTimeMillis()
+        dao.recoverStaleExecutions(accountId, now - STALE_EXECUTION_MILLIS, now)
+    }
 
     internal fun isValid(draft: AutomationDraft): Boolean =
         draft.name.isNotBlank() &&
@@ -165,6 +199,9 @@ class AutomationRepository @Inject constructor(
 
     private companion object {
         const val STALE_EXECUTION_MILLIS = 10 * 60 * 1000L
+        const val MAX_EXECUTION_ATTEMPTS = 3
+        const val RETRY_BASE_DELAY_MILLIS = 60 * 1000L
+        const val EXECUTION_HISTORY_LIMIT = 500
     }
 }
 

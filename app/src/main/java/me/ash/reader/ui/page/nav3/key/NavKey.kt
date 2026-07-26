@@ -17,7 +17,7 @@ sealed interface Route : NavKey {
 
     //    @Serializable data object Flow : Route
 
-    @Serializable enum class ReadingSource { Flow, AiSummary, History }
+    @Serializable enum class ReadingSource { Flow, AiSummary, History, Automation }
 
     @Serializable
     data class ReadingHistory(
