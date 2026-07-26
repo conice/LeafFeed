@@ -4,7 +4,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
-import androidx.datastore.preferences.core.stringPreferencesKey
 
 object FeaturePreferenceKeys {
     val markReadOnOpen = booleanPreferencesKey("reading_mark_read_on_open")
@@ -41,7 +40,6 @@ object FeaturePreferenceKeys {
     val aiContentScope = intPreferencesKey("privacy_ai_content_scope")
     val aiIncludeArticleLink = booleanPreferencesKey("privacy_ai_include_article_link")
     val diagnosticIncludeFeedUrls = booleanPreferencesKey("privacy_diagnostic_feed_urls")
-    val reportRange = stringPreferencesKey("report_last_range")
 }
 
 data class FeatureSettings(

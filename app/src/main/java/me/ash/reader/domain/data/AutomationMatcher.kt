@@ -49,8 +49,8 @@ class AutomationMatcher(private val rules: List<AutomationRule>) {
 private fun AutomationRule.appliesTo(candidate: AutomationCandidate): Boolean =
     accountId == candidate.accountId && when (scope) {
         me.ash.reader.domain.model.article.AutomationScope.GLOBAL -> true
-        me.ash.reader.domain.model.article.AutomationScope.GROUP -> scopeId == candidate.groupId
-        me.ash.reader.domain.model.article.AutomationScope.FEED -> scopeId == candidate.feedId
+        me.ash.reader.domain.model.article.AutomationScope.GROUP -> candidate.groupId in scopeIds
+        me.ash.reader.domain.model.article.AutomationScope.FEED -> candidate.feedId in scopeIds
     }
 
 private fun AutomationRule.matches(candidate: AutomationCandidate, regexes: Map<String, Regex?>): Boolean =

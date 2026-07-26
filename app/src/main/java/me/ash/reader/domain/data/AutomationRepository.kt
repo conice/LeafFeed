@@ -27,6 +27,7 @@ import me.ash.reader.domain.model.article.AutomationRule
 import me.ash.reader.domain.model.article.AutomationRuleEntity
 import me.ash.reader.domain.model.article.AutomationOperator
 import me.ash.reader.domain.model.article.AutomationScope
+import me.ash.reader.domain.model.article.AutomationScopeTargetEntity
 import me.ash.reader.domain.model.article.toDomain
 import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.repository.AutomationDao
@@ -86,8 +87,11 @@ class AutomationRepository @Inject constructor(
         require(draft.groups.isNotEmpty() && draft.groups.all { it.isNotEmpty() }) {
             "Automation must contain at least one condition in every group"
         }
-        require(draft.scope == AutomationScope.GLOBAL || draft.scopeId.isNotBlank()) {
-            "A group or feed scope must have a target"
+        require(
+            draft.scope == AutomationScope.GLOBAL ||
+                (draft.scopeIds.isNotEmpty() && draft.scopeIds.all { it.isNotBlank() })
+        ) {
+            "A group or feed scope must have at least one target"
         }
         require(draft.groups.flatten().all { it.isValid() }) {
             "Automation contains an invalid condition"
@@ -121,6 +125,11 @@ class AutomationRepository @Inject constructor(
         val actions = draft.actions.sortedBy { it.ordinal }.mapIndexed { index, type ->
             AutomationActionEntity(ruleId = ruleId, position = index, type = type.name)
         }
+        val targets =
+            if (draft.scope == AutomationScope.GLOBAL) emptyList()
+            else draft.scopeIds.distinct().mapIndexed { index, targetId ->
+                AutomationScopeTargetEntity(ruleId, targetId, index)
+            }
         dao.replaceRule(
             rule =
                 AutomationRuleEntity(
@@ -130,13 +139,14 @@ class AutomationRepository @Inject constructor(
                     enabled = draft.enabled,
                     position = position,
                     scope = draft.scope.name,
-                    scopeId = draft.scopeId,
+                    scopeId = targets.firstOrNull()?.targetId.orEmpty(),
                     createdAt = existing?.createdAt ?: System.currentTimeMillis(),
                     updatedAt = System.currentTimeMillis(),
                 ),
             groups = groups,
             conditions = conditions,
             actions = actions,
+            targets = targets,
         )
     }
 
@@ -191,7 +201,8 @@ class AutomationRepository @Inject constructor(
     internal fun isValid(draft: AutomationDraft): Boolean =
         draft.name.isNotBlank() &&
             draft.groups.isNotEmpty() && draft.groups.all { it.isNotEmpty() } &&
-            (draft.scope == AutomationScope.GLOBAL || draft.scopeId.isNotBlank()) &&
+            (draft.scope == AutomationScope.GLOBAL ||
+                (draft.scopeIds.isNotEmpty() && draft.scopeIds.all { it.isNotBlank() })) &&
             draft.groups.flatten().all { it.isValid() } &&
             draft.actions.isNotEmpty() &&
             (AutomationActionType.MARK_READ !in draft.actions ||

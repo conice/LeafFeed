@@ -747,32 +747,37 @@ interface ArticleDao {
     data class ReportFeedStats(
         val feedId: String,
         val total: Int,
-        val unread: Int,
+        val opened: Int,
+        val engaged: Int,
+        val periodUnread: Int,
+        val unreadBacklog: Int,
         val starred: Int,
         val readLater: Int,
         val latestDate: Date?,
-    )
-
-    data class ReportDayStats(
-        val day: String,
-        val total: Int,
-        val read: Int,
-    )
-
-    data class ReportFeedLatest(
-        val feedId: String,
-        val latestDate: Date?,
+        val firstDate: Date?,
+        val lifetimeTotal: Int,
+        val lastOpenedAt: Date?,
     )
 
     @Query(
         """SELECT feedId,
-            COUNT(*) AS total,
-            SUM(CASE WHEN isUnread = 1 THEN 1 ELSE 0 END) AS unread,
-            SUM(CASE WHEN isStarred = 1 THEN 1 ELSE 0 END) AS starred,
-            SUM(CASE WHEN isReadLater = 1 THEN 1 ELSE 0 END) AS readLater,
-            MAX(date) AS latestDate
+            SUM(CASE WHEN date >= :start AND date < :endExclusive THEN 1 ELSE 0 END) AS total,
+            SUM(CASE WHEN lastOpenedAt >= :start AND lastOpenedAt < :endExclusive THEN 1 ELSE 0 END) AS opened,
+            SUM(CASE WHEN
+                (lastOpenedAt >= :start AND lastOpenedAt < :endExclusive)
+                OR (date >= :start AND date < :endExclusive AND
+                    (isStarred = 1 OR isReadLater = 1 OR playbackPositionMs > 0 OR isPlayed = 1))
+                THEN 1 ELSE 0 END) AS engaged,
+            SUM(CASE WHEN date >= :start AND date < :endExclusive AND isUnread = 1 THEN 1 ELSE 0 END) AS periodUnread,
+            SUM(CASE WHEN isUnread = 1 THEN 1 ELSE 0 END) AS unreadBacklog,
+            SUM(CASE WHEN date >= :start AND date < :endExclusive AND isStarred = 1 THEN 1 ELSE 0 END) AS starred,
+            SUM(CASE WHEN date >= :start AND date < :endExclusive AND isReadLater = 1 THEN 1 ELSE 0 END) AS readLater,
+            MAX(date) AS latestDate,
+            MIN(date) AS firstDate,
+            COUNT(*) AS lifetimeTotal,
+            MAX(lastOpenedAt) AS lastOpenedAt
         FROM article
-        WHERE accountId = :accountId AND date >= :start AND date < :endExclusive
+        WHERE accountId = :accountId
         GROUP BY feedId"""
     )
     fun queryReportFeedStats(
@@ -780,27 +785,6 @@ interface ArticleDao {
         start: Date,
         endExclusive: Date,
     ): Flow<List<ReportFeedStats>>
-
-    @Query(
-        """SELECT strftime('%Y-%m-%d', date / 1000, 'unixepoch', 'localtime') AS day,
-            COUNT(*) AS total,
-            SUM(CASE WHEN isUnread = 0 THEN 1 ELSE 0 END) AS read
-        FROM article
-        WHERE accountId = :accountId AND date >= :start AND date < :endExclusive
-        GROUP BY day ORDER BY day"""
-    )
-    fun queryReportDayStats(
-        accountId: Int,
-        start: Date,
-        endExclusive: Date,
-    ): Flow<List<ReportDayStats>>
-
-    @Query(
-        """SELECT feedId, MAX(date) AS latestDate
-        FROM article WHERE accountId = :accountId GROUP BY feedId"""
-    )
-    fun queryReportFeedLatest(accountId: Int): Flow<List<ReportFeedLatest>>
-
 
     @Transaction
     @Query(

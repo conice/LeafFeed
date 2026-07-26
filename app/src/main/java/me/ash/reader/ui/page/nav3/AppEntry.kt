@@ -155,6 +155,9 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                             SubscriptionReportPage(
                                 onBack = onBack,
                                 onOpenReading = { backStack.add(Route.Reading(null)) },
+                                onCreateAutomation = { feedId ->
+                                    backStack.add(Route.Automations(feedId))
+                                },
                             )
                         }
                     is Route.Reading -> {
@@ -260,7 +263,7 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                             onBack = onBack,
                             navigateToAiSettings = { backStack.add(Route.AiSettings) },
                             navigateToCollections = { backStack.add(Route.CollectionManager) },
-                            navigateToAutomations = { backStack.add(Route.Automations) },
+                            navigateToAutomations = { backStack.add(Route.Automations()) },
                         )
                     }
                     Route.PodcastSettings -> NavEntry(key) {
@@ -305,9 +308,10 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                             },
                         )
                     }
-                    Route.Automations -> NavEntry(key) {
+                    is Route.Automations -> NavEntry(key) {
                         AutomationPage(
                             onBack = onBack,
+                            initialFeedId = key.initialFeedId,
                             onOpenArticle = { articleId ->
                                 backStack.add(
                                     Route.Reading(articleId, ReadingSource.Automation)

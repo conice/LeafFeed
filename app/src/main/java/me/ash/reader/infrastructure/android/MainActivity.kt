@@ -131,8 +131,6 @@ class MainActivity : AppCompatActivity() {
                                             )
                                             listOf(Route.Feeds)
                                         }
-                                        LaunchAction.OpenSubscriptionReport ->
-                                            listOf(Route.Feeds, Route.SubscriptionReport)
                                         else -> {
                                             if (
                                                 initialPage == InitialPagePreference.FlowPage
@@ -212,16 +210,6 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
 
-                            LaunchAction.OpenSubscriptionReport -> {
-                                val reportIndex = backStack.indexOf(Route.SubscriptionReport)
-                                if (reportIndex != -1) {
-                                    repeat(backStack.size - (reportIndex + 1)) {
-                                        backStack.removeLastOrNull()
-                                    }
-                                } else {
-                                    backStack.add(Route.SubscriptionReport)
-                                }
-                            }
                         }
                     }
                 }
@@ -238,8 +226,6 @@ class MainActivity : AppCompatActivity() {
 }
 
 sealed interface LaunchAction {
-    data object OpenSubscriptionReport : LaunchAction
-
     data class Subscribe(val url: String) : LaunchAction
 
     data class OpenArticle(val articleId: String, val feedId: String?, val groupId: String?) :
@@ -263,10 +249,6 @@ private fun Intent.getLaunchAction(): LaunchAction? {
         }
 
         else -> {
-            if (getBooleanExtra("subscription.report.open", false)) {
-                removeExtra("subscription.report.open")
-                return LaunchAction.OpenSubscriptionReport
-            }
             val articleId =
                 getStringExtra(ExtraName.ARTICLE_ID)?.also { removeExtra(ExtraName.ARTICLE_ID) }
             val feedId = getStringExtra(ExtraName.FEED_ID)?.also { removeExtra(ExtraName.FEED_ID) }

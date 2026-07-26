@@ -66,7 +66,6 @@ class DataStoreExportTest {
         featureKeys.forEach { key ->
             assertTrue("Missing preference registration: ${key.name}", key.name in PreferencesKey.keys)
         }
-        assertTrue(FeaturePreferenceKeys.reportRange.name !in PreferencesKey.keys)
     }
 
     @Test

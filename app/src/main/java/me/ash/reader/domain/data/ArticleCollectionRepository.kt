@@ -192,6 +192,7 @@ constructor(
                 }
         val groupsById = groupDao.queryAll(accountId).associateBy { it.id }
         val feedsById = feedDao.queryAll(accountId).associateBy { it.id }
+        val automations = automationRepository.queryRules(accountId)
         val backup =
             ArticleCollectionBackup(
                 tags = tags,
@@ -220,6 +221,7 @@ constructor(
                             feedUrl = search.feedId?.let { feedsById[it]?.url },
                         )
                     },
+                automations = automations.toBackups(groupsById, feedsById),
             )
         return json.encodeToString(backup.withIntegrityHash(json))
     }
@@ -243,7 +245,7 @@ constructor(
         require(backup.format == AUTOMATION_BACKUP_FORMAT) {
             "Unsupported automation backup format"
         }
-        require(backup.version == AUTOMATION_BACKUP_VERSION) {
+        require(backup.version in 1..AUTOMATION_BACKUP_VERSION) {
             "Unsupported automation backup version"
         }
         require(backup.hasValidIntegrityHash(json)) {
@@ -431,14 +433,21 @@ constructor(
     ): List<AutomationDraft> =
         mapNotNull { imported ->
             val scope = parseAutomationEnum<AutomationScope>(imported.scope) ?: return@mapNotNull null
-            val scopeId =
+            val scopeIds =
                 when (scope) {
-                    AutomationScope.GLOBAL -> ""
+                    AutomationScope.GLOBAL -> emptyList()
                     AutomationScope.GROUP ->
-                        imported.groupName?.let { groupsByName[it]?.id } ?: return@mapNotNull null
+                        imported.groupNames
+                            .ifEmpty { listOfNotNull(imported.groupName) }
+                            .mapNotNull { groupsByName[it]?.id }
+                            .distinct()
                     AutomationScope.FEED ->
-                        imported.feedUrl?.let { feedsByUrl[it]?.id } ?: return@mapNotNull null
+                        imported.feedUrls
+                            .ifEmpty { listOfNotNull(imported.feedUrl) }
+                            .mapNotNull { feedsByUrl[it]?.id }
+                            .distinct()
                 }
+            if (scope != AutomationScope.GLOBAL && scopeIds.isEmpty()) return@mapNotNull null
             val groups =
                 imported.conditionGroups.map { group ->
                     group.mapNotNull { condition ->
@@ -466,7 +475,7 @@ constructor(
                 name = imported.name,
                 enabled = imported.enabled,
                 scope = scope,
-                scopeId = scopeId,
+                scopeIds = scopeIds,
                 groups = groups,
                 actions = actions,
             ).takeIf(automationRepository::isValid)
@@ -495,6 +504,8 @@ data class AutomationBackup(
     val scope: String,
     val groupName: String? = null,
     val feedUrl: String? = null,
+    val groupNames: List<String> = emptyList(),
+    val feedUrls: List<String> = emptyList(),
     val conditionGroups: List<List<AutomationConditionBackup>> = emptyList(),
     val actions: List<String> = emptyList(),
 )
@@ -543,9 +554,9 @@ data class SavedSearchScopeBackup(
 )
 
 internal const val COLLECTION_BACKUP_FORMAT = "leaffeed.collections"
-internal const val COLLECTION_BACKUP_VERSION = 5
+internal const val COLLECTION_BACKUP_VERSION = 6
 internal const val AUTOMATION_BACKUP_FORMAT = "leaffeed.automations"
-internal const val AUTOMATION_BACKUP_VERSION = 1
+internal const val AUTOMATION_BACKUP_VERSION = 2
 private const val MAX_COLLECTION_ENTRIES = 100_000
 
 private fun List<AutomationRule>.toBackups(
@@ -557,14 +568,14 @@ private fun List<AutomationRule>.toBackups(
             name = rule.name,
             enabled = rule.enabled,
             scope = rule.scope.name,
-            groupName =
-                rule.scopeId
-                    .takeIf { rule.scope == AutomationScope.GROUP }
-                    ?.let { groupsById[it]?.name },
-            feedUrl =
-                rule.scopeId
-                    .takeIf { rule.scope == AutomationScope.FEED }
-                    ?.let { feedsById[it]?.url },
+            groupNames =
+                if (rule.scope == AutomationScope.GROUP) {
+                    rule.scopeIds.mapNotNull { groupsById[it]?.name }
+                } else emptyList(),
+            feedUrls =
+                if (rule.scope == AutomationScope.FEED) {
+                    rule.scopeIds.mapNotNull { feedsById[it]?.url }
+                } else emptyList(),
             conditionGroups =
                 rule.groups.map { group ->
                     group.conditions.map { condition ->
@@ -633,7 +644,9 @@ private fun ArticleCollectionBackup.validate() {
     }
     require(automations.all { automation ->
         automation.name.isNotBlank() && automation.conditionGroups.isNotEmpty() &&
-            automation.conditionGroups.all { it.isNotEmpty() } && automation.actions.isNotEmpty()
+            automation.conditionGroups.all { it.isNotEmpty() } && automation.actions.isNotEmpty() &&
+            automation.groupNames.size <= MAX_COLLECTION_ENTRIES &&
+            automation.feedUrls.size <= MAX_COLLECTION_ENTRIES
     }) { "Reading data backup contains an invalid automation" }
 }
 
@@ -654,7 +667,9 @@ private fun AutomationBackupFile.validate() {
     }
     require(automations.all { automation ->
         automation.name.isNotBlank() && automation.conditionGroups.isNotEmpty() &&
-            automation.conditionGroups.all { it.isNotEmpty() } && automation.actions.isNotEmpty()
+            automation.conditionGroups.all { it.isNotEmpty() } && automation.actions.isNotEmpty() &&
+            automation.groupNames.size <= MAX_COLLECTION_ENTRIES &&
+            automation.feedUrls.size <= MAX_COLLECTION_ENTRIES
     }) { "Automation backup contains an invalid automation" }
 }
 

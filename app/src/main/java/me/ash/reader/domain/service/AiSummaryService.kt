@@ -115,24 +115,6 @@ class AiSummaryService @Inject constructor(
         return result.content
     }
 
-    suspend fun summarizeReport(
-        report: String,
-        forceRefresh: Boolean = false,
-        onUpdate: (String) -> Unit = {},
-    ): String {
-        val settings = settings()
-        val prompt = "You are a concise reading analytics editor. Summarize the supplied subscription report in the user's language. Use only the supplied numbers, identify one useful trend and one concrete cleanup or reading action. Do not invent causes. Keep it under 120 words."
-        val result = cache.getOrPut(
-            accountId = 0,
-            fingerprint = fingerprint("report", report, settings.titleSummary),
-            forceRefresh = forceRefresh,
-        ) {
-            complete("Summarize this subscription report.\n\n$report", prompt, settings.titleSummary, onUpdate)
-        }
-        if (result.fromCache) onUpdate(result.content)
-        return result.content
-    }
-
     private fun fingerprint(task: String, input: String, settings: AiTaskSettings): String =
         listOf(
             CACHE_REQUEST_VERSION,

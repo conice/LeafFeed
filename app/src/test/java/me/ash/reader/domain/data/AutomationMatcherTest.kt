@@ -32,9 +32,16 @@ class AutomationMatcherTest {
     @Test
     fun `disabled and out of scope rules do not match`() {
         val disabled = rule(enabled = false)
-        val otherFeed = rule(scope = AutomationScope.FEED, scopeId = "other")
+        val otherFeed = rule(scope = AutomationScope.FEED, scopeIds = listOf("other", "another"))
 
         assertTrue(AutomationMatcher(listOf(disabled, otherFeed)).matching(candidate()).isEmpty())
+    }
+
+    @Test
+    fun `a rule matches any selected scope target`() {
+        val rule = rule(scope = AutomationScope.FEED, scopeIds = listOf("first", "feed"))
+
+        assertEquals(listOf(rule), AutomationMatcher(listOf(rule)).matching(candidate()))
     }
 
     @Test
@@ -47,7 +54,7 @@ class AutomationMatcherTest {
     private fun rule(
         enabled: Boolean = true,
         scope: AutomationScope = AutomationScope.GLOBAL,
-        scopeId: String = "",
+        scopeIds: List<String> = emptyList(),
         groups: List<AutomationConditionGroup> = listOf(group(condition(AutomationField.TITLE, AutomationOperator.CONTAINS, "Kotlin"))),
     ) = AutomationRule(
         id = "rule",
@@ -56,7 +63,7 @@ class AutomationMatcherTest {
         enabled = enabled,
         position = 0,
         scope = scope,
-        scopeId = scopeId,
+        scopeIds = scopeIds,
         createdAt = 1L,
         groups = groups,
         actions = listOf(AutomationActionType.FILTER),

@@ -13,7 +13,7 @@ class ArticleCollectionBackupTest {
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
 
     @Test
-    fun `v5 backup detects changed reading data`() {
+    fun `v6 backup detects changed reading data`() {
         val backup = ArticleCollectionBackup(
             tags = listOf(ArticleTagLabel("tag", 1, "Saved", null)),
             tagRefs = listOf(ArticleTagCrossRef("article", "tag")),
@@ -50,7 +50,12 @@ class ArticleCollectionBackupTest {
             automations = listOf(
                 AutomationBackup(
                     name = "Filter promotions",
-                    scope = "GLOBAL",
+                    scope = "FEED",
+                    feedUrls =
+                        listOf(
+                            "https://example.com/feed.xml",
+                            "https://example.org/feed.xml",
+                        ),
                     conditionGroups = listOf(
                         listOf(AutomationConditionBackup("TITLE", "CONTAINS", "Promotion"))
                     ),
@@ -71,6 +76,11 @@ class ArticleCollectionBackupTest {
         assertFalse(
             backup.copy(automations = backup.automations.map { it.copy(enabled = false) })
                 .hasValidIntegrityHash(json)
+        )
+        assertFalse(
+            backup.copy(
+                automations = backup.automations.map { it.copy(feedUrls = it.feedUrls.drop(1)) }
+            ).hasValidIntegrityHash(json)
         )
     }
 
@@ -106,7 +116,12 @@ class ArticleCollectionBackupTest {
                     listOf(
                         AutomationBackup(
                             name = "Filter promotions",
-                            scope = "GLOBAL",
+                            scope = "FEED",
+                            feedUrls =
+                                listOf(
+                                    "https://example.com/feed.xml",
+                                    "https://example.org/feed.xml",
+                                ),
                             conditionGroups =
                                 listOf(
                                     listOf(
@@ -127,5 +142,36 @@ class ArticleCollectionBackupTest {
             backup.copy(automations = backup.automations.map { it.copy(enabled = false) })
                 .hasValidIntegrityHash(json)
         )
+        assertFalse(
+            backup.copy(
+                automations = backup.automations.map { it.copy(feedUrls = it.feedUrls.drop(1)) }
+            ).hasValidIntegrityHash(json)
+        )
+    }
+
+    @Test
+    fun `v1 automation backup remains integrity compatible`() {
+        val backup =
+            AutomationBackupFile(
+                version = 1,
+                automations =
+                    listOf(
+                        AutomationBackup(
+                            name = "Legacy rule",
+                            scope = "FEED",
+                            feedUrl = "https://example.com/feed.xml",
+                            conditionGroups =
+                                listOf(
+                                    listOf(
+                                        AutomationConditionBackup("TITLE", "CONTAINS", "Kotlin")
+                                    )
+                                ),
+                            actions = listOf("FILTER"),
+                        )
+                    ),
+            ).withIntegrityHash(json)
+
+        assertTrue(backup.version in 1..AUTOMATION_BACKUP_VERSION)
+        assertTrue(backup.hasValidIntegrityHash(json))
     }
 }

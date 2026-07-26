@@ -1,6 +1,7 @@
 package me.ash.reader.infrastructure.android
 
 import android.app.Application
+import android.app.NotificationManager
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
 import androidx.work.WorkManager
@@ -104,6 +105,9 @@ class AndroidApp : Application(), Configuration.Provider {
             Timber.plant(Timber.DebugTree())
         }
         automationProcessor.start()
+        workManager.cancelUniqueWork("subscription-report-reminder")
+        getSystemService(NotificationManager::class.java)
+            .deleteNotificationChannel("subscription-report")
         applicationScope.launch {
             accountInit()
             workerInit()

@@ -12,6 +12,7 @@ import me.ash.reader.domain.model.article.AutomationConditionEntity
 import me.ash.reader.domain.model.article.AutomationConditionGroupEntity
 import me.ash.reader.domain.model.article.AutomationExecutionEntity
 import me.ash.reader.domain.model.article.AutomationRuleEntity
+import me.ash.reader.domain.model.article.AutomationScopeTargetEntity
 import me.ash.reader.domain.model.article.ArticleNote
 import me.ash.reader.domain.model.article.ArticleTagCrossRef
 import me.ash.reader.domain.model.article.ArticleTagLabel
@@ -31,8 +32,9 @@ import me.ash.reader.domain.repository.AutomationDao
         AutomationActionEntity::class,
         AutomationActionClaimEntity::class,
         AutomationExecutionEntity::class,
+        AutomationScopeTargetEntity::class,
     ],
-    version = 3,
+    version = 4,
 )
 abstract class ArticleCollectionDatabase : RoomDatabase() {
     abstract fun articleCollectionDao(): ArticleCollectionDao
@@ -50,8 +52,24 @@ abstract class ArticleCollectionDatabase : RoomDatabase() {
                 ).addMigrations(
                     MIGRATION_COLLECTIONS_1_2,
                     MIGRATION_COLLECTIONS_2_3,
+                    MIGRATION_COLLECTIONS_3_4,
                 ).build().also { instance = it }
             }
+    }
+}
+
+private object MIGRATION_COLLECTIONS_3_4 : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            """CREATE TABLE IF NOT EXISTS `automation_scope_target` (`ruleId` TEXT NOT NULL, `targetId` TEXT NOT NULL, `position` INTEGER NOT NULL, PRIMARY KEY(`ruleId`, `targetId`), FOREIGN KEY(`ruleId`) REFERENCES `automation_rule`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)"""
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_automation_scope_target_ruleId` ON `automation_scope_target` (`ruleId`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_automation_scope_target_ruleId_position` ON `automation_scope_target` (`ruleId`, `position`)")
+        db.execSQL(
+            """INSERT OR IGNORE INTO `automation_scope_target` (`ruleId`, `targetId`, `position`)
+                SELECT `id`, `scopeId`, 0 FROM `automation_rule`
+                WHERE `scope` != 'GLOBAL' AND `scopeId` != ''"""
+        )
     }
 }
 

@@ -17,6 +17,7 @@ import me.ash.reader.domain.model.article.AutomationExecutionRecord
 import me.ash.reader.domain.model.article.AutomationExecutionStatus
 import me.ash.reader.domain.model.article.AutomationRuleBundle
 import me.ash.reader.domain.model.article.AutomationRuleEntity
+import me.ash.reader.domain.model.article.AutomationScopeTargetEntity
 
 @Dao
 interface AutomationDao {
@@ -50,11 +51,17 @@ interface AutomationDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertActions(actions: List<AutomationActionEntity>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertScopeTargets(targets: List<AutomationScopeTargetEntity>)
+
     @Query("DELETE FROM automation_condition_group WHERE ruleId = :ruleId")
     suspend fun deleteGroups(ruleId: String)
 
     @Query("DELETE FROM automation_action WHERE ruleId = :ruleId")
     suspend fun deleteActions(ruleId: String)
+
+    @Query("DELETE FROM automation_scope_target WHERE ruleId = :ruleId")
+    suspend fun deleteScopeTargets(ruleId: String)
 
     @Query("DELETE FROM automation_rule WHERE id = :ruleId")
     suspend fun deleteRule(ruleId: String)
@@ -71,13 +78,16 @@ interface AutomationDao {
         groups: List<AutomationConditionGroupEntity>,
         conditions: List<AutomationConditionEntity>,
         actions: List<AutomationActionEntity>,
+        targets: List<AutomationScopeTargetEntity>,
     ) {
         if (insertRule(rule) == -1L) updateRule(rule)
         deleteGroups(rule.id)
         deleteActions(rule.id)
+        deleteScopeTargets(rule.id)
         insertGroups(groups)
         insertConditions(conditions)
         insertActions(actions)
+        insertScopeTargets(targets)
     }
 
     @Query(

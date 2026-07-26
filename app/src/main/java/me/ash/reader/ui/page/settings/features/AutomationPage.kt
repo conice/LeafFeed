@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
@@ -130,13 +131,15 @@ class AutomationViewModel @Inject constructor(
 fun AutomationPage(
     onBack: () -> Unit,
     onOpenArticle: (String) -> Unit,
+    initialFeedId: String? = null,
     viewModel: AutomationViewModel = hiltViewModel(),
 ) {
     val rules by viewModel.rules.collectAsStateWithLifecycle()
     val executions by viewModel.executions.collectAsStateWithLifecycle()
     val options by viewModel.scopeOptions.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<AutomationRule?>(null) }
-    var creating by remember { mutableStateOf(false) }
+    var pendingInitialFeedId by remember(initialFeedId) { mutableStateOf(initialFeedId) }
+    var creating by remember(initialFeedId) { mutableStateOf(initialFeedId != null) }
     var failedActivityOnly by remember { mutableStateOf(false) }
     var showAllActivity by remember { mutableStateOf(false) }
     var confirmClearHistory by remember { mutableStateOf(false) }
@@ -150,9 +153,14 @@ fun AutomationPage(
     }
 
     if (creating || editing != null) {
-        val closeEditor = { creating = false; editing = null }
+        val closeEditor = {
+            creating = false
+            editing = null
+            pendingInitialFeedId = null
+        }
         AutomationEditorPage(
             rule = editing,
+            initialFeedId = pendingInitialFeedId.takeIf { creating },
             options = options,
             onDismiss = closeEditor,
             onSave = {
@@ -332,11 +340,20 @@ private const val ACTIVITY_GROUP_WINDOW_MILLIS = 60_000L
 @Composable
 private fun AutomationEditorPage(
     rule: AutomationRule?,
+    initialFeedId: String? = null,
     options: AutomationScopeOptions,
     onDismiss: () -> Unit,
     onSave: (AutomationDraft) -> Unit,
 ) {
-    var draft by remember(rule?.id) { mutableStateOf(rule.toDraft()) }
+    var draft by remember(rule?.id, initialFeedId) {
+        mutableStateOf(
+            rule.toDraft().let { value ->
+                if (rule == null && initialFeedId != null) {
+                    value.copy(scope = AutomationScope.FEED, scopeIds = listOf(initialFeedId))
+                } else value
+            }
+        )
+    }
     val validationError = draft.validationError()
     val targetOptions = if (draft.scope == AutomationScope.GROUP) options.groups else options.feeds
     val toggleAction: (AutomationActionType) -> Unit = { action ->
@@ -385,7 +402,11 @@ private fun AutomationEditorPage(
                     AutomationScope.entries.forEachIndexed { index, scope ->
                         SegmentedButton(
                             selected = draft.scope == scope,
-                            onClick = { draft = draft.copy(scope = scope, scopeId = "") },
+                            onClick = {
+                                if (draft.scope != scope) {
+                                    draft = draft.copy(scope = scope, scopeIds = emptyList())
+                                }
+                            },
                             shape = SegmentedButtonDefaults.itemShape(
                                 index = index,
                                 count = AutomationScope.entries.size,
@@ -396,10 +417,10 @@ private fun AutomationEditorPage(
                 }
                 if (draft.scope != AutomationScope.GLOBAL) {
                     ScopeTargetSelector(
-                        label = if (draft.scope == AutomationScope.GROUP) "Group" else "Feed",
-                        value = targetOptions.firstOrNull { it.id == draft.scopeId }?.name,
+                        label = if (draft.scope == AutomationScope.GROUP) "Groups" else "Feeds",
+                        selectedIds = draft.scopeIds,
                         options = targetOptions,
-                        onSelected = { draft = draft.copy(scopeId = it.id) },
+                        onSelectionChanged = { draft = draft.copy(scopeIds = it) },
                     )
                 }
             }
@@ -680,17 +701,52 @@ private fun <T> EnumMenu(
 @Composable
 private fun ScopeTargetSelector(
     label: String,
-    value: String?,
+    selectedIds: List<String>,
     options: List<AutomationScopeOption>,
-    onSelected: (AutomationScopeOption) -> Unit,
+    onSelectionChanged: (List<String>) -> Unit,
 ) {
     var visible by remember { mutableStateOf(false) }
     var query by remember { mutableStateOf("") }
+    var pendingIds by remember { mutableStateOf(selectedIds) }
+    val selectedOptions = selectedIds.map { id ->
+        options.firstOrNull { it.id == id } ?: AutomationScopeOption(id, id)
+    }
+    if (selectedOptions.isNotEmpty()) {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            selectedOptions.take(5).forEach { option ->
+                FilterChip(
+                    selected = true,
+                    onClick = { onSelectionChanged(selectedIds - option.id) },
+                    label = { Text(option.name, maxLines = 1) },
+                    trailingIcon = {
+                        Icon(Icons.Outlined.Close, contentDescription = "Remove ${option.name}")
+                    },
+                )
+            }
+            if (selectedOptions.size > 5) {
+                Text(
+                    "+${selectedOptions.size - 5} more",
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+        }
+    }
     OutlinedButton(
-        onClick = { query = ""; visible = true },
+        onClick = {
+            query = ""
+            pendingIds = selectedIds
+            visible = true
+        },
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Text("$label: ${value ?: "Select"}", modifier = Modifier.fillMaxWidth())
+        Text(
+            if (selectedIds.isEmpty()) "Select $label" else "$label: ${selectedIds.size} selected",
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
     if (visible) {
         val filtered = options.filter { it.name.contains(query, ignoreCase = true) }
@@ -699,27 +755,53 @@ private fun ScopeTargetSelector(
             title = { Text("Select $label") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (options.size > 8) {
-                        OutlinedTextField(
-                            value = query,
-                            onValueChange = { query = it },
-                            label = { Text("Search") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
+                    OutlinedTextField(
+                        value = query,
+                        onValueChange = { query = it },
+                        label = { Text("Search") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                     LazyColumn(Modifier.fillMaxWidth().heightIn(max = 360.dp)) {
+                        if (filtered.isEmpty()) {
+                            item {
+                                Text(
+                                    "No $label found",
+                                    modifier = Modifier.padding(16.dp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                         items(filtered, key = { it.id }) { option ->
                             TextButton(
-                                onClick = { visible = false; onSelected(option) },
+                                onClick = {
+                                    pendingIds =
+                                        if (option.id in pendingIds) pendingIds - option.id
+                                        else pendingIds + option.id
+                                },
                                 modifier = Modifier.fillMaxWidth(),
-                            ) { Text(option.name, modifier = Modifier.fillMaxWidth()) }
+                            ) {
+                                Checkbox(
+                                    checked = option.id in pendingIds,
+                                    onCheckedChange = null,
+                                )
+                                Text(option.name, modifier = Modifier.weight(1f))
+                            }
                         }
                     }
                 }
             },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = { pendingIds = emptyList() }) { Text("Clear all") }
+                    TextButton(onClick = { visible = false }) { Text("Cancel") }
+                }
+            },
             confirmButton = {
-                TextButton(onClick = { visible = false }) { Text("Cancel") }
+                TextButton(onClick = {
+                    onSelectionChanged(pendingIds)
+                    visible = false
+                }) { Text("Done") }
             },
         )
     }
@@ -727,8 +809,12 @@ private fun ScopeTargetSelector(
 
 private fun AutomationDraft.validationError(): String? {
     if (name.isBlank()) return "Enter a name"
-    if (scope != AutomationScope.GLOBAL && scopeId.isBlank()) {
-        return if (scope == AutomationScope.GROUP) "Select a group" else "Select a feed"
+    if (scope != AutomationScope.GLOBAL && scopeIds.isEmpty()) {
+        return if (scope == AutomationScope.GROUP) {
+            "Select at least one group"
+        } else {
+            "Select at least one feed"
+        }
     }
     if (groups.isEmpty() || groups.any { it.isEmpty() }) return "Add at least one condition"
     groups.forEachIndexed { groupIndex, group ->
@@ -762,8 +848,8 @@ private fun AutomationConditionDraft.valueLabel(): String = when (field) {
 
 private fun AutomationScope.scopeLabel(): String = when (this) {
     AutomationScope.GLOBAL -> "All feeds"
-    AutomationScope.GROUP -> "Group"
-    AutomationScope.FEED -> "Feed"
+    AutomationScope.GROUP -> "Groups"
+    AutomationScope.FEED -> "Feeds"
 }
 
 private fun AutomationRule?.toDraft(): AutomationDraft = if (this == null) {
@@ -778,7 +864,7 @@ private fun AutomationRule?.toDraft(): AutomationDraft = if (this == null) {
         name = name,
         enabled = enabled,
         scope = scope,
-        scopeId = scopeId,
+        scopeIds = scopeIds,
         groups = groups.map { group -> group.conditions.map { AutomationConditionDraft(it.field, it.operator, it.value, it.caseSensitive) } },
         actions = actions.toSet(),
     )
@@ -806,10 +892,19 @@ private fun List<List<AutomationConditionDraft>>.replaceGroup(
 private fun automationDescription(rule: AutomationRule, options: AutomationScopeOptions): String {
     val target = when (rule.scope) {
         AutomationScope.GLOBAL -> "All feeds"
-        AutomationScope.GROUP -> options.groups.firstOrNull { it.id == rule.scopeId }?.name ?: rule.scopeId
-        AutomationScope.FEED -> options.feeds.firstOrNull { it.id == rule.scopeId }?.name ?: rule.scopeId
+        AutomationScope.GROUP -> rule.scopeIds.targetSummary(options.groups)
+        AutomationScope.FEED -> rule.scopeIds.targetSummary(options.feeds)
     }
     return "${rule.scope.displayName()}: $target\n${rule.groups.sumOf { it.conditions.size }} conditions - ${rule.actions.joinToString { it.displayName() }}"
+}
+
+private fun List<String>.targetSummary(options: List<AutomationScopeOption>): String {
+    val names = map { id -> options.firstOrNull { it.id == id }?.name ?: id }
+    return if (names.size <= 3) {
+        names.joinToString()
+    } else {
+        "${names.take(3).joinToString()} +${names.size - 3} more"
+    }
 }
 
 private fun Enum<*>.displayName(): String = name.displayEnumName()

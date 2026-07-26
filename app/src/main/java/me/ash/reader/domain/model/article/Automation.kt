@@ -57,6 +57,25 @@ data class AutomationRuleEntity(
 )
 
 @Entity(
+    tableName = "automation_scope_target",
+    primaryKeys = ["ruleId", "targetId"],
+    foreignKeys = [
+        ForeignKey(
+            entity = AutomationRuleEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["ruleId"],
+            onDelete = ForeignKey.CASCADE,
+        )
+    ],
+    indices = [Index("ruleId"), Index(value = ["ruleId", "position"])],
+)
+data class AutomationScopeTargetEntity(
+    val ruleId: String,
+    val targetId: String,
+    val position: Int = 0,
+)
+
+@Entity(
     tableName = "automation_condition_group",
     foreignKeys = [
         ForeignKey(
@@ -171,6 +190,8 @@ data class AutomationGroupWithConditions(
 
 data class AutomationRuleBundle(
     @androidx.room.Embedded val rule: AutomationRuleEntity,
+    @Relation(parentColumn = "id", entityColumn = "ruleId")
+    val targets: List<AutomationScopeTargetEntity>,
     @Relation(parentColumn = "id", entityColumn = "ruleId", entity = AutomationConditionGroupEntity::class)
     val groups: List<AutomationGroupWithConditions>,
     @Relation(parentColumn = "id", entityColumn = "ruleId")
@@ -194,7 +215,7 @@ data class AutomationRule(
     val enabled: Boolean,
     val position: Int,
     val scope: AutomationScope,
-    val scopeId: String,
+    val scopeIds: List<String>,
     val createdAt: Long,
     val groups: List<AutomationConditionGroup>,
     val actions: List<AutomationActionType>,
@@ -205,7 +226,7 @@ data class AutomationDraft(
     val name: String,
     val enabled: Boolean = true,
     val scope: AutomationScope = AutomationScope.GLOBAL,
-    val scopeId: String = "",
+    val scopeIds: List<String> = emptyList(),
     val groups: List<List<AutomationConditionDraft>>,
     val actions: Set<AutomationActionType>,
 )
@@ -256,7 +277,7 @@ internal fun AutomationRuleBundle.toDomain(): AutomationRule =
         enabled = rule.enabled,
         position = rule.position,
         scope = enumValueOrDefault(rule.scope, AutomationScope.GLOBAL),
-        scopeId = rule.scopeId,
+        scopeIds = targets.sortedBy { it.position }.map { it.targetId },
         createdAt = rule.createdAt,
         groups =
             groups.sortedBy { it.group.position }.map { bundle ->
