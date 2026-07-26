@@ -109,8 +109,11 @@ fun BackupAndMigrationPage(
                                     context.getString(
                                         R.string.reading_data_imported,
                                         imported.tags,
+                                        imported.tagRefs,
                                         imported.notes,
                                         imported.savedSearches,
+                                        imported.readingStates,
+                                        imported.skipped,
                                     )
                                 },
                                 onFailure = { context.getString(R.string.import_failed) },

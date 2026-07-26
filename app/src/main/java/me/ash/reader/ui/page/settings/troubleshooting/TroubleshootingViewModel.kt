@@ -166,7 +166,7 @@ constructor(
     ) {
         viewModelScope.launch(ioDispatcher) {
             val result = runCatching {
-                require(content.size <= 10 * 1024 * 1024) { "Reading data backup is too large" }
+                require(content.size <= 50 * 1024 * 1024) { "Reading data backup is too large" }
                 articleCollectionRepository.importBackup(content.toString(Charsets.UTF_8))
             }
             withContext(mainDispatcher) { callback(result) }

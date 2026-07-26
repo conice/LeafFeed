@@ -2,7 +2,9 @@ package me.ash.reader.domain.model.article
 
 import androidx.room.Entity
 import androidx.room.Embedded
+import androidx.room.ColumnInfo
 import androidx.room.Index
+import java.util.Date
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -68,4 +70,32 @@ data class SavedSearch(
     val groupId: String? = null,
     val feedId: String? = null,
     val createdAt: Long = System.currentTimeMillis(),
+)
+
+data class ArticleBackupIdentityRow(
+    val articleId: String,
+    val feedUrl: String,
+    val articleLink: String,
+)
+
+data class ArticleReadingStateRow(
+    val articleId: String,
+    val feedUrl: String,
+    val articleLink: String,
+    val isUnread: Boolean,
+    val isStarred: Boolean,
+    val isReadLater: Boolean,
+    val lastOpenedAt: Date?,
+    val playbackPositionMs: Long,
+    val isPlayed: Boolean,
+)
+
+data class ArticleReadingStateUpdate(
+    @ColumnInfo(name = "id") val articleId: String,
+    val isUnread: Boolean,
+    val isStarred: Boolean,
+    val isReadLater: Boolean,
+    val lastOpenedAt: Date?,
+    val playbackPositionMs: Long,
+    val isPlayed: Boolean,
 )

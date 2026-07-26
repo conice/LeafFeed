@@ -1,6 +1,7 @@
 package me.ash.reader.ui.ext
 
 import me.ash.reader.infrastructure.preference.AiPreferenceKeys
+import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -23,6 +24,57 @@ class DataStoreExportTest {
             )
 
         aiKeys.forEach { key -> assertTrue(key.name in PreferencesKey.keys) }
+    }
+
+    @Test
+    fun `registers every portable feature preference for import`() {
+        val featureKeys =
+            listOf(
+                FeaturePreferenceKeys.markReadOnOpen,
+                FeaturePreferenceKeys.markReadAtEnd,
+                FeaturePreferenceKeys.showHighlightMatches,
+                FeaturePreferenceKeys.showArticleTags,
+                FeaturePreferenceKeys.showNotesAction,
+                FeaturePreferenceKeys.showReadLaterIcon,
+                FeaturePreferenceKeys.preferFullContent,
+                FeaturePreferenceKeys.aiStreamingEnabled,
+                FeaturePreferenceKeys.aiTimeoutSeconds,
+                FeaturePreferenceKeys.filterRulesEnabled,
+                FeaturePreferenceKeys.highlightRulesEnabled,
+                FeaturePreferenceKeys.ruleMatchDescription,
+                FeaturePreferenceKeys.ruleFailureMode,
+                FeaturePreferenceKeys.ruleConflictMode,
+                FeaturePreferenceKeys.podcastDefaultSpeed,
+                FeaturePreferenceKeys.podcastRewindSeconds,
+                FeaturePreferenceKeys.podcastForwardSeconds,
+                FeaturePreferenceKeys.podcastAutoPlayNext,
+                FeaturePreferenceKeys.podcastMarkPlayed,
+                FeaturePreferenceKeys.podcastRememberProgress,
+                FeaturePreferenceKeys.podcastAutoDownload,
+                FeaturePreferenceKeys.podcastWifiOnly,
+                FeaturePreferenceKeys.podcastDownloadScope,
+                FeaturePreferenceKeys.podcastCacheMb,
+                FeaturePreferenceKeys.podcastRetentionDays,
+                FeaturePreferenceKeys.podcastAutoTranscript,
+                FeaturePreferenceKeys.podcastShowEpisodeMetadata,
+                FeaturePreferenceKeys.notificationsEnabled,
+                FeaturePreferenceKeys.notificationMaxArticles,
+                FeaturePreferenceKeys.notificationOpenArticle,
+                FeaturePreferenceKeys.notificationHighlightsOnly,
+                FeaturePreferenceKeys.notificationExcludeFiltered,
+                FeaturePreferenceKeys.notificationPodcastEpisodes,
+                FeaturePreferenceKeys.deduplicationMode,
+                FeaturePreferenceKeys.cleanupConfirmation,
+                FeaturePreferenceKeys.syncFullContent,
+                FeaturePreferenceKeys.aiContentScope,
+                FeaturePreferenceKeys.aiIncludeArticleLink,
+                FeaturePreferenceKeys.diagnosticIncludeFeedUrls,
+            )
+
+        featureKeys.forEach { key ->
+            assertTrue("Missing preference registration: ${key.name}", key.name in PreferencesKey.keys)
+        }
+        assertTrue(FeaturePreferenceKeys.reportRange.name !in PreferencesKey.keys)
     }
 
     @Test

@@ -1,7 +1,8 @@
 package me.ash.reader.domain.data
 
-import java.util.UUID
 import java.security.MessageDigest
+import java.util.Date
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
@@ -9,19 +10,28 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import me.ash.reader.domain.model.article.ArticleNote
+import me.ash.reader.domain.model.article.ArticleBackupIdentityRow
+import me.ash.reader.domain.model.article.ArticleReadingStateUpdate
 import me.ash.reader.domain.model.article.ArticleTagCrossRef
 import me.ash.reader.domain.model.article.ArticleTagLabel
 import me.ash.reader.domain.model.article.ArticleTagGroup
 import me.ash.reader.domain.model.article.SavedSearch
 import me.ash.reader.domain.repository.ArticleCollectionDao
 import me.ash.reader.domain.repository.ArticleDao
+import me.ash.reader.domain.repository.FeedDao
+import me.ash.reader.domain.repository.GroupDao
 import me.ash.reader.domain.service.AccountService
+import me.ash.reader.ui.ext.dollarLast
+import me.ash.reader.ui.ext.getDefaultGroupId
+import me.ash.reader.ui.ext.spacerDollar
 
 class ArticleCollectionRepository
 @Inject
 constructor(
     private val dao: ArticleCollectionDao,
     private val articleDao: ArticleDao,
+    private val feedDao: FeedDao,
+    private val groupDao: GroupDao,
     private val accountService: AccountService,
 ) {
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
@@ -140,12 +150,66 @@ constructor(
 
     suspend fun exportBackup(): String {
         val accountId = accountService.getCurrentAccountId()
+        val tags = dao.queryTags(accountId)
+        val tagRefs = dao.queryTagRefs(accountId)
+        val notes = dao.queryNotesByAccount(accountId)
+        val savedSearches = dao.querySavedSearches(accountId)
+        val readingStateRows = articleDao.queryReadingStatesForBackup(accountId)
+        val stateIdentities =
+            readingStateRows.map {
+                ArticleBackupIdentityRow(it.articleId, it.feedUrl, it.articleLink)
+            }
+        val referencedArticleIds =
+            buildSet {
+                tagRefs.forEach { add(it.articleId) }
+                notes.forEach { add(it.articleId) }
+            }
+        val otherIdentities =
+            referencedArticleIds
+                .minus(stateIdentities.mapTo(mutableSetOf()) { it.articleId })
+                .chunked(ARTICLE_QUERY_CHUNK_SIZE)
+                .flatMap { articleDao.queryBackupIdentities(accountId, it) }
+        val articleIdentities =
+            (stateIdentities + otherIdentities)
+                .distinctBy { it.articleId }
+                .map {
+                    BackupArticleIdentity(
+                        articleId = it.articleId,
+                        sourceArticleId = it.articleId.dollarLast(),
+                        feedUrl = it.feedUrl,
+                        articleLink = it.articleLink,
+                    )
+                }
+        val groupsById = groupDao.queryAll(accountId).associateBy { it.id }
+        val feedsById = feedDao.queryAll(accountId).associateBy { it.id }
         val backup =
             ArticleCollectionBackup(
-                tags = dao.queryTags(accountId),
-                tagRefs = dao.queryTagRefs(accountId),
-                notes = dao.queryNotesByAccount(accountId),
-                savedSearches = dao.querySavedSearches(accountId),
+                tags = tags,
+                tagRefs = tagRefs,
+                notes = notes,
+                savedSearches = savedSearches,
+                articles = articleIdentities,
+                readingStates =
+                    readingStateRows.map {
+                        ArticleReadingStateBackup(
+                            articleId = it.articleId,
+                            isUnread = it.isUnread,
+                            isStarred = it.isStarred,
+                            isReadLater = it.isReadLater,
+                            lastOpenedAt = it.lastOpenedAt?.time,
+                            playbackPositionMs = it.playbackPositionMs,
+                            isPlayed = it.isPlayed,
+                        )
+                    },
+                savedSearchScopes =
+                    savedSearches.map { search ->
+                        SavedSearchScopeBackup(
+                            searchId = search.id,
+                            groupName = search.groupId?.let { groupsById[it]?.name },
+                            isDefaultGroup = search.groupId == accountId.getDefaultGroupId(),
+                            feedUrl = search.feedId?.let { feedsById[it]?.url },
+                        )
+                    },
             )
         return json.encodeToString(backup.withIntegrityHash(json))
     }
@@ -167,47 +231,141 @@ constructor(
         }
         backup.validate()
         val accountId = accountService.getCurrentAccountId()
-        val existingTagsByName = dao.queryTags(accountId).associateBy { it.name }
+        val backupArticleIds =
+            buildSet {
+                backup.tagRefs.forEach { add(it.articleId) }
+                backup.notes.forEach { add(it.articleId) }
+                backup.readingStates.forEach { add(it.articleId) }
+            }
+        val candidateArticleIds =
+            backupArticleIds +
+                backup.articles.mapNotNull { identity ->
+                    identity.sourceArticleId?.let { accountId spacerDollar it }
+                }
+        val currentById =
+            candidateArticleIds
+                .chunked(ARTICLE_QUERY_CHUNK_SIZE)
+                .flatMap { articleDao.queryBackupIdentities(accountId, it) }
+                .associateBy { it.articleId }
+        val backupIdentitiesById = backup.articles.associateBy { it.articleId }
+        val backupLinks = backup.articles.map { it.articleLink }.filter { it.isNotBlank() }.distinct()
+        val currentByPortableIdentity =
+            backupLinks
+                .chunked(ARTICLE_QUERY_CHUNK_SIZE)
+                .flatMap { articleDao.queryBackupIdentitiesByLinks(accountId, it) }
+                .associateBy { it.portableKey() }
+        fun resolveArticleId(sourceArticleId: String): String? =
+            currentById[sourceArticleId]?.articleId
+                ?: backupIdentitiesById[sourceArticleId]?.let { identity ->
+                    identity.sourceArticleId
+                        ?.let { accountId spacerDollar it }
+                        ?.let(currentById::get)
+                        ?.articleId
+                        ?: identity
+                            .portableKey()
+                            .let(currentByPortableIdentity::get)
+                            ?.articleId
+                }
+
+        val existingTags = dao.queryTags(accountId)
+        val existingTagsByName = existingTags.associateBy { it.name }
         val importedToLocalTagId = mutableMapOf<String, String>()
         val tags = backup.tags.map { imported ->
             val existing = existingTagsByName[imported.name]
             val local = if (existing != null) {
                 existing.copy(color = imported.color ?: existing.color)
             } else {
-                imported.copy(accountId = accountId)
+                imported.copy(
+                    id = portableImportedId("tag", accountId, imported.id),
+                    accountId = accountId,
+                )
             }
             importedToLocalTagId[imported.id] = local.id
             local
         }.distinctBy { it.id }
-        val articleIds = backup.tagRefs.map { it.articleId }.distinct()
-        val existingArticleIds = articleIds
-            .chunked(500)
-            .flatMap { articleDao.queryExistingIds(accountId, it) }
-            .toSet()
         val refs = backup.tagRefs.mapNotNull { ref ->
             val tagId = importedToLocalTagId[ref.tagId] ?: return@mapNotNull null
-            ref.copy(tagId = tagId).takeIf { it.articleId in existingArticleIds }
+            val articleId = resolveArticleId(ref.articleId) ?: return@mapNotNull null
+            ref.copy(articleId = articleId, tagId = tagId)
         }.distinctBy { it.articleId to it.tagId }
-        val noteArticleIds = backup.notes.map { it.articleId }.distinct()
-        val existingNoteArticleIds = noteArticleIds
-            .chunked(500)
-            .flatMap { articleDao.queryExistingIds(accountId, it) }
-            .toSet()
-        val notes = backup.notes
-            .filter { it.articleId in existingNoteArticleIds }
-            .map { it.copy(accountId = accountId) }
-        val searches = backup.savedSearches.map { it.copy(accountId = accountId) }
+        val existingNoteIds = dao.queryNotesByAccount(accountId).mapTo(mutableSetOf()) { it.id }
+        val notes = backup.notes.mapNotNull { imported ->
+            val articleId = resolveArticleId(imported.articleId) ?: return@mapNotNull null
+            imported.copy(
+                id =
+                    imported.id.takeIf { it in existingNoteIds }
+                        ?: portableImportedId("note", accountId, imported.id),
+                articleId = articleId,
+                accountId = accountId,
+            )
+        }
+        val groupsById = groupDao.queryAll(accountId).associateBy { it.id }
+        val groupsByName = groupsById.values.associateBy { it.name }
+        val feedsById = feedDao.queryAll(accountId).associateBy { it.id }
+        val feedsByUrl = feedsById.values.associateBy { it.url }
+        val scopesBySearchId = backup.savedSearchScopes.associateBy { it.searchId }
+        val existingSearchIds =
+            dao.querySavedSearches(accountId).mapTo(mutableSetOf()) { it.id }
+        val searches = backup.savedSearches.mapNotNull { imported ->
+            val scope = scopesBySearchId[imported.id]
+            val groupId =
+                when {
+                    imported.groupId == null -> null
+                    scope?.isDefaultGroup == true ->
+                        accountId.getDefaultGroupId().takeIf(groupsById::containsKey)
+                    scope?.groupName != null -> groupsByName[scope.groupName]?.id
+                    else -> imported.groupId.takeIf(groupsById::containsKey)
+                }
+            if (imported.groupId != null && groupId == null) return@mapNotNull null
+            val feedId =
+                when {
+                    imported.feedId == null -> null
+                    scope?.feedUrl != null -> feedsByUrl[scope.feedUrl]?.id
+                    else -> imported.feedId.takeIf(feedsById::containsKey)
+                }
+            if (imported.feedId != null && feedId == null) return@mapNotNull null
+            imported.copy(
+                id =
+                    imported.id.takeIf { it in existingSearchIds }
+                        ?: portableImportedId("search", accountId, imported.id),
+                accountId = accountId,
+                groupId = groupId,
+                feedId = feedId,
+            )
+        }
+        val readingStates =
+            backup.readingStates.mapNotNull { state ->
+                val articleId = resolveArticleId(state.articleId) ?: return@mapNotNull null
+                ArticleReadingStateUpdate(
+                    articleId = articleId,
+                    isUnread = state.isUnread,
+                    isStarred = state.isStarred,
+                    isReadLater = state.isReadLater,
+                    lastOpenedAt = state.lastOpenedAt?.let(::Date),
+                    playbackPositionMs = state.playbackPositionMs.coerceAtLeast(0L),
+                    isPlayed = state.isPlayed,
+                )
+            }.distinctBy { it.articleId }
         dao.importCollections(tags, refs, notes, searches)
+        articleDao.restoreReadingStates(readingStates)
+        val skipped =
+            (backup.tagRefs.size - refs.size) +
+                (backup.notes.size - notes.size) +
+                (backup.savedSearches.size - searches.size) +
+                (backup.readingStates.size - readingStates.size)
         return ArticleCollectionImportResult(
             tags = tags.size,
             tagRefs = refs.size,
             notes = notes.size,
             savedSearches = searches.size,
+            readingStates = readingStates.size,
+            skipped = skipped,
         )
     }
 
     private companion object {
-        const val MAX_BACKUP_CHARS = 10 * 1024 * 1024
+        const val MAX_BACKUP_CHARS = 50 * 1024 * 1024
+        const val ARTICLE_QUERY_CHUNK_SIZE = 500
     }
 }
 
@@ -220,10 +378,40 @@ data class ArticleCollectionBackup(
     val tagRefs: List<ArticleTagCrossRef> = emptyList(),
     val notes: List<ArticleNote> = emptyList(),
     val savedSearches: List<SavedSearch> = emptyList(),
+    val articles: List<BackupArticleIdentity> = emptyList(),
+    val readingStates: List<ArticleReadingStateBackup> = emptyList(),
+    val savedSearchScopes: List<SavedSearchScopeBackup> = emptyList(),
+)
+
+@Serializable
+data class BackupArticleIdentity(
+    val articleId: String,
+    val feedUrl: String,
+    val articleLink: String,
+    val sourceArticleId: String? = null,
+)
+
+@Serializable
+data class ArticleReadingStateBackup(
+    val articleId: String,
+    val isUnread: Boolean = true,
+    val isStarred: Boolean = false,
+    val isReadLater: Boolean = false,
+    val lastOpenedAt: Long? = null,
+    val playbackPositionMs: Long = 0L,
+    val isPlayed: Boolean = false,
+)
+
+@Serializable
+data class SavedSearchScopeBackup(
+    val searchId: String,
+    val groupName: String? = null,
+    val isDefaultGroup: Boolean = false,
+    val feedUrl: String? = null,
 )
 
 internal const val COLLECTION_BACKUP_FORMAT = "leaffeed.collections"
-internal const val COLLECTION_BACKUP_VERSION = 2
+internal const val COLLECTION_BACKUP_VERSION = 3
 private const val MAX_COLLECTION_ENTRIES = 100_000
 
 internal fun ArticleCollectionBackup.withIntegrityHash(json: Json): ArticleCollectionBackup =
@@ -244,6 +432,15 @@ private fun ArticleCollectionBackup.validate() {
     require(savedSearches.size <= MAX_COLLECTION_ENTRIES) {
         "Too many saved searches in reading data backup"
     }
+    require(articles.size <= MAX_COLLECTION_ENTRIES) {
+        "Too many article identities in reading data backup"
+    }
+    require(readingStates.size <= MAX_COLLECTION_ENTRIES) {
+        "Too many reading states in reading data backup"
+    }
+    require(savedSearchScopes.size <= MAX_COLLECTION_ENTRIES) {
+        "Too many saved search scopes in reading data backup"
+    }
     require(tags.all { it.id.isNotBlank() && it.name.isNotBlank() }) {
         "Reading data backup contains an invalid tag"
     }
@@ -256,7 +453,24 @@ private fun ArticleCollectionBackup.validate() {
     require(savedSearches.all { it.id.isNotBlank() && it.name.isNotBlank() && it.query.isNotBlank() }) {
         "Reading data backup contains an invalid saved search"
     }
+    require(articles.all { it.articleId.isNotBlank() }) {
+        "Reading data backup contains an invalid article identity"
+    }
+    require(readingStates.all { it.articleId.isNotBlank() && it.playbackPositionMs >= 0L }) {
+        "Reading data backup contains an invalid reading state"
+    }
+    require(savedSearchScopes.all { it.searchId.isNotBlank() }) {
+        "Reading data backup contains an invalid saved search scope"
+    }
 }
+
+private fun BackupArticleIdentity.portableKey(): Pair<String, String> = feedUrl to articleLink
+
+private fun ArticleBackupIdentityRow.portableKey(): Pair<String, String> = feedUrl to articleLink
+
+private fun portableImportedId(kind: String, accountId: Int, sourceId: String): String =
+    UUID.nameUUIDFromBytes("LeafFeed:$kind:$accountId:$sourceId".toByteArray(Charsets.UTF_8))
+        .toString()
 
 @OptIn(ExperimentalStdlibApi::class)
 private fun ArticleCollectionBackup.canonicalSha256(json: Json): String =
@@ -269,4 +483,6 @@ data class ArticleCollectionImportResult(
     val tagRefs: Int,
     val notes: Int,
     val savedSearches: Int,
+    val readingStates: Int = 0,
+    val skipped: Int = 0,
 )

@@ -13,16 +13,64 @@ class ArticleCollectionBackupTest {
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
 
     @Test
-    fun `v2 backup detects changed content`() {
+    fun `v3 backup detects changed reading state`() {
         val backup = ArticleCollectionBackup(
             tags = listOf(ArticleTagLabel("tag", 1, "Saved", null)),
             tagRefs = listOf(ArticleTagCrossRef("article", "tag")),
             notes = listOf(ArticleNote("note", "article", 1, "quote", "note", 1, 1)),
             savedSearches = listOf(SavedSearch("search", 1, "Saved", "kotlin", 0)),
+            articles =
+                listOf(
+                    BackupArticleIdentity(
+                        articleId = "article",
+                        feedUrl = "https://example.com/feed.xml",
+                        articleLink = "https://example.com/article",
+                        sourceArticleId = "source-article",
+                    )
+                ),
+            readingStates =
+                listOf(
+                    ArticleReadingStateBackup(
+                        articleId = "article",
+                        isUnread = false,
+                        isStarred = true,
+                        isReadLater = true,
+                        lastOpenedAt = 100L,
+                        playbackPositionMs = 200L,
+                        isPlayed = true,
+                    )
+                ),
+            savedSearchScopes =
+                listOf(
+                    SavedSearchScopeBackup(
+                        searchId = "search",
+                        feedUrl = "https://example.com/feed.xml",
+                    )
+                ),
         ).withIntegrityHash(json)
 
         assertTrue(backup.hasValidIntegrityHash(json))
-        assertFalse(backup.copy(notes = emptyList()).hasValidIntegrityHash(json))
+        assertFalse(
+            backup
+                .copy(
+                    readingStates =
+                        backup.readingStates.map { it.copy(playbackPositionMs = 201L) }
+                )
+                .hasValidIntegrityHash(json)
+        )
+    }
+
+    @Test
+    fun `v2 backup remains integrity compatible`() {
+        val backup =
+            ArticleCollectionBackup(
+                    version = 2,
+                    notes = listOf(ArticleNote("note", "article", 1, "quote", "note", 1, 1)),
+                )
+                .withIntegrityHash(json)
+
+        assertTrue(backup.version in 1..COLLECTION_BACKUP_VERSION)
+        assertTrue(backup.hasValidIntegrityHash(json))
     }
 
     @Test

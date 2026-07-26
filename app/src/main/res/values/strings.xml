@@ -323,7 +323,7 @@
     <string name="saved_searches">Saved searches</string>
     <string name="export_reading_data">Export reading data</string>
     <string name="import_reading_data">Import reading data</string>
-    <string name="reading_data_imported">Imported %1$d tags, %2$d notes, and %3$d saved searches</string>
+    <string name="reading_data_imported">Imported %1$d tags, %2$d tag links, %3$d notes, %4$d saved searches, and %5$d article states; skipped %6$d unmatched items</string>
     <string name="touch_to_play_video">Tap to play a video</string>
     <string name="text">Text</string>
     <string name="font_size">Font size</string>
