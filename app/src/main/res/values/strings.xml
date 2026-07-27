@@ -297,6 +297,8 @@
     <string name="share">Share</string>
     <string name="add_to_read_later">Add to read later</string>
     <string name="remove_from_read_later">Remove from read later</string>
+    <string name="remove_read_from_read_later">Remove read articles</string>
+    <string name="remove_read_from_read_later_tips">Remove all read articles in the current view from Read later? The articles will remain in their feeds.</string>
     <string name="read_later">Read later</string>
     <string name="retry">Retry</string>
     <string name="add_note">Add note</string>

@@ -178,8 +178,11 @@ fun DataPrivacySettingsPage(
     val context = LocalContext.current
     val viewModel: CacheSettingsViewModel = hiltViewModel()
     val cacheUsage by viewModel.usage.collectAsStateWithLifecycle()
+    val storageOperationInProgress by viewModel.operationInProgress.collectAsStateWithLifecycle()
     var confirmClearAi by remember { mutableStateOf(false) }
     var confirmClearReader by remember { mutableStateOf(false) }
+    var confirmCleanArticles by remember { mutableStateOf(false) }
+    var confirmOptimizeDatabase by remember { mutableStateOf(false) }
     FeatureSettingsPage(title = "Data and privacy", onBack = onBack) { settings, write ->
         section("Synchronization and storage")
         choice("Duplicate detection", settings.deduplicationMode, listOf("Article ID", "Normalized link", "Link, title and date")) {
@@ -192,7 +195,11 @@ fun DataPrivacySettingsPage(
             write(FeaturePreferenceKeys.aiContentScope, it)
         }
         toggle("Include the article link", settings.aiIncludeArticleLink) { write(FeaturePreferenceKeys.aiIncludeArticleLink, it) }
-        action("Clear AI summary cache", "${cacheUsage.aiFiles} files, ${formatBytes(cacheUsage.aiBytes)}") {
+        action(
+            "Clear AI summary cache",
+            "${cacheUsage.aiFiles} files, ${formatBytes(cacheUsage.aiBytes)}",
+            enabled = !storageOperationInProgress,
+        ) {
             if (settings.cleanupConfirmation) confirmClearAi = true
             else viewModel.clearAiSummaryCache { success ->
                 context.showToast(if (success) "AI summary cache cleared" else "Unable to clear AI summary cache")
@@ -200,12 +207,48 @@ fun DataPrivacySettingsPage(
         }
 
         section("Cache controls")
-        action("Clear parsed article cache", "${cacheUsage.readerFiles} files, ${formatBytes(cacheUsage.readerBytes)}") {
+        info("Database storage", formatBytes(cacheUsage.databaseBytes))
+        action(
+            "Clear temporary cache",
+            "${cacheUsage.temporaryFiles} files, ${formatBytes(cacheUsage.temporaryBytes)}",
+            enabled = !storageOperationInProgress,
+        ) {
+            viewModel.clearTemporaryCache { success ->
+                context.showToast(
+                    if (success) "Temporary cache cleared" else "Unable to clear temporary cache"
+                )
+            }
+        }
+        action(
+            "Clear parsed article cache",
+            "${cacheUsage.readerFiles} files, ${formatBytes(cacheUsage.readerBytes)}",
+            enabled = !storageOperationInProgress,
+        ) {
             if (settings.cleanupConfirmation) confirmClearReader = true
             else viewModel.clearReaderCache { success ->
                 context.showToast(if (success) "Article cache cleared" else "Unable to clear article cache")
             }
         }
+        action(
+            "Clean up old read articles",
+            "Uses account retention; keeps unread, starred and Read later articles",
+            enabled = !storageOperationInProgress,
+        ) {
+            if (settings.cleanupConfirmation) confirmCleanArticles = true
+            else viewModel.cleanOldReadArticles { result ->
+                context.showToast(
+                    result.fold(
+                        onSuccess = { "$it old articles removed" },
+                        onFailure = { "Unable to clean up old articles" },
+                    )
+                )
+            }
+        }
+        action(
+            "Optimize database",
+            "Reclaim unused space after cleanup",
+            enabled = !storageOperationInProgress,
+        ) { confirmOptimizeDatabase = true }
 
         section("Backups")
         action(
@@ -244,6 +287,39 @@ fun DataPrivacySettingsPage(
                 confirmClearReader = false
                 viewModel.clearReaderCache { success ->
                     context.showToast(if (success) "Article cache cleared" else "Unable to clear article cache")
+                }
+            },
+        )
+    }
+    if (confirmCleanArticles) {
+        ConfirmationDialog(
+            title = "Clean up old read articles?",
+            text = "Articles older than the account retention period will be removed. Unread, starred and Read later articles are preserved.",
+            onDismiss = { confirmCleanArticles = false },
+            onConfirm = {
+                confirmCleanArticles = false
+                viewModel.cleanOldReadArticles { result ->
+                    context.showToast(
+                        result.fold(
+                            onSuccess = { "$it old articles removed" },
+                            onFailure = { "Unable to clean up old articles" },
+                        )
+                    )
+                }
+            },
+        )
+    }
+    if (confirmOptimizeDatabase) {
+        ConfirmationDialog(
+            title = "Optimize database?",
+            text = "Synchronization and search may pause while unused database space is reclaimed.",
+            onDismiss = { confirmOptimizeDatabase = false },
+            onConfirm = {
+                confirmOptimizeDatabase = false
+                viewModel.optimizeDatabases { result ->
+                    context.showToast(
+                        if (result.isSuccess) "Database optimized" else "Unable to optimize database"
+                    )
                 }
             },
         )
@@ -321,8 +397,21 @@ private class FeaturePageScope(
         )
     }
 
-    @Composable fun action(title: String, description: String, onClick: () -> Unit) {
-        SettingItem(title = title, desc = description, onClick = onClick) {}
+    @Composable fun action(
+        title: String,
+        description: String,
+        onClick: () -> Unit,
+    ) {
+        action(title, description, enabled = true, onClick = onClick)
+    }
+
+    @Composable fun action(
+        title: String,
+        description: String,
+        enabled: Boolean,
+        onClick: () -> Unit,
+    ) {
+        SettingItem(enabled = enabled, title = title, desc = description, onClick = onClick) {}
     }
 
     @Composable fun info(title: String, description: String) {

@@ -36,7 +36,9 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.outlined.BookmarkRemove
 import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
@@ -211,6 +213,7 @@ fun FlowPage(
     var markAsRead by remember { mutableStateOf(false) }
     var onSearch by rememberSaveable { mutableStateOf(false) }
     var selectedSavedSearchId by rememberSaveable { mutableStateOf<String?>(null) }
+    var clearReadLaterDialogVisible by rememberSaveable { mutableStateOf(false) }
 
     val onHistoryAction: () -> Unit = {
         navigateToReadingHistory(
@@ -522,11 +525,13 @@ fun FlowPage(
                                     isUnread = filterUiState.filter.isUnread(),
                                     isAll = filterUiState.filter.isAll(),
                                     isStarred = filterUiState.filter.isStarred(),
+                                    isReadLater = filterUiState.filter.isReadLater(),
                                     searchActive = onSearch,
                                     markAsReadActive = markAsRead,
                                     onHistory = onHistoryAction,
                                     onAiSummary = viewModel::summarizeCurrentTitles,
                                     onMarkAllRead = onMarkAllReadAction,
+                                    onClearReadLater = { clearReadLaterDialogVisible = true },
                                     onSearch = onSearchAction,
                                     onRefresh = viewModel::sync,
                                 )
@@ -977,6 +982,34 @@ fun FlowPage(
             },
         onRegenerate = { viewModel.summarizeCurrentTitles(forceRefresh = true) },
     )
+    if (clearReadLaterDialogVisible) {
+        AlertDialog(
+            onDismissRequest = { clearReadLaterDialogVisible = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Outlined.BookmarkRemove,
+                    contentDescription = null,
+                )
+            },
+            title = { Text(stringResource(R.string.remove_read_from_read_later)) },
+            text = { Text(stringResource(R.string.remove_read_from_read_later_tips)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        clearReadLaterDialogVisible = false
+                        viewModel.clearReadArticlesFromReadLater(filterUiState)
+                    },
+                ) {
+                    Text(stringResource(R.string.remove))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { clearReadLaterDialogVisible = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
 }
 
 @Composable
@@ -1005,6 +1038,7 @@ private fun EmptyFlowState(filter: Filter, isSearch: Boolean) {
             style = MaterialTheme.typography.bodyLarge,
         )
     }
+
 }
 
 @Composable

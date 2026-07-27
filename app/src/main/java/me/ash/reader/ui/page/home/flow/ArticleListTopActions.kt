@@ -2,6 +2,7 @@ package me.ash.reader.ui.page.home.flow
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.BookmarkRemove
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -34,11 +35,13 @@ fun ArticleListTopActions(
     isUnread: Boolean,
     isAll: Boolean,
     isStarred: Boolean,
+    isReadLater: Boolean,
     searchActive: Boolean,
     markAsReadActive: Boolean,
     onHistory: () -> Unit,
     onAiSummary: () -> Unit,
     onMarkAllRead: () -> Unit,
+    onClearReadLater: () -> Unit,
     onSearch: () -> Unit,
     onRefresh: () -> Unit,
 ) {
@@ -62,6 +65,7 @@ fun ArticleListTopActions(
     val layout = remember(actions, availableIds, capacity) {
         resolveNavigationActionLayout(actions, availableIds, capacity)
     }
+    val showClearReadLater = isReadLater && !searchActive
     var menuExpanded by remember { mutableStateOf(false) }
 
     layout.toolbar.forEach { action ->
@@ -79,7 +83,7 @@ fun ArticleListTopActions(
             },
         )
     }
-    if (layout.overflow.isNotEmpty()) {
+    if (layout.overflow.isNotEmpty() || showClearReadLater) {
         FeedbackIconButton(
             modifier = Modifier.size(iconSize.dp),
             imageVector = Icons.Rounded.MoreVert,
@@ -88,7 +92,7 @@ fun ArticleListTopActions(
             onClick = { menuExpanded = true },
         )
         DropdownMenu(
-            expanded = menuExpanded && layout.overflow.isNotEmpty(),
+            expanded = menuExpanded && (layout.overflow.isNotEmpty() || showClearReadLater),
             onDismissRequest = { menuExpanded = false },
         ) {
             layout.overflow.forEach { action ->
@@ -104,6 +108,16 @@ fun ArticleListTopActions(
                             NavigationItemIds.SEARCH -> onSearch()
                             NavigationItemIds.REFRESH -> onRefresh()
                         }
+                    },
+                )
+            }
+            if (showClearReadLater) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.remove_read_from_read_later)) },
+                    leadingIcon = { Icon(Icons.Outlined.BookmarkRemove, null) },
+                    onClick = {
+                        menuExpanded = false
+                        onClearReadLater()
                     },
                 )
             }

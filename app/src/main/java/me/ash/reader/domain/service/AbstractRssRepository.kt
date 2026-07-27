@@ -156,6 +156,20 @@ abstract class AbstractRssRepository(
         articleDao.markAsReadLaterByArticleId(accountId, articleId, isReadLater)
     }
 
+    suspend fun clearReadArticlesFromReadLater(
+        groupId: String?,
+        feedId: String?,
+        audioOnly: Boolean,
+    ): Int {
+        val accountId = accountService.getCurrentAccountId()
+        return articleDao.clearReadArticlesFromReadLater(
+            accountId = accountId,
+            groupId = groupId,
+            feedId = feedId,
+            audioOnly = audioOnly,
+        )
+    }
+
     suspend fun clearKeepArchivedArticles(): List<Article> {
         val accountId = accountService.getCurrentAccountId()
         val currentAccount = accountService.getCurrentAccount()

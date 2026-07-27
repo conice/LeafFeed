@@ -604,6 +604,28 @@ interface ArticleDao {
 
     @Query(
         """
+        UPDATE article SET isReadLater = 0
+        WHERE accountId = :accountId
+        AND isReadLater = 1
+        AND isUnread = 0
+        AND (:feedId IS NULL OR feedId = :feedId)
+        AND (:groupId IS NULL OR feedId IN (
+            SELECT id FROM feed
+            WHERE accountId = :accountId AND groupId = :groupId
+        ))
+        AND ((:audioOnly = 1 AND audioUrl IS NOT NULL)
+            OR (:audioOnly = 0 AND audioUrl IS NULL))
+        """
+    )
+    suspend fun clearReadArticlesFromReadLater(
+        accountId: Int,
+        groupId: String?,
+        feedId: String?,
+        audioOnly: Boolean,
+    ): Int
+
+    @Query(
+        """
         DELETE FROM article
         WHERE accountId = :accountId
         AND feedId = :feedId
