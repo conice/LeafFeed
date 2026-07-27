@@ -209,7 +209,7 @@ fun FlowPage(
     var onSearch by rememberSaveable { mutableStateOf(false) }
     var selectedSavedSearchId by rememberSaveable { mutableStateOf<String?>(null) }
 
-    val onHistoryAction = {
+    val onHistoryAction: () -> Unit = {
         navigateToReadingHistory(
             filterUiState.feed?.accountId
                 ?: filterUiState.group?.accountId
@@ -219,7 +219,7 @@ fun FlowPage(
             filterUiState.contentType == ArticleContentType.AUDIO,
         )
     }
-    val onMarkAllReadAction = {
+    val onMarkAllReadAction: () -> Unit = {
         if (markAsRead) {
             markAsRead = false
         } else {
@@ -231,7 +231,7 @@ fun FlowPage(
             }
         }
     }
-    val onSearchAction = {
+    val onSearchAction: () -> Unit = {
         if (onSearch) {
             onSearch = false
         } else {
