@@ -95,6 +95,8 @@ class PodcastLibraryViewModel @Inject constructor(
     val episodes = accountService.currentAccountIdFlow.filterNotNull()
         .flatMapLatest { articleDao.observePodcastEpisodes(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    val downloadWorkInfos = downloads.downloadWorkInfosByArticleId
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     fun download(article: Article) {
         downloads.enqueue(
@@ -104,7 +106,6 @@ class PodcastLibraryViewModel @Inject constructor(
     }
 
     fun remove(article: Article) = viewModelScope.launch { downloads.remove(article) }
-    fun observeDownload(articleId: String) = downloads.observe(articleId)
     fun cancel(articleId: String) = downloads.cancel(articleId)
 }
 
@@ -115,6 +116,7 @@ fun PodcastLibraryPage(
     viewModel: PodcastLibraryViewModel = hiltViewModel(),
 ) {
     val episodes by viewModel.episodes.collectAsStateWithLifecycle()
+    val downloadWorkInfos by viewModel.downloadWorkInfos.collectAsStateWithLifecycle()
     var filter by remember { mutableStateOf(PodcastLibraryFilter.ALL) }
     val visible = episodes.filter {
         when (filter) {
@@ -143,9 +145,7 @@ fun PodcastLibraryPage(
             item { Text("No episodes in this view", Modifier.padding(horizontal = 24.dp)) }
         }
         items(visible, key = { it.article.id }) { item ->
-            val workInfos by viewModel.observeDownload(item.article.id)
-                .collectAsStateWithLifecycle(initialValue = emptyList())
-            val work = workInfos.lastOrNull()
+            val work = downloadWorkInfos[item.article.id]
             val active = work?.state == WorkInfo.State.ENQUEUED ||
                 work?.state == WorkInfo.State.RUNNING ||
                 work?.state == WorkInfo.State.BLOCKED

@@ -178,6 +178,7 @@ internal fun LazyListScope.navigationActionSection(
         key = { _, item -> "$sectionId:${item.id}" },
     ) { _, item ->
         ReorderableNavigationItem(
+            modifier = Modifier.animateItem(),
             sectionId = sectionId,
             item = item,
             state = state,
@@ -205,6 +206,7 @@ internal fun LazyListScope.navigationActionSection(
 
 @Composable
 private fun ReorderableNavigationItem(
+    modifier: Modifier,
     sectionId: String,
     item: NavigationItemPreference,
     state: NavigationSectionState,
@@ -222,8 +224,7 @@ private fun ReorderableNavigationItem(
     val isDragging = state.draggedItemId == item.id
     Box(
         modifier =
-            Modifier.fillMaxWidth()
-                .animateItem()
+            modifier.fillMaxWidth()
                 .zIndex(if (isDragging) 1f else 0f)
                 .graphicsLayer {
                     if (isDragging) {

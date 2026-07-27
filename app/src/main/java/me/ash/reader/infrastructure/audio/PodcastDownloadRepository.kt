@@ -35,17 +35,29 @@ class PodcastDownloadRepository @Inject constructor(
     private val workManager: WorkManager,
     private val settingsProvider: SettingsProvider,
 ) {
-    val downloadingArticleIds: Flow<Set<String>> =
+    val downloadWorkInfosByArticleId: Flow<Map<String, WorkInfo>> =
         workManager.getWorkInfosByTagFlow(DOWNLOAD_TAG)
             .map { workInfos ->
                 workInfos.asSequence()
-                    .filter { it.state == WorkInfo.State.ENQUEUED ||
-                        it.state == WorkInfo.State.BLOCKED ||
-                        it.state == WorkInfo.State.RUNNING }
                     .mapNotNull { workInfo ->
                         workInfo.tags.firstOrNull { it.startsWith(ARTICLE_TAG_PREFIX) }
                             ?.removePrefix(ARTICLE_TAG_PREFIX)
+                            ?.let { articleId -> articleId to workInfo }
                     }
+                    .toMap()
+            }
+            .distinctUntilChanged()
+
+    val downloadingArticleIds: Flow<Set<String>> =
+        downloadWorkInfosByArticleId
+            .map { workInfos ->
+                workInfos.asSequence()
+                    .filter { (_, workInfo) ->
+                        workInfo.state == WorkInfo.State.ENQUEUED ||
+                            workInfo.state == WorkInfo.State.BLOCKED ||
+                            workInfo.state == WorkInfo.State.RUNNING
+                    }
+                    .map { it.key }
                     .toSet()
             }
             .distinctUntilChanged()
