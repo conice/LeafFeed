@@ -144,7 +144,7 @@ constructor(
         val nextState = filterState.copy(
             feed = feed,
             group = group,
-            filter = Filter.Unread,
+            searchContent = null,
         ).let { it.copy(contentType = contentTypeForScope(it)) }
         val resolvedState =
             if (hasStoredContentType(nextState)) nextState else autoSelectContentType(nextState)

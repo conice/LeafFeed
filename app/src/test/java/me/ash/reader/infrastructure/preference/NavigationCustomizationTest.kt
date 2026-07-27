@@ -34,7 +34,7 @@ class NavigationCustomizationTest {
     }
 
     @Test
-    fun `restores one bottom item when all are hidden`() {
+    fun `restores all fixed bottom items from legacy hidden configuration`() {
         val preferences = mutablePreferencesOf(
             NavigationPreferenceKeys.mainBottomItems to
                 "all:hidden,unread:hidden,starred:hidden,readLater:hidden",
@@ -43,8 +43,7 @@ class NavigationCustomizationTest {
         val items = preferences.toNavigationCustomization().mainBottomItems
 
         assertEquals(NavigationItemIds.ALL, items.first().id)
-        assertEquals(ActionPlacement.Toolbar, items.first().placement)
-        assertTrue(items.drop(1).all { it.placement == ActionPlacement.Hidden })
+        assertTrue(items.all { it.placement == ActionPlacement.Toolbar })
     }
 
     @Test

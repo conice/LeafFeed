@@ -233,6 +233,7 @@ fun Preferences.toNavigationCustomization(): NavigationCustomization {
             defaults.mainBottomItems,
             allowMore = false,
             requireVisible = true,
+            forceToolbar = true,
         ),
         feedTopActions = parseItems(
             this[NavigationPreferenceKeys.feedTopActions],
@@ -343,6 +344,7 @@ private fun parseItems(
     defaults: List<NavigationItemPreference>,
     allowMore: Boolean = true,
     requireVisible: Boolean = false,
+    forceToolbar: Boolean = false,
 ): List<NavigationItemPreference> {
     if (stored == null) return defaults
     val defaultsById = defaults.associateBy { it.id }
@@ -354,12 +356,19 @@ private fun parseItems(
         val placement = storedItem.placement
         NavigationItemPreference(
             id,
-            if (!allowMore && placement == ActionPlacement.More) ActionPlacement.Toolbar
-            else placement,
+            when {
+                forceToolbar -> ActionPlacement.Toolbar
+                !allowMore && placement == ActionPlacement.More -> ActionPlacement.Toolbar
+                else -> placement
+            },
         )
     }.toMutableList()
     defaults.filterNot { it.id in seen }.forEach {
-        parsed.add(it.copy(placement = ActionPlacement.Hidden))
+        parsed.add(
+            it.copy(
+                placement = if (forceToolbar) ActionPlacement.Toolbar else ActionPlacement.Hidden,
+            )
+        )
     }
     if (requireVisible && parsed.none { it.placement == ActionPlacement.Toolbar }) {
         parsed[0] = parsed[0].copy(placement = ActionPlacement.Toolbar)

@@ -204,6 +204,7 @@ constructor(
     private val _searchContentInput =
         MutableStateFlow(filterStateUseCase.filterStateFlow.value.searchContent)
     val searchContentInput = _searchContentInput.asStateFlow()
+    private val activeSearchScope = MutableStateFlow<FilterState?>(null)
     val savedSearches =
         articleCollectionRepository.observeSavedSearches()
             .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
@@ -218,8 +219,12 @@ constructor(
                 .distinctUntilChanged()
                 .collectLatest { input ->
                     val searchContent = input?.trim()?.takeIf { it.isNotEmpty() }
-                    if (searchContent != filterStateUseCase.filterStateFlow.value.searchContent) {
-                        filterStateUseCase.updateFilterState(searchContent = searchContent)
+                    val currentState = filterStateUseCase.filterStateFlow.value
+                    val targetState = (activeSearchScope.value ?: currentState).copy(
+                        searchContent = searchContent,
+                    )
+                    if (targetState != currentState) {
+                        filterStateUseCase.updateFilterState(targetState)
                     }
                 }
         }
@@ -390,16 +395,39 @@ constructor(
     }
 
     fun resetFilter() {
+        activeSearchScope.value = null
         _searchContentInput.value = null
         filterStateUseCase.updateFilterState(feed = null, group = null, searchContent = null)
     }
 
     fun changeFilter(filterState: FilterState) {
-        filterStateUseCase.updateFilterState(
-            filterState.feed,
-            filterState.group,
-            filterState.filter,
-        )
+        val searchScope = activeSearchScope.value
+        if (searchScope != null) {
+            val nextScope = filterState.copy(searchContent = null)
+            activeSearchScope.value = nextScope
+            filterStateUseCase.updateFilterState(
+                nextScope.copy(searchContent = _searchContentInput.value?.trim()?.ifEmpty { null }),
+            )
+        } else {
+            filterStateUseCase.updateFilterState(filterState.copy(searchContent = null))
+        }
+    }
+
+    fun beginSearch(filterState: FilterState) {
+        val scope = filterState.copy(searchContent = null)
+        activeSearchScope.value = scope
+        _searchContentInput.value = null
+        filterStateUseCase.updateFilterState(scope)
+    }
+
+    fun endSearch() {
+        val scope = activeSearchScope.value ?: run {
+            if (_searchContentInput.value == null) return
+            filterStateUseCase.filterStateFlow.value.copy(searchContent = null)
+        }
+        activeSearchScope.value = null
+        _searchContentInput.value = null
+        filterStateUseCase.updateFilterState(scope.copy(searchContent = null))
     }
 
     fun inputSearchContent(content: String? = null) {
@@ -434,12 +462,16 @@ constructor(
                 ?: Filter.All
             val group = search.groupId?.let { rssService.get().findGroupById(it) }
             val feed = search.feedId?.let { rssService.get().findFeedById(it) }
-            _searchContentInput.value = search.query
-            filterStateUseCase.updateFilterState(
+            val searchScope = filterStateUseCase.filterStateFlow.value.copy(
                 feed = feed,
                 group = group,
                 filter = filter,
-                searchContent = search.query,
+                searchContent = null,
+            )
+            activeSearchScope.value = searchScope
+            _searchContentInput.value = search.query
+            filterStateUseCase.updateFilterState(
+                searchScope.copy(searchContent = search.query),
             )
         }
     }

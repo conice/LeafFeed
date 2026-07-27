@@ -237,11 +237,14 @@ fun FlowPage(
     val onSearchAction: () -> Unit = {
         if (onSearch) {
             onSearch = false
+            viewModel.endSearch()
         } else {
+            val searchScope = filterUiState
             scope.launch {
                 if (listState.firstVisibleItemIndex != 0) listState.animateScrollToItem(0)
             }.invokeOnCompletion {
                 scope.launch {
+                    viewModel.beginSearch(searchScope)
                     onSearch = true
                     markAsRead = false
                     delay(100)
@@ -316,7 +319,7 @@ fun FlowPage(
         if (!onSearch) {
             selectedSavedSearchId = null
             keyboardController?.hide()
-            viewModel.inputSearchContent(null)
+            viewModel.endSearch()
         }
     }
 
@@ -495,6 +498,7 @@ fun FlowPage(
                                 tint = MaterialTheme.colorScheme.onSurface,
                             ) {
                                 onSearch = false
+                                viewModel.endSearch()
                                 onNavigateUp()
                             }
                         },
@@ -574,7 +578,7 @@ fun FlowPage(
                             onValueChange = { viewModel.inputSearchContent(it) },
                             onClose = {
                                 onSearch = false
-                                viewModel.inputSearchContent(null)
+                                viewModel.endSearch()
                             },
                             onSave = viewModel::saveCurrentSearch,
                         )
