@@ -39,6 +39,7 @@ import me.ash.reader.domain.data.GroupWithFeedsListUseCase
 import me.ash.reader.domain.service.SyncWorker
 import me.ash.reader.infrastructure.di.DefaultDispatcher
 import me.ash.reader.infrastructure.di.IODispatcher
+import me.ash.reader.infrastructure.exception.runSuspendCatching
 import me.ash.reader.ui.page.home.SyncOperationState
 import javax.inject.Inject
 
@@ -76,7 +77,7 @@ class FeedsViewModel @Inject constructor(
         _syncOperationState.value = SyncOperationState.Running()
         viewModelScope.launch {
             val workId =
-                runCatching {
+                runSuspendCatching {
                     withContext(ioDispatcher) { rssService.get().doSyncOneTime() }
                 }.getOrElse {
                     showSyncResult(SyncOperationState.Failed(it.toOperationFailure()))

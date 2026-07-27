@@ -16,10 +16,13 @@ import javax.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import me.ash.reader.domain.model.article.Article
 import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
 import me.ash.reader.infrastructure.preference.SettingsProvider
+import me.ash.reader.infrastructure.exception.runSuspendCatching
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.util.concurrent.TimeUnit
@@ -32,6 +35,21 @@ class PodcastDownloadRepository @Inject constructor(
     private val workManager: WorkManager,
     private val settingsProvider: SettingsProvider,
 ) {
+    val downloadingArticleIds: Flow<Set<String>> =
+        workManager.getWorkInfosByTagFlow(DOWNLOAD_TAG)
+            .map { workInfos ->
+                workInfos.asSequence()
+                    .filter { it.state == WorkInfo.State.ENQUEUED ||
+                        it.state == WorkInfo.State.BLOCKED ||
+                        it.state == WorkInfo.State.RUNNING }
+                    .mapNotNull { workInfo ->
+                        workInfo.tags.firstOrNull { it.startsWith(ARTICLE_TAG_PREFIX) }
+                            ?.removePrefix(ARTICLE_TAG_PREFIX)
+                    }
+                    .toSet()
+            }
+            .distinctUntilChanged()
+
     val downloadDirectory: File
         get() = context.externalMediaDirs
             .filterNotNull()
@@ -50,6 +68,8 @@ class PodcastDownloadRepository @Inject constructor(
         val request = OneTimeWorkRequestBuilder<PodcastDownloadWorker>()
             .setInputData(Data.Builder().putString(PodcastDownloadWorker.ARTICLE_ID, article.id).build())
             .setConstraints(constraints)
+            .addTag(DOWNLOAD_TAG)
+            .addTag("$ARTICLE_TAG_PREFIX${article.id}")
             .build()
         workManager.enqueueUniqueWork(workName(article.id), ExistingWorkPolicy.KEEP, request)
         Unit
@@ -57,15 +77,12 @@ class PodcastDownloadRepository @Inject constructor(
 
     fun cancel(articleId: String) = workManager.cancelUniqueWork(workName(articleId))
 
-    fun observe(articleId: String): Flow<List<WorkInfo>> =
-        workManager.getWorkInfosForUniqueWorkFlow(workName(articleId))
-
     suspend fun download(
         article: Article,
         onProgress: suspend (Int) -> Unit = {},
     ): Result<File> = withContext(Dispatchers.IO) {
         val url = article.audioUrl ?: return@withContext Result.failure(IllegalArgumentException("Episode has no audio"))
-        runCatching {
+        runSuspendCatching {
             val directory = downloadDirectory.also {
                 check(it.isDirectory || it.mkdirs()) { "Unable to create download directory" }
             }
@@ -105,14 +122,14 @@ class PodcastDownloadRepository @Inject constructor(
     }
 
     suspend fun remove(article: Article): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
+        runSuspendCatching {
             article.downloadedPath?.let(::File)?.takeIf(File::exists)?.delete()
             articleDao.updateDownloadedPath(article.id, null)
         }
     }
 
     suspend fun clearAll(): Result<Unit> = withContext(Dispatchers.IO) {
-        runCatching {
+        runSuspendCatching {
             setOf(downloadDirectory, legacyDownloadDirectory).forEach { directory ->
                 directory.listFiles().orEmpty().filter { it.isFile }.forEach { deleteAndClear(it) }
                 directory.deleteRecursively()
@@ -148,5 +165,7 @@ class PodcastDownloadRepository @Inject constructor(
 
     private companion object {
         const val PODCAST_DIRECTORY = "podcasts"
+        const val DOWNLOAD_TAG = "podcast-download"
+        const val ARTICLE_TAG_PREFIX = "podcast-download-article:"
     }
 }

@@ -41,6 +41,19 @@ class PerformancePolicyTest {
     }
 
     @Test
+    fun periodicSyncUsesABoundedCoalescingWindow() {
+        assertTrue(syncFlexMinutes(15) >= MIN_SYNC_FLEX_MINUTES)
+        assertTrue(syncFlexMinutes(60) < 60)
+        assertTrue(syncFlexMinutes(1_440) <= MAX_SYNC_FLEX_MINUTES)
+    }
+
+    @Test
+    fun fullContentPrefetchRemainsBounded() {
+        assertTrue(ReaderWorker.PREFETCH_CONCURRENCY <= 2)
+        assertTrue(ReaderWorker.PREFETCH_ARTICLE_LIMIT <= 20)
+    }
+
+    @Test
     fun automaticUpdateChecksRunDailyAndRecoverFromClockChanges() {
         val now = 10L * AUTOMATIC_UPDATE_CHECK_INTERVAL_MS
 

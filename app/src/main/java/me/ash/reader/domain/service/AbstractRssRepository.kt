@@ -17,6 +17,7 @@ import me.ash.reader.domain.model.article.ArchivedArticle
 import me.ash.reader.domain.model.article.Article
 import me.ash.reader.domain.model.article.ArticleWithFeed
 import me.ash.reader.domain.data.ArticleContentType
+import me.ash.reader.domain.data.toArticleFtsQuery
 import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.model.group.Group
 import me.ash.reader.domain.model.group.GroupWithFeed
@@ -448,17 +449,14 @@ abstract class AbstractRssRepository(
         sortAscending: Boolean = false,
     ): PagingSource<Int, ArticleWithFeed> {
         val accountId = accountService.getCurrentAccountId()
-        Log.i(
-            "RLog",
-            "searchArticles: content: ${content}, accountId: ${accountId}, groupId: ${groupId}, feedId: ${feedId}, isStarred: ${isStarred}, isUnread: ${isUnread}",
-        )
+        val searchQuery = content.toArticleFtsQuery()
         return when {
             groupId != null ->
                 when {
                     isStarred ->
                         articleDao.searchArticleByGroupIdWhenIsStarred(
                             accountId,
-                            content,
+                            searchQuery,
                             groupId,
                             true,
                         )
@@ -466,13 +464,17 @@ abstract class AbstractRssRepository(
                     isUnread ->
                         articleDao.searchArticleByGroupIdWhenIsUnread(
                             accountId,
-                            content,
+                            searchQuery,
                             groupId,
                             true,
                             sortAscending,
                         )
 
-                    else -> articleDao.searchArticleByGroupIdWhenAll(accountId, content, groupId)
+                    else -> articleDao.searchArticleByGroupIdWhenAll(
+                        accountId,
+                        searchQuery,
+                        groupId,
+                    )
                 }
 
             feedId != null ->
@@ -480,7 +482,7 @@ abstract class AbstractRssRepository(
                     isStarred ->
                         articleDao.searchArticleByFeedIdWhenIsStarred(
                             accountId,
-                            content,
+                            searchQuery,
                             feedId,
                             true,
                         )
@@ -488,27 +490,35 @@ abstract class AbstractRssRepository(
                     isUnread ->
                         articleDao.searchArticleByFeedIdWhenIsUnread(
                             accountId,
-                            content,
+                            searchQuery,
                             feedId,
                             true,
                             sortAscending,
                         )
 
-                    else -> articleDao.searchArticleByFeedIdWhenAll(accountId, content, feedId)
+                    else -> articleDao.searchArticleByFeedIdWhenAll(
+                        accountId,
+                        searchQuery,
+                        feedId,
+                    )
                 }
 
             else ->
                 when {
-                    isStarred -> articleDao.searchArticleWhenIsStarred(accountId, content, true)
+                    isStarred -> articleDao.searchArticleWhenIsStarred(
+                        accountId,
+                        searchQuery,
+                        true,
+                    )
                     isUnread ->
                         articleDao.searchArticleWhenIsUnread(
                             accountId,
-                            content,
+                            searchQuery,
                             true,
                             sortAscending,
                         )
 
-                    else -> articleDao.searchArticleWhenAll(accountId, content)
+                    else -> articleDao.searchArticleWhenAll(accountId, searchQuery)
                 }
         }
     }

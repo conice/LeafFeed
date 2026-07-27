@@ -81,7 +81,7 @@ constructor(
                 summary?.redacted()
             }
         }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val _troubleshootingUiState = MutableStateFlow(TroubleshootingUiState())
     val troubleshootingUiState: StateFlow<TroubleshootingUiState> =

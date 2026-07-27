@@ -10,9 +10,11 @@ import androidx.room.Query
 import androidx.room.RewriteQueriesToDropUnusedColumns
 import androidx.room.Transaction
 import androidx.room.Update
+import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 import me.ash.reader.domain.model.article.Article
 import me.ash.reader.domain.model.article.ArticleBackupIdentityRow
+import me.ash.reader.domain.model.article.ArticleContentFetchCandidate
 import me.ash.reader.domain.model.article.ArticleMeta
 import me.ash.reader.domain.model.article.ArticleReadingStateRow
 import me.ash.reader.domain.model.article.ArticleReadingStateUpdate
@@ -107,6 +109,7 @@ interface ArticleDao {
     @Query(
         """
         SELECT article.* FROM article
+        INNER JOIN article_fts ON article_fts.articleId = article.id
         INNER JOIN feed ON feed.id = article.feedId
         WHERE article.accountId = :accountId
             AND feed.accountId = :accountId
@@ -115,11 +118,7 @@ interface ArticleDao {
             AND (:feedId IS NULL OR article.feedId = :feedId)
             AND ((:audioOnly = 1 AND article.audioUrl IS NOT NULL)
                 OR (:audioOnly = 0 AND article.audioUrl IS NULL))
-            AND (
-                article.title LIKE '%' || :text || '%'
-                OR article.shortDescription LIKE '%' || :text || '%'
-                OR article.rawDescription LIKE '%' || :text || '%'
-            )
+            AND article_fts MATCH :text
         ORDER BY article.lastOpenedAt DESC
         """
     )
@@ -305,17 +304,14 @@ interface ArticleDao {
     @Transaction
     @Query(
         """
-        SELECT * FROM article
+        SELECT article.* FROM article
+        INNER JOIN article_fts ON article_fts.articleId = article.id
         WHERE accountId = :accountId 
         AND feedId IN (
             SELECT id FROM feed WHERE groupId = :groupId
         )
         AND isUnread = :isUnread
-        AND (
-            title LIKE '%' || :text || '%'
-            OR shortDescription LIKE '%' || :text || '%'
-            OR fullContent LIKE '%' || :text || '%'
-        )
+        AND article_fts MATCH :text
         ORDER BY
             CASE WHEN :sortAscending = 1 THEN date END ASC,
             CASE WHEN :sortAscending = 0 THEN date END DESC
@@ -332,17 +328,14 @@ interface ArticleDao {
     @Transaction
     @Query(
         """
-        SELECT * FROM article
+        SELECT article.* FROM article
+        INNER JOIN article_fts ON article_fts.articleId = article.id
         WHERE accountId = :accountId 
         AND feedId IN (
             SELECT id FROM feed WHERE groupId = :groupId
         )
         AND isStarred = :isStarred
-        AND (
-            title LIKE '%' || :text || '%'
-            OR shortDescription LIKE '%' || :text || '%'
-            OR fullContent LIKE '%' || :text || '%'
-        )
+        AND article_fts MATCH :text
         ORDER BY
             CASE WHEN :sortAscending = 1 THEN date END ASC,
             CASE WHEN :sortAscending = 0 THEN date END DESC
@@ -359,16 +352,13 @@ interface ArticleDao {
     @Transaction
     @Query(
         """
-        SELECT * FROM article
+        SELECT article.* FROM article
+        INNER JOIN article_fts ON article_fts.articleId = article.id
         WHERE accountId = :accountId 
         AND feedId IN (
             SELECT id FROM feed WHERE groupId = :groupId
         )
-        AND (
-            title LIKE '%' || :text || '%'
-            OR shortDescription LIKE '%' || :text || '%'
-            OR fullContent LIKE '%' || :text || '%'
-        )
+        AND article_fts MATCH :text
         ORDER BY
             CASE WHEN :sortAscending = 1 THEN date END ASC,
             CASE WHEN :sortAscending = 0 THEN date END DESC
@@ -381,15 +371,12 @@ interface ArticleDao {
     @Transaction
     @Query(
         """
-        SELECT * FROM article
+        SELECT article.* FROM article
+        INNER JOIN article_fts ON article_fts.articleId = article.id
         WHERE accountId = :accountId 
         AND feedId = :feedId
         AND isUnread = :isUnread
-        AND (
-            title LIKE '%' || :text || '%'
-            OR shortDescription LIKE '%' || :text || '%'
-            OR fullContent LIKE '%' || :text || '%'
-        )
+        AND article_fts MATCH :text
         ORDER BY
             CASE WHEN :sortAscending = 1 THEN date END ASC,
             CASE WHEN :sortAscending = 0 THEN date END DESC
@@ -406,15 +393,12 @@ interface ArticleDao {
     @Transaction
     @Query(
         """
-        SELECT * FROM article
+        SELECT article.* FROM article
+        INNER JOIN article_fts ON article_fts.articleId = article.id
         WHERE accountId = :accountId 
         AND feedId = :feedId
         AND isStarred = :isStarred
-        AND (
-            title LIKE '%' || :text || '%'
-            OR shortDescription LIKE '%' || :text || '%'
-            OR fullContent LIKE '%' || :text || '%'
-        )
+        AND article_fts MATCH :text
         ORDER BY
             CASE WHEN :sortAscending = 1 THEN date END ASC,
             CASE WHEN :sortAscending = 0 THEN date END DESC
@@ -431,14 +415,11 @@ interface ArticleDao {
     @Transaction
     @Query(
         """
-        SELECT * FROM article
+        SELECT article.* FROM article
+        INNER JOIN article_fts ON article_fts.articleId = article.id
         WHERE accountId = :accountId 
         AND feedId = :feedId 
-        AND (
-            title LIKE '%' || :text || '%'
-            OR shortDescription LIKE '%' || :text || '%'
-            OR fullContent LIKE '%' || :text || '%'
-        )
+        AND article_fts MATCH :text
         ORDER BY
             CASE WHEN :sortAscending = 1 THEN date END ASC,
             CASE WHEN :sortAscending = 0 THEN date END DESC
@@ -451,14 +432,11 @@ interface ArticleDao {
     @Transaction
     @Query(
         """
-        SELECT * FROM article
+        SELECT article.* FROM article
+        INNER JOIN article_fts ON article_fts.articleId = article.id
         WHERE accountId = :accountId 
         AND isUnread = :isUnread
-        AND (
-            title LIKE '%' || :text || '%'
-            OR shortDescription LIKE '%' || :text || '%'
-            OR fullContent LIKE '%' || :text || '%'
-        )
+        AND article_fts MATCH :text
         ORDER BY
             CASE WHEN :sortAscending = 1 THEN date END ASC,
             CASE WHEN :sortAscending = 0 THEN date END DESC
@@ -471,14 +449,11 @@ interface ArticleDao {
     @Transaction
     @Query(
         """
-        SELECT * FROM article
+        SELECT article.* FROM article
+        INNER JOIN article_fts ON article_fts.articleId = article.id
         WHERE accountId = :accountId 
         AND isStarred = :isStarred
-        AND (
-            title LIKE '%' || :text || '%'
-            OR shortDescription LIKE '%' || :text || '%'
-            OR fullContent LIKE '%' || :text || '%'
-        )
+        AND article_fts MATCH :text
         ORDER BY
             CASE WHEN :sortAscending = 1 THEN date END ASC,
             CASE WHEN :sortAscending = 0 THEN date END DESC
@@ -491,13 +466,10 @@ interface ArticleDao {
     @Transaction
     @Query(
         """
-        SELECT * FROM article
+        SELECT article.* FROM article
+        INNER JOIN article_fts ON article_fts.articleId = article.id
         WHERE accountId = :accountId 
-        AND (
-            title LIKE '%' || :text || '%'
-            OR shortDescription LIKE '%' || :text || '%'
-            OR fullContent LIKE '%' || :text || '%'
-        )
+        AND article_fts MATCH :text
         ORDER BY
             CASE WHEN :sortAscending = 1 THEN date END ASC,
             CASE WHEN :sortAscending = 0 THEN date END DESC
@@ -1019,7 +991,7 @@ interface ArticleDao {
 
     @Query(
         """
-        SELECT a.*
+        SELECT a.id, a.title, a.link
         FROM article AS a
         LEFT JOIN feed AS f ON a.feedId = f.id
         WHERE f.accountId = :accountId
@@ -1032,7 +1004,7 @@ interface ArticleDao {
     suspend fun queryUnreadFullContentArticles(
         accountId: Int,
         limit: Int,
-    ): List<Article>
+    ): List<ArticleContentFetchCandidate>
 
     @Transaction
     @Query(
@@ -1249,7 +1221,7 @@ interface ArticleDao {
     )
     fun queryLatestUnreadArticleFlow(accountId: Int, limit: Int): Flow<List<ArticleWithFeed>>
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    @Upsert
     suspend fun insert(vararg article: Article)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)

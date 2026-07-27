@@ -94,7 +94,7 @@ class PodcastLibraryViewModel @Inject constructor(
 ) : ViewModel() {
     val episodes = accountService.currentAccountIdFlow.filterNotNull()
         .flatMapLatest { articleDao.observePodcastEpisodes(it) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun download(article: Article) {
         downloads.enqueue(
@@ -192,9 +192,9 @@ class CollectionManagerViewModel @Inject constructor(
     private val rssService: RssService,
 ) : ViewModel() {
     val tags = repository.observeTagGroups()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val notes = repository.observeAllNotes()
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     private val _taggedArticles = MutableStateFlow<List<ArticleWithFeed>?>(null)
     val taggedArticles = _taggedArticles.asStateFlow()
 

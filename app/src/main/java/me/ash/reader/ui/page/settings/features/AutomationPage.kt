@@ -97,11 +97,11 @@ class AutomationViewModel @Inject constructor(
 
     val rules = accountService.currentAccountIdFlow.filterNotNull()
         .flatMapLatest(repository::observeRules)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val executions = accountService.currentAccountIdFlow.filterNotNull()
         .flatMapLatest(repository::observeRecentExecutions)
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val scopeOptions = accountService.currentAccountIdFlow.mapLatest { id ->
         if (id == null) return@mapLatest AutomationScopeOptions()
@@ -109,7 +109,11 @@ class AutomationViewModel @Inject constructor(
             groups = groupDao.queryAll(id).sortedBy { it.name }.map { AutomationScopeOption(it.id, it.name) },
             feeds = feedDao.queryAll(id).sortedBy { it.name }.map { AutomationScopeOption(it.id, it.name) },
         )
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, AutomationScopeOptions())
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5_000),
+        AutomationScopeOptions(),
+    )
 
     fun save(draft: AutomationDraft) {
         val id = accountId.value ?: return

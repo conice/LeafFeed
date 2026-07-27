@@ -8,6 +8,7 @@ import me.ash.reader.domain.model.account.*
 import me.ash.reader.domain.model.account.security.DESUtils
 import me.ash.reader.domain.model.article.ArchivedArticle
 import me.ash.reader.domain.model.article.Article
+import me.ash.reader.domain.model.article.ArticleSearchEntity
 import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.model.group.Group
 import me.ash.reader.domain.repository.AccountDao
@@ -19,8 +20,15 @@ import me.ash.reader.ui.ext.toInt
 import java.util.*
 
 @Database(
-    entities = [Account::class, Feed::class, Article::class, Group::class, ArchivedArticle::class],
-    version = 10,
+    entities = [
+        Account::class,
+        Feed::class,
+        Article::class,
+        ArticleSearchEntity::class,
+        Group::class,
+        ArchivedArticle::class,
+    ],
+    version = 11,
     autoMigrations = [
         AutoMigration(from = 5, to = 6),
         AutoMigration(from = 5, to = 7),
@@ -54,9 +62,11 @@ abstract class AndroidDatabase : RoomDatabase() {
                     context.applicationContext,
                     AndroidDatabase::class.java,
                     "Reader"
-                ).addMigrations(*allMigrations).build().also {
-                    instance = it
-                }
+                ).addMigrations(*allMigrations)
+                    .addCallback(ARTICLE_SEARCH_CALLBACK)
+                    .build().also {
+                        instance = it
+                    }
             }
         }
     }
@@ -83,7 +93,56 @@ val allMigrations = arrayOf(
     MIGRATION_7_8,
     MIGRATION_8_9,
     MIGRATION_9_10,
+    MIGRATION_10_11,
 )
+
+@Suppress("ClassName")
+object MIGRATION_10_11 : Migration(10, 11) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE VIRTUAL TABLE IF NOT EXISTS `article_fts` USING FTS4(" +
+                "`articleId` TEXT NOT NULL, `title` TEXT NOT NULL, " +
+                "`shortDescription` TEXT NOT NULL, `rawDescription` TEXT NOT NULL)"
+        )
+        db.execSQL(
+            "INSERT INTO `article_fts` (`articleId`, `title`, `shortDescription`, " +
+                "`rawDescription`) SELECT `id`, `title`, `shortDescription`, " +
+                "`rawDescription` FROM `article`"
+        )
+        createArticleSearchTriggers(db)
+    }
+}
+
+private val ARTICLE_SEARCH_CALLBACK = object : RoomDatabase.Callback() {
+    override fun onCreate(db: SupportSQLiteDatabase) {
+        createArticleSearchTriggers(db)
+    }
+
+    override fun onOpen(db: SupportSQLiteDatabase) {
+        createArticleSearchTriggers(db)
+    }
+}
+
+private fun createArticleSearchTriggers(db: SupportSQLiteDatabase) {
+    db.execSQL(
+        "CREATE TRIGGER IF NOT EXISTS `article_fts_after_insert` AFTER INSERT ON `article` " +
+            "BEGIN INSERT INTO `article_fts` (`articleId`, `title`, `shortDescription`, " +
+            "`rawDescription`) VALUES (new.`id`, new.`title`, new.`shortDescription`, " +
+            "new.`rawDescription`); END"
+    )
+    db.execSQL(
+        "CREATE TRIGGER IF NOT EXISTS `article_fts_after_delete` AFTER DELETE ON `article` " +
+            "BEGIN DELETE FROM `article_fts` WHERE `articleId` = old.`id`; END"
+    )
+    db.execSQL(
+        "CREATE TRIGGER IF NOT EXISTS `article_fts_after_update` AFTER UPDATE OF " +
+            "`id`, `title`, `shortDescription`, `rawDescription` ON `article` " +
+            "BEGIN DELETE FROM `article_fts` WHERE `articleId` = old.`id`; " +
+            "INSERT INTO `article_fts` (`articleId`, `title`, `shortDescription`, " +
+            "`rawDescription`) VALUES (new.`id`, new.`title`, new.`shortDescription`, " +
+            "new.`rawDescription`); END"
+    )
+}
 
 @Suppress("ClassName")
 object MIGRATION_9_10 : Migration(9, 10) {

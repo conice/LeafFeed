@@ -20,8 +20,13 @@ jobs:
                   java-version: 17
 
             - uses: gradle/actions/setup-gradle@v5
-            - name: Assemble GitHub debug snapshot
-              run: sh ./gradlew assembleGithubDebug --build-cache
+            - name: Verify and assemble GitHub debug snapshot
+              run: >-
+                  sh ./gradlew
+                  testGithubDebugUnitTest
+                  lintGithubDebug
+                  assembleGithubDebug
+                  --build-cache
 
             - uses: actions/upload-artifact@v5
               with:

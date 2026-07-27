@@ -140,13 +140,10 @@ constructor(
                                     .setConstraints(
                                         Constraints.Builder()
                                             .setRequiredNetworkType(
-                                                if (account.syncOnlyOnWiFi.value) {
-                                                    NetworkType.UNMETERED
-                                                } else {
-                                                    NetworkType.CONNECTED
-                                                }
+                                                NetworkType.UNMETERED
                                             )
                                             .setRequiresBatteryNotLow(true)
+                                            .setRequiresCharging(true)
                                             .build()
                                     )
                                     .setBackoffCriteria(
@@ -254,7 +251,12 @@ constructor(
             workManager.enqueueUniquePeriodicWork(
                 workName,
                 ExistingPeriodicWorkPolicy.UPDATE,
-                PeriodicWorkRequestBuilder<SyncWorker>(syncInterval.value, TimeUnit.MINUTES)
+                PeriodicWorkRequestBuilder<SyncWorker>(
+                    syncInterval.value,
+                    TimeUnit.MINUTES,
+                    syncFlexMinutes(syncInterval.value),
+                    TimeUnit.MINUTES,
+                )
                     .setConstraints(
                         Constraints.Builder()
                             .setRequiresBatteryNotLow(true)
@@ -289,6 +291,14 @@ constructor(
 }
 
 internal const val SYNC_PROGRESS_MIN_INTERVAL_MS = 1_500L
+internal const val MIN_SYNC_FLEX_MINUTES = 5L
+internal const val MAX_SYNC_FLEX_MINUTES = 30L
+
+internal fun syncFlexMinutes(intervalMinutes: Long): Long =
+    (intervalMinutes / 4).coerceIn(
+        MIN_SYNC_FLEX_MINUTES,
+        minOf(MAX_SYNC_FLEX_MINUTES, intervalMinutes),
+    )
 
 internal fun shouldPublishSyncProgress(
     nowMillis: Long,

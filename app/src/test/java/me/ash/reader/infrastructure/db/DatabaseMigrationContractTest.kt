@@ -46,4 +46,25 @@ class DatabaseMigrationContractTest {
                 "ON article(accountId, lastOpenedAt)"
         )
     }
+
+    @Test
+    fun `article search migration creates and backfills the FTS index`() {
+        val db = mock<SupportSQLiteDatabase>()
+
+        MIGRATION_10_11.migrate(db)
+
+        assertEquals(10, MIGRATION_10_11.startVersion)
+        assertEquals(11, MIGRATION_10_11.endVersion)
+        assertTrue(allMigrations.contains(MIGRATION_10_11))
+        verify(db).execSQL(
+            "CREATE VIRTUAL TABLE IF NOT EXISTS `article_fts` USING FTS4(" +
+                "`articleId` TEXT NOT NULL, `title` TEXT NOT NULL, " +
+                "`shortDescription` TEXT NOT NULL, `rawDescription` TEXT NOT NULL)"
+        )
+        verify(db).execSQL(
+            "INSERT INTO `article_fts` (`articleId`, `title`, `shortDescription`, " +
+                "`rawDescription`) SELECT `id`, `title`, `shortDescription`, " +
+                "`rawDescription` FROM `article`"
+        )
+    }
 }

@@ -23,11 +23,9 @@ import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.UnfoldLess
 import androidx.compose.material.icons.rounded.UnfoldMore
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -85,6 +83,7 @@ import me.ash.reader.infrastructure.preference.NavigationItemIds
 import me.ash.reader.infrastructure.preference.resolveNavigationActionLayout
 import me.ash.reader.ui.component.FilterBar
 import me.ash.reader.ui.component.navigationTonalElevation
+import me.ash.reader.ui.component.navigationActionIcon
 import me.ash.reader.ui.component.responsiveToolbarCapacity
 import me.ash.reader.ui.component.visibleMainFilters
 import me.ash.reader.ui.component.RefreshIndicatorResult
@@ -381,7 +380,7 @@ fun FeedsPage(
                                     modifier = Modifier.size(
                                         navigationCustomization.mainTopIconSize.dp
                                     ),
-                                    imageVector = Icons.Outlined.BarChart,
+                                    imageVector = navigationActionIcon(item.id),
                                     contentDescription = stringResource(
                                         R.string.subscription_report
                                     ),
@@ -392,7 +391,7 @@ fun FeedsPage(
                                     modifier = Modifier.size(
                                         navigationCustomization.mainTopIconSize.dp
                                     ),
-                                    imageVector = Icons.Rounded.Add,
+                                    imageVector = navigationActionIcon(item.id),
                                     contentDescription = stringResource(R.string.subscribe),
                                     tint = MaterialTheme.colorScheme.onSurface,
                                     onClick = subscribeViewModel::showDrawer,
@@ -401,7 +400,7 @@ fun FeedsPage(
                                     modifier = Modifier.size(
                                         navigationCustomization.mainTopIconSize.dp
                                     ),
-                                    imageVector = Icons.Outlined.Settings,
+                                    imageVector = navigationActionIcon(item.id),
                                     contentDescription = stringResource(R.string.settings),
                                     tint = MaterialTheme.colorScheme.onSurface,
                                     onClick = navigateToSettings,
@@ -410,7 +409,7 @@ fun FeedsPage(
                                     modifier = Modifier.size(
                                         navigationCustomization.mainTopIconSize.dp
                                     ),
-                                    imageVector = Icons.Rounded.Sync,
+                                    imageVector = navigationActionIcon(item.id),
                                     contentDescription = stringResource(R.string.sync_interval),
                                     tint = MaterialTheme.colorScheme.onSurface,
                                     enabled = !indicatorRunning,
@@ -435,7 +434,7 @@ fun FeedsPage(
                                 when (item.id) {
                                     NavigationItemIds.SUBSCRIPTION_REPORT -> DropdownMenuItem(
                                         text = { Text(stringResource(R.string.subscription_report)) },
-                                        leadingIcon = { Icon(Icons.Outlined.BarChart, null) },
+                                        leadingIcon = { Icon(navigationActionIcon(item.id), null) },
                                         onClick = {
                                             actionMenuExpanded = false
                                             navigateToSubscriptionReport()
@@ -443,7 +442,7 @@ fun FeedsPage(
                                     )
                                     NavigationItemIds.ADD_SUBSCRIPTION -> DropdownMenuItem(
                                         text = { Text(stringResource(R.string.subscribe)) },
-                                        leadingIcon = { Icon(Icons.Rounded.Add, null) },
+                                        leadingIcon = { Icon(navigationActionIcon(item.id), null) },
                                         onClick = {
                                             actionMenuExpanded = false
                                             subscribeViewModel.showDrawer()
@@ -451,7 +450,7 @@ fun FeedsPage(
                                     )
                                     NavigationItemIds.SETTINGS -> DropdownMenuItem(
                                         text = { Text(stringResource(R.string.settings)) },
-                                        leadingIcon = { Icon(Icons.Outlined.Settings, null) },
+                                        leadingIcon = { Icon(navigationActionIcon(item.id), null) },
                                         onClick = {
                                             actionMenuExpanded = false
                                             navigateToSettings()
@@ -459,7 +458,7 @@ fun FeedsPage(
                                     )
                                     NavigationItemIds.SYNC -> DropdownMenuItem(
                                         text = { Text(stringResource(R.string.sync_interval)) },
-                                        leadingIcon = { Icon(Icons.Rounded.Sync, null) },
+                                        leadingIcon = { Icon(navigationActionIcon(item.id), null) },
                                         enabled = !indicatorRunning,
                                         onClick = {
                                             actionMenuExpanded = false

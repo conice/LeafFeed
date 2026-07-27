@@ -9,6 +9,7 @@ import okio.Buffer
 import okio.BufferedSource
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -16,6 +17,11 @@ import org.junit.rules.TemporaryFolder
 class NetworkDataSourceTest {
     @get:Rule
     val temporaryFolder = TemporaryFolder()
+
+    @Test
+    fun `network clients verify server certificates by default`() {
+        assertFalse(me.ash.reader.infrastructure.di.DEFAULT_TRUST_ALL_CERTIFICATES)
+    }
 
     @Test
     fun `downloads responses without content length`() = runBlocking {

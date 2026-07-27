@@ -70,7 +70,7 @@ fun cachingHttpClient(
     context: Context,
     cacheDirectory: File? = null,
     cacheSize: Long = 10L * 1024L * 1024L,
-    trustAllCerts: Boolean = true,
+    trustAllCerts: Boolean = DEFAULT_TRUST_ALL_CERTIFICATES,
     connectTimeoutSecs: Long = 30L,
     readTimeoutSecs: Long = 30L,
     clientCertificateAlias: String? = null,
@@ -175,3 +175,4 @@ object UserAgentInterceptor : Interceptor {
 }
 
 const val USER_AGENT_STRING = BuildConfig.USER_AGENT_STRING
+internal const val DEFAULT_TRUST_ALL_CERTIFICATES = false

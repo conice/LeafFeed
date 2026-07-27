@@ -15,12 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.MenuOpen
-import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.outlined.Label
-import androidx.compose.material.icons.outlined.NoteAdd
-import androidx.compose.material.icons.outlined.OpenInBrowser
-import androidx.compose.material.icons.outlined.Palette
-import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.MenuOpen
@@ -62,6 +56,7 @@ import me.ash.reader.infrastructure.preference.NavigationItemPreference
 import me.ash.reader.infrastructure.preference.ReadingPageTonalElevationPreference
 import me.ash.reader.infrastructure.preference.resolveNavigationActionLayout
 import me.ash.reader.ui.component.base.FeedbackIconButton
+import me.ash.reader.ui.component.navigationActionIcon
 import me.ash.reader.ui.component.navigationTonalElevation
 import me.ash.reader.ui.component.responsiveToolbarCapacity
 import me.ash.reader.ui.ext.surfaceColorAtElevation
@@ -275,14 +270,7 @@ fun TopBar(
 
 private fun NavigationItemPreference.label(): String = NavigationActionCatalog.label(id)
 
-private fun NavigationItemPreference.icon() = when (id) {
-    NavigationItemIds.AI_SUMMARY -> Icons.Outlined.AutoAwesome
-    NavigationItemIds.TAGS -> Icons.Outlined.Label
-    NavigationItemIds.ADD_NOTE -> Icons.Outlined.NoteAdd
-    NavigationItemIds.STYLE -> Icons.Outlined.Palette
-    NavigationItemIds.OPEN_IN_BROWSER -> Icons.Outlined.OpenInBrowser
-    else -> Icons.Outlined.Share
-}
+private fun NavigationItemPreference.icon() = navigationActionIcon(id)
 
 private fun NavigationItemPreference.performAction(
     onAiSummary: () -> Unit,

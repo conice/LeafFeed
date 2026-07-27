@@ -80,7 +80,7 @@ android {
         // CI uses a monotonically increasing value so APKs signed by the same certificate can be
         // installed as updates. Local builds keep the stable development fallback.
         versionCode = ciVersionCode ?: 1
-        versionName = "0.1.1"
+        versionName = "0.2.0"
 
         buildConfigField(
             "String",
@@ -152,12 +152,6 @@ android {
     }
     buildFeatures { buildConfig = true }
     packaging {
-        jniLibs.keepDebugSymbols.addAll(
-            setOf(
-                "**/libandroidx.graphics.path.so",
-                "**/libdatastore_shared_counter.so",
-            ),
-        )
         resources.excludes.add("/META-INF/{AL2.0,LGPL2.1}")
         resources.excludes.add("rome-utils-*.jar")
     }
@@ -188,7 +182,7 @@ dependencies {
     implementation(libs.compose.html)
     implementation(platform(libs.compose.bom.alpha))
     implementation(libs.androidx.ui.graphics)
-    androidTestImplementation(platform(libs.compose.bom.stable))
+    androidTestImplementation(platform(libs.compose.bom.alpha))
     implementation(libs.compose.animation.graphics)
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.util)
@@ -207,7 +201,6 @@ dependencies {
     // Hilt
     implementation(libs.hilt.work)
     implementation(libs.hilt.android)
-    androidTestImplementation(platform(libs.compose.bom.stable))
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     ksp(libs.hilt.android.compiler)

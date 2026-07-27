@@ -2,12 +2,7 @@ package me.ash.reader.ui.page.home.flow
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.AutoAwesome
-import androidx.compose.material.icons.rounded.DoneAll
-import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -29,6 +24,7 @@ import me.ash.reader.infrastructure.preference.NavigationItemIds
 import me.ash.reader.infrastructure.preference.NavigationItemPreference
 import me.ash.reader.infrastructure.preference.resolveNavigationActionLayout
 import me.ash.reader.ui.component.base.FeedbackIconButton
+import me.ash.reader.ui.component.navigationActionIcon
 import me.ash.reader.ui.component.responsiveToolbarCapacity
 
 @Composable
@@ -130,13 +126,7 @@ private fun ActionIcon(
     }
     FeedbackIconButton(
         modifier = Modifier.size(iconSize.dp),
-        imageVector = when (id) {
-            NavigationItemIds.HISTORY -> Icons.Rounded.History
-            NavigationItemIds.AI_SUMMARY -> Icons.Outlined.AutoAwesome
-            NavigationItemIds.MARK_ALL_READ -> Icons.Rounded.DoneAll
-            NavigationItemIds.REFRESH -> Icons.Rounded.Refresh
-            else -> Icons.Rounded.Search
-        },
+        imageVector = navigationActionIcon(id),
         contentDescription = when (id) {
             NavigationItemIds.HISTORY -> stringResource(R.string.reading_history)
             NavigationItemIds.AI_SUMMARY -> stringResource(R.string.ai_summary)
@@ -152,10 +142,4 @@ private fun ActionIcon(
 
 private fun NavigationItemPreference.label(): String = NavigationActionCatalog.label(id)
 
-private fun NavigationItemPreference.icon() = when (id) {
-    NavigationItemIds.HISTORY -> Icons.Rounded.History
-    NavigationItemIds.AI_SUMMARY -> Icons.Outlined.AutoAwesome
-    NavigationItemIds.MARK_ALL_READ -> Icons.Rounded.DoneAll
-    NavigationItemIds.REFRESH -> Icons.Rounded.Refresh
-    else -> Icons.Rounded.Search
-}
+private fun NavigationItemPreference.icon() = navigationActionIcon(id)

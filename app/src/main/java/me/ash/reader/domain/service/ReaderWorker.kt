@@ -78,6 +78,6 @@ constructor(
         internal const val FAILED_COUNT = "failedCount"
         internal const val ACCOUNT_ID = "accountId"
         internal const val PREFETCH_CONCURRENCY = 2
-        internal const val PREFETCH_ARTICLE_LIMIT = 100
+        internal const val PREFETCH_ARTICLE_LIMIT = 20
     }
 }

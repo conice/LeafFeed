@@ -8,12 +8,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.work.WorkInfo
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
@@ -41,7 +37,7 @@ fun LazyListScope.ArticleList(
     isPodcastPlaying: Boolean = false,
     podcastPositionMs: Long = 0L,
     queuedPodcastIds: Set<String> = emptySet(),
-    observePodcastDownload: (String) -> Flow<List<WorkInfo>> = { flowOf(emptyList()) },
+    downloadingPodcastIds: Set<String> = emptySet(),
     onPodcastPlay: (ArticleWithFeed) -> Unit = {},
     onPodcastEnqueue: (ArticleWithFeed) -> Unit = {},
     onPodcastDownload: (ArticleWithFeed) -> Unit = {},
@@ -80,7 +76,7 @@ fun LazyListScope.ArticleList(
                         isPodcastPlaying = isPodcastPlaying,
                         podcastPositionMs = podcastPositionMs,
                         queuedPodcastIds = queuedPodcastIds,
-                        observePodcastDownload = observePodcastDownload,
+                        downloadingPodcastIds = downloadingPodcastIds,
                         onPodcastPlay = onPodcastPlay,
                         onPodcastEnqueue = onPodcastEnqueue,
                         onPodcastDownload = onPodcastDownload,
@@ -125,7 +121,7 @@ fun LazyListScope.ArticleList(
                             isPodcastPlaying = isPodcastPlaying,
                             podcastPositionMs = podcastPositionMs,
                             queuedPodcastIds = queuedPodcastIds,
-                            observePodcastDownload = observePodcastDownload,
+                            downloadingPodcastIds = downloadingPodcastIds,
                             onPodcastPlay = onPodcastPlay,
                             onPodcastEnqueue = onPodcastEnqueue,
                             onPodcastDownload = onPodcastDownload,
@@ -168,24 +164,13 @@ private fun ArticleListItem(
     isPodcastPlaying: Boolean,
     podcastPositionMs: Long,
     queuedPodcastIds: Set<String>,
-    observePodcastDownload: (String) -> Flow<List<WorkInfo>>,
+    downloadingPodcastIds: Set<String>,
     onPodcastPlay: (ArticleWithFeed) -> Unit,
     onPodcastEnqueue: (ArticleWithFeed) -> Unit,
     onPodcastDownload: (ArticleWithFeed) -> Unit,
 ) {
     val article = item.articleWithFeed.article
-    val isPodcastDownloading = if (article.audioUrl != null) {
-        observePodcastDownload(article.id)
-            .collectAsStateWithLifecycle(emptyList())
-            .value
-            .any { work ->
-                work.state == WorkInfo.State.ENQUEUED ||
-                    work.state == WorkInfo.State.BLOCKED ||
-                    work.state == WorkInfo.State.RUNNING
-            }
-    } else {
-        false
-    }
+    val isPodcastDownloading = article.audioUrl != null && article.id in downloadingPodcastIds
     SwipeableArticleItem(
         modifier = modifier,
         articleWithFeed = item.articleWithFeed,

@@ -116,7 +116,11 @@ constructor(
         viewModelScope.launch(Dispatchers.IO) { articleDao.updatePlayedStatus(article.id, played) }
     }
 
-    fun observePodcastDownload(articleId: String) = podcastDownloadRepository.observe(articleId)
+    val downloadingPodcastIds = podcastDownloadRepository.downloadingArticleIds.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5_000),
+        emptySet(),
+    )
 
     fun cancelPodcastDownload(articleId: String) = podcastDownloadRepository.cancel(articleId)
 

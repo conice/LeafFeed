@@ -10,9 +10,11 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import me.ash.reader.domain.model.article.Article
+import me.ash.reader.domain.model.article.ArticleContentFetchCandidate
 import me.ash.reader.domain.service.AccountService
 import me.ash.reader.infrastructure.di.IODispatcher
 import me.ash.reader.infrastructure.cache.CacheUsage
+import me.ash.reader.infrastructure.exception.runSuspendCatching
 
 class ReaderCacheHelper
 @Inject
@@ -51,7 +53,7 @@ constructor(
         accountId: Int = accountService.getCurrentAccountId(),
     ): Boolean {
         return withContext(ioDispatcher) {
-            runCatching {
+            runSuspendCatching {
                     val directory = cacheDir(accountId).apply {
                         check(isDirectory || mkdirs()) { "Unable to create offline content directory" }
                     }
@@ -70,7 +72,7 @@ constructor(
     @CheckResult
     suspend fun readFullContent(articleId: String): Result<String> {
         return withContext(ioDispatcher) {
-            runCatching {
+            runSuspendCatching {
                 val file = resolveAndMigrate(articleId)
                 if (!file.exists()) return@withContext Result.failure(FileNotFoundException())
                 file.readText()
@@ -81,12 +83,24 @@ constructor(
     private suspend fun fetchFullContentInternal(
         article: Article,
         accountId: Int = accountService.getCurrentAccountId(),
+    ): Result<String> = fetchFullContentInternal(
+        articleId = article.id,
+        link = article.link,
+        title = article.title,
+        accountId = accountId,
+    )
+
+    private suspend fun fetchFullContentInternal(
+        articleId: String,
+        link: String,
+        title: String,
+        accountId: Int,
     ): Result<String> {
         return withContext(ioDispatcher) {
-            runCatching {
-                val fullContent = rssHelper.parseFullContent(article.link, article.title)
+            runSuspendCatching {
+                val fullContent = rssHelper.parseFullContent(link, title)
                 if (fullContent.isNotBlank()) {
-                    writeContentToCache(fullContent, article.id, accountId)
+                    writeContentToCache(fullContent, articleId, accountId)
                     fullContent
                 } else return@withContext Result.failure(Exception())
             }
@@ -96,7 +110,7 @@ constructor(
     @CheckResult
     suspend fun readOrFetchFullContent(article: Article): Result<String> {
         return withContext(ioDispatcher) {
-            runCatching {
+            runSuspendCatching {
                 val result = readFullContent(article.id)
                 if (result.isSuccess) return@withContext result
                 return@withContext fetchFullContentInternal(article)
@@ -107,12 +121,39 @@ constructor(
     suspend fun checkOrFetchFullContent(
         article: Article,
         accountId: Int = accountService.getCurrentAccountId(),
+    ): Boolean = checkOrFetchFullContent(
+        articleId = article.id,
+        link = article.link,
+        title = article.title,
+        accountId = accountId,
+    )
+
+    suspend fun checkOrFetchFullContent(
+        article: ArticleContentFetchCandidate,
+        accountId: Int,
+    ): Boolean = checkOrFetchFullContent(
+        articleId = article.id,
+        link = article.link,
+        title = article.title,
+        accountId = accountId,
+    )
+
+    private suspend fun checkOrFetchFullContent(
+        articleId: String,
+        link: String,
+        title: String,
+        accountId: Int,
     ): Boolean {
         return withContext(ioDispatcher) {
-            val file = resolveAndMigrate(article.id, accountId)
+            val file = resolveAndMigrate(articleId, accountId)
             try {
                 if (!file.exists()) {
-                    return@withContext fetchFullContentInternal(article, accountId)
+                    return@withContext fetchFullContentInternal(
+                        articleId,
+                        link,
+                        title,
+                        accountId,
+                    )
                         .fold(onFailure = { false }, onSuccess = { true })
                 } else {
                     return@withContext true
@@ -125,12 +166,12 @@ constructor(
 
     suspend fun deleteCacheFor(articleId: String): Boolean {
         return withContext(ioDispatcher) {
-            runCatching {
+            runSuspendCatching {
                     val file = currentCacheDir.resolve(getFileNameFor(articleId))
                     val legacy = currentLegacyCacheDir.resolve(getFileNameFor(articleId))
                     val deleted = file.delete()
                     val legacyDeleted = legacy.delete()
-                    return@runCatching deleted || legacyDeleted
+                    return@runSuspendCatching deleted || legacyDeleted
                 }
                 .fold(onSuccess = { true }, onFailure = { false })
         }
@@ -138,7 +179,7 @@ constructor(
 
     suspend fun clearCache(): Boolean {
         return withContext(ioDispatcher) {
-            runCatching {
+            runSuspendCatching {
                     val currentDeleted = currentCacheDir.deleteRecursively()
                     val legacyDeleted = currentLegacyCacheDir.deleteRecursively()
                     return@withContext currentDeleted && legacyDeleted
