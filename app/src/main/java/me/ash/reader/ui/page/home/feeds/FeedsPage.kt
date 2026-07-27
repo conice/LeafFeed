@@ -80,9 +80,9 @@ import me.ash.reader.infrastructure.preference.LocalFeedsGroupListTonalElevation
 import me.ash.reader.infrastructure.preference.LocalFeedsTopBarTonalElevation
 import me.ash.reader.infrastructure.preference.LocalNewVersionNumber
 import me.ash.reader.infrastructure.preference.LocalSkipVersionNumber
-import me.ash.reader.infrastructure.preference.ActionPlacement
 import me.ash.reader.infrastructure.preference.LocalSettings
 import me.ash.reader.infrastructure.preference.NavigationItemIds
+import me.ash.reader.infrastructure.preference.resolveNavigationActionLayout
 import me.ash.reader.ui.component.FilterBar
 import me.ash.reader.ui.component.navigationTonalElevation
 import me.ash.reader.ui.component.responsiveToolbarCapacity
@@ -140,7 +140,9 @@ fun FeedsPage(
     val filterBarPadding = LocalFeedsFilterBarPadding.current
     val filterBarTonalElevation = LocalFeedsFilterBarTonalElevation.current
     val navigationCustomization = LocalSettings.current.navigationCustomization
-    val visibleFilters = navigationCustomization.visibleMainFilters()
+    val visibleFilters = remember(navigationCustomization.mainBottomItems) {
+        navigationCustomization.visibleMainFilters()
+    }
     var actionMenuExpanded by remember { mutableStateOf(false) }
 
     val accounts = accountViewModel.accounts.collectAsStateValue(initial = emptyList())
@@ -338,14 +340,21 @@ fun FeedsPage(
                 actions = {
                     val configuration = LocalConfiguration.current
                     val fontScale = LocalDensity.current.fontScale
-                    val availableActions = navigationCustomization.feedTopActions.filter { item ->
-                        when (item.id) {
-                            NavigationItemIds.SUBSCRIPTION_REPORT -> filterState.filter.isAll()
-                            NavigationItemIds.ADD_SUBSCRIPTION ->
-                                subscribeViewModel.rssService.get().addSubscription
-                            NavigationItemIds.SETTINGS,
-                            NavigationItemIds.SYNC -> true
-                            else -> false
+                    val addSubscriptionAvailable =
+                        subscribeViewModel.rssService.get().addSubscription
+                    val availableIds = remember(
+                        filterState.filter,
+                        addSubscriptionAvailable,
+                    ) {
+                        buildSet {
+                            if (filterState.filter.isAll()) {
+                                add(NavigationItemIds.SUBSCRIPTION_REPORT)
+                            }
+                            if (addSubscriptionAvailable) {
+                                add(NavigationItemIds.ADD_SUBSCRIPTION)
+                            }
+                            add(NavigationItemIds.SETTINGS)
+                            add(NavigationItemIds.SYNC)
                         }
                     }
                     val capacity = responsiveToolbarCapacity(
@@ -354,17 +363,18 @@ fun FeedsPage(
                         fontScale = fontScale,
                         normalCapacity = 4,
                     )
-                    val configuredToolbar = availableActions.filter {
-                        it.placement == ActionPlacement.Toolbar
+                    val actionLayout = remember(
+                        navigationCustomization.feedTopActions,
+                        availableIds,
+                        capacity,
+                    ) {
+                        resolveNavigationActionLayout(
+                            navigationCustomization.feedTopActions,
+                            availableIds,
+                            capacity,
+                        )
                     }
-                    val hasOverflow = availableActions.any {
-                        it.placement == ActionPlacement.More
-                    } || configuredToolbar.size > capacity
-                    val toolbarCapacity =
-                        if (hasOverflow) (capacity - 1).coerceAtLeast(1) else capacity
-                    val toolbarActions = configuredToolbar.take(toolbarCapacity)
-                    val toolbarIds = toolbarActions.mapTo(mutableSetOf()) { it.id }
-                    toolbarActions
+                    actionLayout.toolbar
                         .forEach { item ->
                             when (item.id) {
                                 NavigationItemIds.SUBSCRIPTION_REPORT -> FeedbackIconButton(
@@ -408,10 +418,7 @@ fun FeedsPage(
                                 )
                             }
                         }
-                    val moreActions = availableActions.filter {
-                        it.placement == ActionPlacement.More ||
-                            it.placement == ActionPlacement.Toolbar && it.id !in toolbarIds
-                    }
+                    val moreActions = actionLayout.overflow
                     if (moreActions.isNotEmpty()) {
                         FeedbackIconButton(
                             modifier = Modifier.size(navigationCustomization.mainTopIconSize.dp),
@@ -421,7 +428,7 @@ fun FeedsPage(
                             onClick = { actionMenuExpanded = true },
                         )
                         DropdownMenu(
-                            expanded = actionMenuExpanded,
+                            expanded = actionMenuExpanded && moreActions.isNotEmpty(),
                             onDismissRequest = { actionMenuExpanded = false },
                         ) {
                             moreActions.forEach { item ->

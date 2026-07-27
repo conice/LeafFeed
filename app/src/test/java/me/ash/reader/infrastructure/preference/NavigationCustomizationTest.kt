@@ -2,6 +2,7 @@ package me.ash.reader.infrastructure.preference
 
 import androidx.datastore.preferences.core.mutablePreferencesOf
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -24,8 +25,8 @@ class NavigationCustomizationTest {
             listOf(
                 NavigationItemPreference(NavigationItemIds.SEARCH, ActionPlacement.More),
                 NavigationItemPreference(NavigationItemIds.HISTORY, ActionPlacement.Hidden),
-                NavigationItemPreference(NavigationItemIds.AI_SUMMARY, ActionPlacement.Toolbar),
-                NavigationItemPreference(NavigationItemIds.MARK_ALL_READ, ActionPlacement.Toolbar),
+                NavigationItemPreference(NavigationItemIds.AI_SUMMARY, ActionPlacement.Hidden),
+                NavigationItemPreference(NavigationItemIds.MARK_ALL_READ, ActionPlacement.Hidden),
                 NavigationItemPreference(NavigationItemIds.REFRESH, ActionPlacement.Hidden),
             ),
             actions,
@@ -77,12 +78,108 @@ class NavigationCustomizationTest {
     }
 
     @Test
-    fun `encodes item order and placement`() {
+    fun `encodes versioned JSON and round trips item order and placement`() {
         val items = listOf(
             NavigationItemPreference(NavigationItemIds.SEARCH, ActionPlacement.More),
             NavigationItemPreference(NavigationItemIds.HISTORY, ActionPlacement.Hidden),
         )
 
-        assertEquals("search:more,history:hidden", encodeNavigationItems(items))
+        val encoded = encodeNavigationItems(items)
+        val preferences = mutablePreferencesOf(
+            NavigationPreferenceKeys.articleTopActions to encoded,
+        )
+
+        assertTrue(encoded.startsWith("{"))
+        assertTrue(encoded.contains("\"version\":2"))
+        assertEquals(items, preferences.toNavigationCustomization().articleTopActions.take(2))
+    }
+
+    @Test
+    fun `loads legacy comma separated values`() {
+        val preferences = mutablePreferencesOf(
+            NavigationPreferenceKeys.feedTopActions to
+                "addSubscription:more,subscriptionReport:hidden",
+        )
+
+        val actions = preferences.toNavigationCustomization().feedTopActions
+
+        assertEquals(NavigationItemIds.ADD_SUBSCRIPTION, actions[0].id)
+        assertEquals(ActionPlacement.More, actions[0].placement)
+        assertEquals(NavigationItemIds.SUBSCRIPTION_REPORT, actions[1].id)
+        assertEquals(ActionPlacement.Hidden, actions[1].placement)
+    }
+
+    @Test
+    fun `uses the action default for an invalid legacy placement`() {
+        val preferences = mutablePreferencesOf(
+            NavigationPreferenceKeys.articleTopActions to "search:invalid",
+        )
+
+        val actions = preferences.toNavigationCustomization().articleTopActions
+
+        assertEquals(NavigationItemIds.SEARCH, actions.first().id)
+        assertEquals(ActionPlacement.Toolbar, actions.first().placement)
+    }
+
+    @Test
+    fun `normalizes duplicate and unknown JSON items`() {
+        val preferences = mutablePreferencesOf(
+            NavigationPreferenceKeys.articleTopActions to """
+                {"version":2,"items":[
+                  {"id":"search","placement":"more"},
+                  {"id":"unknown","placement":"toolbar"},
+                  {"id":"search","placement":"hidden"}
+                ]}
+            """.trimIndent(),
+        )
+
+        val actions = preferences.toNavigationCustomization().articleTopActions
+
+        assertEquals(1, actions.count { it.id == NavigationItemIds.SEARCH })
+        assertEquals(ActionPlacement.More, actions.first().placement)
+        assertFalse(actions.any { it.id == "unknown" })
+        assertTrue(actions.drop(1).all { it.placement == ActionPlacement.Hidden })
+    }
+
+    @Test
+    fun `falls back to defaults for malformed or unsupported JSON`() {
+        val malformed = mutablePreferencesOf(
+            NavigationPreferenceKeys.articleTopActions to "{not-json",
+        )
+        val futureVersion = mutablePreferencesOf(
+            NavigationPreferenceKeys.articleTopActions to "{\"version\":99,\"items\":[]}",
+        )
+
+        assertEquals(
+            NavigationCustomization.Defaults.articleTopActions,
+            malformed.toNavigationCustomization().articleTopActions,
+        )
+        assertEquals(
+            NavigationCustomization.Defaults.articleTopActions,
+            futureVersion.toNavigationCustomization().articleTopActions,
+        )
+    }
+
+    @Test
+    fun `catalog entries are unique within each surface`() {
+        val entries = NavigationActionCatalog.definitions
+
+        assertEquals(
+            entries.size,
+            entries.distinctBy { it.surface to it.id }.size,
+        )
+    }
+
+    @Test
+    fun `keeps automatic main bottom height`() {
+        val preferences = mutablePreferencesOf(
+            NavigationPreferenceKeys.mainBottomHeight to
+                NavigationCustomization.AUTOMATIC_BOTTOM_HEIGHT,
+        )
+
+        assertEquals(
+            NavigationCustomization.AUTOMATIC_BOTTOM_HEIGHT,
+            preferences.toNavigationCustomization().mainBottomHeight,
+        )
     }
 }

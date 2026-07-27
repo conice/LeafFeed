@@ -24,9 +24,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import me.ash.reader.R
-import me.ash.reader.infrastructure.preference.ActionPlacement
+import me.ash.reader.infrastructure.preference.NavigationActionCatalog
 import me.ash.reader.infrastructure.preference.NavigationItemIds
 import me.ash.reader.infrastructure.preference.NavigationItemPreference
+import me.ash.reader.infrastructure.preference.resolveNavigationActionLayout
 import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.component.responsiveToolbarCapacity
 
@@ -53,29 +54,21 @@ fun ArticleListTopActions(
         fontScale = fontScale,
         normalCapacity = 4,
     )
-    val available = actions.filter { action ->
-        action.placement != ActionPlacement.Hidden && when (action.id) {
-            NavigationItemIds.HISTORY -> !searchActive && isUnread
-            NavigationItemIds.AI_SUMMARY -> !searchActive && (isUnread || isAll)
-            NavigationItemIds.MARK_ALL_READ -> !isStarred
-            NavigationItemIds.SEARCH -> true
-            NavigationItemIds.REFRESH -> !searchActive
-            else -> false
+    val availableIds = remember(isUnread, isAll, isStarred, searchActive) {
+        buildSet {
+            if (!searchActive && isUnread) add(NavigationItemIds.HISTORY)
+            if (!searchActive && (isUnread || isAll)) add(NavigationItemIds.AI_SUMMARY)
+            if (!isStarred) add(NavigationItemIds.MARK_ALL_READ)
+            add(NavigationItemIds.SEARCH)
+            if (!searchActive) add(NavigationItemIds.REFRESH)
         }
     }
-    val configuredToolbar = available.filter { it.placement == ActionPlacement.Toolbar }
-    val hasOverflow = available.any { it.placement == ActionPlacement.More } ||
-        configuredToolbar.size > capacity
-    val toolbarCapacity = if (hasOverflow) (capacity - 1).coerceAtLeast(1) else capacity
-    val toolbar = configuredToolbar.take(toolbarCapacity)
-    val toolbarIds = toolbar.mapTo(mutableSetOf()) { it.id }
-    val more = available.filter {
-        it.placement == ActionPlacement.More ||
-            it.placement == ActionPlacement.Toolbar && it.id !in toolbarIds
+    val layout = remember(actions, availableIds, capacity) {
+        resolveNavigationActionLayout(actions, availableIds, capacity)
     }
     var menuExpanded by remember { mutableStateOf(false) }
 
-    toolbar.forEach { action ->
+    layout.toolbar.forEach { action ->
         ActionIcon(
             id = action.id,
             iconSize = iconSize,
@@ -90,7 +83,7 @@ fun ArticleListTopActions(
             },
         )
     }
-    if (more.isNotEmpty()) {
+    if (layout.overflow.isNotEmpty()) {
         FeedbackIconButton(
             modifier = Modifier.size(iconSize.dp),
             imageVector = Icons.Rounded.MoreVert,
@@ -99,10 +92,10 @@ fun ArticleListTopActions(
             onClick = { menuExpanded = true },
         )
         DropdownMenu(
-            expanded = menuExpanded,
+            expanded = menuExpanded && layout.overflow.isNotEmpty(),
             onDismissRequest = { menuExpanded = false },
         ) {
-            more.forEach { action ->
+            layout.overflow.forEach { action ->
                 DropdownMenuItem(
                     text = { Text(action.label()) },
                     leadingIcon = { Icon(action.icon(), null) },
@@ -157,13 +150,7 @@ private fun ActionIcon(
     )
 }
 
-private fun NavigationItemPreference.label(): String = when (id) {
-    NavigationItemIds.HISTORY -> "History"
-    NavigationItemIds.AI_SUMMARY -> "AI summary"
-    NavigationItemIds.MARK_ALL_READ -> "Mark all as read"
-    NavigationItemIds.REFRESH -> "Refresh"
-    else -> "Search"
-}
+private fun NavigationItemPreference.label(): String = NavigationActionCatalog.label(id)
 
 private fun NavigationItemPreference.icon() = when (id) {
     NavigationItemIds.HISTORY -> Icons.Rounded.History

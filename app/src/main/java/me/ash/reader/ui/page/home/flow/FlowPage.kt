@@ -162,7 +162,9 @@ fun FlowPage(
     val settings = LocalSettings.current
     val pullToSwitchFeed = settings.pullToSwitchFeed
     val navigationCustomization = settings.navigationCustomization
-    val visibleFilters = navigationCustomization.visibleMainFilters()
+    val visibleFilters = remember(navigationCustomization.mainBottomItems) {
+        navigationCustomization.visibleMainFilters()
+    }
 
     val flowUiState = viewModel.flowUiState.collectAsStateValue()
     if (flowUiState == null) return

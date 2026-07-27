@@ -51,7 +51,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import me.ash.reader.R
-import me.ash.reader.infrastructure.preference.ActionPlacement
+import me.ash.reader.infrastructure.preference.NavigationActionCatalog
 import me.ash.reader.infrastructure.preference.LocalReadingPageTonalElevation
 import me.ash.reader.infrastructure.preference.LocalOpenLink
 import me.ash.reader.infrastructure.preference.LocalOpenLinkSpecificBrowser
@@ -60,6 +60,7 @@ import me.ash.reader.infrastructure.preference.LocalSharedContent
 import me.ash.reader.infrastructure.preference.NavigationItemIds
 import me.ash.reader.infrastructure.preference.NavigationItemPreference
 import me.ash.reader.infrastructure.preference.ReadingPageTonalElevationPreference
+import me.ash.reader.infrastructure.preference.resolveNavigationActionLayout
 import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.component.navigationTonalElevation
 import me.ash.reader.ui.component.responsiveToolbarCapacity
@@ -153,15 +154,16 @@ fun TopBar(
                         }
                     },
                     actions = {
-                        val availableActions = navigationCustomization.readingTopActions.filter {
-                            it.placement != ActionPlacement.Hidden && when (it.id) {
-                                NavigationItemIds.TAGS,
-                                NavigationItemIds.ADD_NOTE,
-                                NavigationItemIds.AI_SUMMARY,
-                                NavigationItemIds.STYLE,
-                                NavigationItemIds.SHARE -> true
-                                NavigationItemIds.OPEN_IN_BROWSER -> !link.isNullOrBlank()
-                                else -> false
+                        val availableIds = remember(link) {
+                            buildSet {
+                                add(NavigationItemIds.TAGS)
+                                add(NavigationItemIds.ADD_NOTE)
+                                add(NavigationItemIds.AI_SUMMARY)
+                                add(NavigationItemIds.STYLE)
+                                add(NavigationItemIds.SHARE)
+                                if (!link.isNullOrBlank()) {
+                                    add(NavigationItemIds.OPEN_IN_BROWSER)
+                                }
                             }
                         }
                         val capacity = responsiveToolbarCapacity(
@@ -170,22 +172,18 @@ fun TopBar(
                             fontScale = fontScale,
                             normalCapacity = 3,
                         )
-                        val configuredToolbar = availableActions.filter {
-                            it.placement == ActionPlacement.Toolbar
+                        val actionLayout = remember(
+                            navigationCustomization.readingTopActions,
+                            availableIds,
+                            capacity,
+                        ) {
+                            resolveNavigationActionLayout(
+                                navigationCustomization.readingTopActions,
+                                availableIds,
+                                capacity,
+                            )
                         }
-                        val hasOverflow = availableActions.any {
-                            it.placement == ActionPlacement.More
-                        } || configuredToolbar.size > capacity
-                        val toolbarCapacity =
-                            if (hasOverflow) (capacity - 1).coerceAtLeast(1) else capacity
-                        val toolbarActions = configuredToolbar.take(toolbarCapacity)
-                        val toolbarIds = toolbarActions.mapTo(mutableSetOf()) { it.id }
-                        val moreActions = availableActions.filter {
-                            it.placement == ActionPlacement.More ||
-                                it.placement == ActionPlacement.Toolbar &&
-                                it.id !in toolbarIds
-                        }
-                        toolbarActions.forEach { action ->
+                        actionLayout.toolbar.forEach { action ->
                             FeedbackIconButton(
                                 modifier = Modifier.size(
                                     navigationCustomization.readingTopIconSize.dp
@@ -219,7 +217,7 @@ fun TopBar(
                                 },
                             )
                         }
-                        if (moreActions.isNotEmpty()) {
+                        if (actionLayout.overflow.isNotEmpty()) {
                             FeedbackIconButton(
                                 modifier = Modifier.size(
                                     navigationCustomization.readingTopIconSize.dp
@@ -230,10 +228,10 @@ fun TopBar(
                             ) { menuExpanded = true }
                         }
                         DropdownMenu(
-                            expanded = menuExpanded && moreActions.isNotEmpty(),
+                            expanded = menuExpanded && actionLayout.overflow.isNotEmpty(),
                             onDismissRequest = { menuExpanded = false },
                         ) {
-                            moreActions.forEach { action ->
+                            actionLayout.overflow.forEach { action ->
                                 DropdownMenuItem(
                                     text = { Text(action.label()) },
                                     leadingIcon = { Icon(action.icon(), null) },
@@ -275,14 +273,7 @@ fun TopBar(
     }
 }
 
-private fun NavigationItemPreference.label(): String = when (id) {
-    NavigationItemIds.AI_SUMMARY -> "AI summary"
-    NavigationItemIds.TAGS -> "Tags"
-    NavigationItemIds.ADD_NOTE -> "Add note"
-    NavigationItemIds.STYLE -> "Style"
-    NavigationItemIds.OPEN_IN_BROWSER -> "Open in browser"
-    else -> "Share"
-}
+private fun NavigationItemPreference.label(): String = NavigationActionCatalog.label(id)
 
 private fun NavigationItemPreference.icon() = when (id) {
     NavigationItemIds.AI_SUMMARY -> Icons.Outlined.AutoAwesome

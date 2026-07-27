@@ -3,10 +3,20 @@ package me.ash.reader.infrastructure.preference
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.compose.runtime.Immutable
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
+@Serializable
 enum class ActionPlacement(val storedValue: String) {
+    @SerialName("toolbar")
     Toolbar("toolbar"),
+    @SerialName("more")
     More("more"),
+    @SerialName("hidden")
     Hidden("hidden");
 
     companion object {
@@ -15,9 +25,27 @@ enum class ActionPlacement(val storedValue: String) {
     }
 }
 
+@Immutable
+@Serializable
 data class NavigationItemPreference(
     val id: String,
     val placement: ActionPlacement,
+)
+
+enum class NavigationSurface {
+    MainBottom,
+    FeedTop,
+    ArticleTop,
+    ReadingTop,
+    ReadingBottom,
+}
+
+@Immutable
+data class NavigationActionDefinition(
+    val id: String,
+    val label: String,
+    val surface: NavigationSurface,
+    val defaultPlacement: ActionPlacement,
 )
 
 object NavigationItemIds {
@@ -48,6 +76,95 @@ object NavigationItemIds {
     const val NEXT_ARTICLE = "nextArticle"
 }
 
+object NavigationActionCatalog {
+    val definitions: List<NavigationActionDefinition> = buildList {
+        fun register(
+            surface: NavigationSurface,
+            placement: ActionPlacement,
+            vararg actions: Pair<String, String>,
+        ) {
+            actions.forEach { (id, label) ->
+                this@buildList.add(NavigationActionDefinition(id, label, surface, placement))
+            }
+        }
+
+        register(
+            NavigationSurface.MainBottom,
+            ActionPlacement.Toolbar,
+            NavigationItemIds.STARRED to "Starred",
+            NavigationItemIds.UNREAD to "Unread",
+            NavigationItemIds.ALL to "All",
+            NavigationItemIds.READ_LATER to "Read later",
+        )
+        register(
+            NavigationSurface.FeedTop,
+            ActionPlacement.Toolbar,
+            NavigationItemIds.SUBSCRIPTION_REPORT to "Subscription report",
+            NavigationItemIds.ADD_SUBSCRIPTION to "Add subscription",
+        )
+        register(
+            NavigationSurface.FeedTop,
+            ActionPlacement.Hidden,
+            NavigationItemIds.SETTINGS to "Settings",
+            NavigationItemIds.SYNC to "Sync",
+        )
+        register(
+            NavigationSurface.ArticleTop,
+            ActionPlacement.Toolbar,
+            NavigationItemIds.HISTORY to "History",
+            NavigationItemIds.AI_SUMMARY to "AI summary",
+            NavigationItemIds.MARK_ALL_READ to "Mark all as read",
+            NavigationItemIds.SEARCH to "Search",
+        )
+        register(
+            NavigationSurface.ArticleTop,
+            ActionPlacement.Hidden,
+            NavigationItemIds.REFRESH to "Refresh",
+        )
+        register(
+            NavigationSurface.ReadingTop,
+            ActionPlacement.Toolbar,
+            NavigationItemIds.AI_SUMMARY to "AI summary",
+            NavigationItemIds.TAGS to "Tags",
+        )
+        register(
+            NavigationSurface.ReadingTop,
+            ActionPlacement.More,
+            NavigationItemIds.ADD_NOTE to "Add note",
+            NavigationItemIds.STYLE to "Style",
+            NavigationItemIds.SHARE to "Share",
+        )
+        register(
+            NavigationSurface.ReadingTop,
+            ActionPlacement.Hidden,
+            NavigationItemIds.OPEN_IN_BROWSER to "Open in browser",
+        )
+        register(
+            NavigationSurface.ReadingBottom,
+            ActionPlacement.Toolbar,
+            NavigationItemIds.STARRED to "Starred",
+            NavigationItemIds.UNREAD to "Unread",
+            NavigationItemIds.FULL_CONTENT to "Full content",
+            NavigationItemIds.TEXT_TO_SPEECH to "Text to speech",
+            NavigationItemIds.READ_LATER to "Read later",
+        )
+        register(
+            NavigationSurface.ReadingBottom,
+            ActionPlacement.Hidden,
+            NavigationItemIds.PREVIOUS_ARTICLE to "Previous article",
+            NavigationItemIds.NEXT_ARTICLE to "Next article",
+        )
+    }
+
+    fun definitions(surface: NavigationSurface): List<NavigationActionDefinition> =
+        definitions.filter { it.surface == surface }
+
+    fun defaults(surface: NavigationSurface): List<NavigationItemPreference> =
+        definitions(surface).map { NavigationItemPreference(it.id, it.defaultPlacement) }
+
+    fun label(id: String): String = definitions.firstOrNull { it.id == id }?.label ?: id
+}
+
 object NavigationPreferenceKeys {
     val mainBottomItems = stringPreferencesKey("navigation_main_bottom_items")
     val feedTopActions = stringPreferencesKey("navigation_feed_top_actions")
@@ -68,6 +185,7 @@ object NavigationPreferenceKeys {
     val readingBottomElevation = intPreferencesKey("navigation_reading_bottom_elevation")
 }
 
+@Immutable
 data class NavigationCustomization(
     val mainBottomItems: List<NavigationItemPreference> = Defaults.mainBottomItems,
     val feedTopActions: List<NavigationItemPreference> = Defaults.feedTopActions,
@@ -86,55 +204,11 @@ data class NavigationCustomization(
     val readingBottomElevation: Int = 0,
 ) {
     object Defaults {
-        val mainBottomItems = toolbarItems(
-            NavigationItemIds.STARRED,
-            NavigationItemIds.UNREAD,
-            NavigationItemIds.ALL,
-            NavigationItemIds.READ_LATER,
-        )
-        val feedTopActions =
-            toolbarItems(
-                NavigationItemIds.SUBSCRIPTION_REPORT,
-                NavigationItemIds.ADD_SUBSCRIPTION,
-            ) + hiddenItems(
-                NavigationItemIds.SETTINGS,
-                NavigationItemIds.SYNC,
-            )
-        val articleTopActions =
-            toolbarItems(
-                NavigationItemIds.HISTORY,
-                NavigationItemIds.AI_SUMMARY,
-                NavigationItemIds.MARK_ALL_READ,
-                NavigationItemIds.SEARCH,
-            ) + hiddenItems(NavigationItemIds.REFRESH)
-        val readingTopActions = listOf(
-            NavigationItemPreference(NavigationItemIds.AI_SUMMARY, ActionPlacement.Toolbar),
-            NavigationItemPreference(NavigationItemIds.TAGS, ActionPlacement.Toolbar),
-            NavigationItemPreference(NavigationItemIds.ADD_NOTE, ActionPlacement.More),
-            NavigationItemPreference(NavigationItemIds.STYLE, ActionPlacement.More),
-            NavigationItemPreference(NavigationItemIds.SHARE, ActionPlacement.More),
-            NavigationItemPreference(
-                NavigationItemIds.OPEN_IN_BROWSER,
-                ActionPlacement.Hidden,
-            ),
-        )
-        val readingBottomActions =
-            toolbarItems(
-                NavigationItemIds.STARRED,
-                NavigationItemIds.UNREAD,
-                NavigationItemIds.FULL_CONTENT,
-                NavigationItemIds.TEXT_TO_SPEECH,
-                NavigationItemIds.READ_LATER,
-            ) + hiddenItems(
-                NavigationItemIds.PREVIOUS_ARTICLE,
-                NavigationItemIds.NEXT_ARTICLE,
-            )
-
-        private fun toolbarItems(vararg ids: String) =
-            ids.map { NavigationItemPreference(it, ActionPlacement.Toolbar) }
-
-        private fun hiddenItems(vararg ids: String) =
-            ids.map { NavigationItemPreference(it, ActionPlacement.Hidden) }
+        val mainBottomItems = NavigationActionCatalog.defaults(NavigationSurface.MainBottom)
+        val feedTopActions = NavigationActionCatalog.defaults(NavigationSurface.FeedTop)
+        val articleTopActions = NavigationActionCatalog.defaults(NavigationSurface.ArticleTop)
+        val readingTopActions = NavigationActionCatalog.defaults(NavigationSurface.ReadingTop)
+        val readingBottomActions = NavigationActionCatalog.defaults(NavigationSurface.ReadingBottom)
     }
 
     companion object {
@@ -220,7 +294,22 @@ fun Preferences.toNavigationCustomization(): NavigationCustomization {
 }
 
 fun encodeNavigationItems(items: List<NavigationItemPreference>): String =
-    items.joinToString(",") { "${it.id}:${it.placement.storedValue}" }
+    navigationItemsJson.encodeToString<StoredNavigationItems>(
+        StoredNavigationItems(items = items),
+    )
+
+private const val NAVIGATION_ITEMS_VERSION = 2
+
+@Serializable
+private data class StoredNavigationItems(
+    val version: Int = NAVIGATION_ITEMS_VERSION,
+    val items: List<NavigationItemPreference>,
+)
+
+private val navigationItemsJson = Json {
+    ignoreUnknownKeys = true
+    encodeDefaults = true
+}
 
 private fun Preferences.iconSize(key: Preferences.Key<Int>, default: Int): Int =
     (this[key] ?: default).coerceIn(
@@ -258,20 +347,40 @@ private fun parseItems(
     if (stored == null) return defaults
     val defaultsById = defaults.associateBy { it.id }
     val seen = mutableSetOf<String>()
-    val parsed = stored.split(',').mapNotNull { entry ->
-        val id = entry.substringBefore(':')
+    val storedItems = decodeStoredItems(stored, defaultsById) ?: return defaults
+    val parsed = storedItems.mapNotNull { storedItem ->
+        val id = storedItem.id
         if (id !in defaultsById || !seen.add(id)) return@mapNotNull null
-        val placement = ActionPlacement.fromStoredValue(entry.substringAfter(':', ""))
-            ?: defaultsById.getValue(id).placement
+        val placement = storedItem.placement
         NavigationItemPreference(
             id,
             if (!allowMore && placement == ActionPlacement.More) ActionPlacement.Toolbar
             else placement,
         )
     }.toMutableList()
-    defaults.filterNot { it.id in seen }.forEach(parsed::add)
+    defaults.filterNot { it.id in seen }.forEach {
+        parsed.add(it.copy(placement = ActionPlacement.Hidden))
+    }
     if (requireVisible && parsed.none { it.placement == ActionPlacement.Toolbar }) {
         parsed[0] = parsed[0].copy(placement = ActionPlacement.Toolbar)
     }
     return parsed
+}
+
+private fun decodeStoredItems(
+    stored: String,
+    defaultsById: Map<String, NavigationItemPreference>,
+): List<NavigationItemPreference>? {
+    if (stored.trimStart().startsWith('{')) {
+        return runCatching {
+            navigationItemsJson.decodeFromString<StoredNavigationItems>(stored)
+        }.getOrNull()?.takeIf { it.version == NAVIGATION_ITEMS_VERSION }?.items
+    }
+    return stored.split(',').mapNotNull { entry ->
+        val id = entry.substringBefore(':').takeIf { it.isNotBlank() } ?: return@mapNotNull null
+        val placement = ActionPlacement.fromStoredValue(entry.substringAfter(':', ""))
+            ?: defaultsById[id]?.placement
+            ?: return@mapNotNull null
+        NavigationItemPreference(id, placement)
+    }.takeIf { it.isNotEmpty() }
 }

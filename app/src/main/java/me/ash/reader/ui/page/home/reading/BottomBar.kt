@@ -30,6 +30,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
@@ -74,8 +75,10 @@ fun BottomBar(
     val filterBarPadding = LocalFeedsFilterBarPadding.current.dp
     val navigationCustomization = LocalSettings.current.navigationCustomization
     val iconSize = navigationCustomization.readingBottomIconSize.dp
-    val visibleActions = navigationCustomization.readingBottomActions.filter {
-        it.placement == ActionPlacement.Toolbar
+    val visibleActions = remember(navigationCustomization.readingBottomActions) {
+        navigationCustomization.readingBottomActions.filter {
+            it.placement == ActionPlacement.Toolbar
+        }
     }
     val actionSpacing = if (visibleActions.size > 5) 0.dp else 8.dp
     val horizontalPadding = if (visibleActions.size > 5) 0.dp else filterBarPadding
