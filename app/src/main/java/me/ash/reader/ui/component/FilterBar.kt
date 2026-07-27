@@ -40,6 +40,7 @@ fun FilterBar(
     filterBarPadding: Dp,
     filterBarTonalElevation: Dp,
     iconSize: Dp = 24.dp,
+    backgroundHeight: Dp? = null,
     filters: List<Filter> = Filter.values,
     filterOnClick: (Filter) -> Unit = {},
 ) {
@@ -63,7 +64,7 @@ fun FilterBar(
             filterBarStyle
         }
 
-    val containerHeight = when (effectiveStyle) {
+    val containerHeight = backgroundHeight ?: when (effectiveStyle) {
         FlowFilterBarStylePreference.Icon.value -> 64.dp
         else -> 80.dp
     }

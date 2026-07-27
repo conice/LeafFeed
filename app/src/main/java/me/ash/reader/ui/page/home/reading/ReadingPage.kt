@@ -333,12 +333,24 @@ fun ReadingPage(
                             readerState.content is ReaderState.Error,
                         isFullContentLoading = readerState.content is ReaderState.Loading,
                         isReadLater = readingUiState.isReadLater,
+                        isPreviousArticleAvailable = isPreviousArticleAvailable,
+                        isNextArticleAvailable = isNextArticleAvailable,
                         onUnread = { viewModel.updateReadStatus(it) },
                         onStarred = { viewModel.updateStarredStatus(it) },
                         onReadLater = viewModel::updateReadLaterStatus,
                         onFullContent = {
                             if (it) viewModel.renderFullContent()
                             else viewModel.renderDescriptionContent()
+                        },
+                        onPreviousArticle = {
+                            readerState.previousArticle?.let { (id, index) ->
+                                onLoadArticle(id, index)
+                            }
+                        },
+                        onNextArticle = {
+                            readerState.nextArticle?.let { (id, index) ->
+                                onLoadArticle(id, index)
+                            }
                         },
                         ttsButton = { iconSize ->
                             TtsButton(

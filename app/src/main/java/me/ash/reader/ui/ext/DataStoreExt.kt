@@ -386,12 +386,20 @@ sealed interface PreferencesKey {
                     NavigationPreferenceKeys.mainBottomIconSize,
                 ),
                 IntKey(
+                    NavigationPreferenceKeys.mainBottomHeight.name,
+                    NavigationPreferenceKeys.mainBottomHeight,
+                ),
+                IntKey(
                     NavigationPreferenceKeys.readingTopIconSize.name,
                     NavigationPreferenceKeys.readingTopIconSize,
                 ),
                 IntKey(
                     NavigationPreferenceKeys.readingBottomIconSize.name,
                     NavigationPreferenceKeys.readingBottomIconSize,
+                ),
+                IntKey(
+                    NavigationPreferenceKeys.readingBottomHeight.name,
+                    NavigationPreferenceKeys.readingBottomHeight,
                 ),
                 IntKey(
                     NavigationPreferenceKeys.mainTopElevation.name,

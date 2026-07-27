@@ -24,6 +24,8 @@ import androidx.compose.material.icons.outlined.FiberManualRecord
 import androidx.compose.material.icons.rounded.Bookmark
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.StarOutline
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -57,11 +59,15 @@ fun BottomBar(
     isFullContent: Boolean,
     isFullContentLoading: Boolean,
     isReadLater: Boolean,
+    isPreviousArticleAvailable: Boolean,
+    isNextArticleAvailable: Boolean,
     ttsButton: @Composable (iconSize: Dp) -> Unit,
     onUnread: (isUnread: Boolean) -> Unit = {},
     onStarred: (isStarred: Boolean) -> Unit = {},
     onReadLater: (Boolean) -> Unit = {},
     onFullContent: (isFullContent: Boolean) -> Unit = {},
+    onPreviousArticle: () -> Unit = {},
+    onNextArticle: () -> Unit = {},
 ) {
     val tonalElevation = LocalReadingPageTonalElevation.current
     val isOutlined = tonalElevation == ReadingPageTonalElevationPreference.Outlined
@@ -71,6 +77,8 @@ fun BottomBar(
     val visibleActions = navigationCustomization.readingBottomActions.filter {
         it.placement == ActionPlacement.Toolbar
     }
+    val actionSpacing = if (visibleActions.size > 5) 0.dp else 8.dp
+    val horizontalPadding = if (visibleActions.size > 5) 0.dp else filterBarPadding
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -105,11 +113,11 @@ fun BottomBar(
                         modifier = Modifier
                             .navigationBarsPadding()
                             .fillMaxWidth()
-                            .height(maxOf(60, navigationCustomization.readingBottomIconSize + 36).dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            .height(navigationCustomization.readingBottomHeight.dp),
+                        horizontalArrangement = Arrangement.spacedBy(actionSpacing),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Spacer(modifier = Modifier.width(filterBarPadding))
+                        Spacer(modifier = Modifier.width(horizontalPadding))
                         visibleActions.forEach { action ->
                             ActionSlot {
                                 when (action.id) {
@@ -191,10 +199,32 @@ fun BottomBar(
                                         )
                                         onReadLater(!isReadLater)
                                     }
+                                    NavigationItemIds.PREVIOUS_ARTICLE ->
+                                        CanBeDisabledIconButton(
+                                            modifier = Modifier.size(48.dp),
+                                            size = iconSize,
+                                            disabled = !isPreviousArticleAvailable,
+                                            imageVector = Icons.Rounded.SkipPrevious,
+                                            contentDescription = "Previous article",
+                                            tint = MaterialTheme.colorScheme.outline,
+                                            onClick = onPreviousArticle,
+                                        )
+                                    NavigationItemIds.NEXT_ARTICLE ->
+                                        CanBeDisabledIconButton(
+                                            modifier = Modifier.size(48.dp),
+                                            size = iconSize,
+                                            disabled = !isNextArticleAvailable,
+                                            imageVector = Icons.Rounded.SkipNext,
+                                            contentDescription = stringResource(
+                                                R.string.next_article
+                                            ),
+                                            tint = MaterialTheme.colorScheme.outline,
+                                            onClick = onNextArticle,
+                                        )
                                 }
                             }
                         }
-                        Spacer(modifier = Modifier.width(filterBarPadding))
+                        Spacer(modifier = Modifier.width(horizontalPadding))
                     }
                 }
             }

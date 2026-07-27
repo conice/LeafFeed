@@ -521,6 +521,7 @@ fun FlowPage(
                                     onAiSummary = viewModel::summarizeCurrentTitles,
                                     onMarkAllRead = onMarkAllReadAction,
                                     onSearch = onSearchAction,
+                                    onRefresh = viewModel::sync,
                                 )
                             }
                         },
@@ -897,6 +898,9 @@ fun FlowPage(
                             navigationCustomization.mainBottomElevation,
                         ).navigationTonalElevation(),
                         iconSize = navigationCustomization.mainBottomIconSize.dp,
+                        backgroundHeight = navigationCustomization.mainBottomHeight
+                            .takeIf { it > 0 }
+                            ?.dp,
                         filters = visibleFilters,
                     ) {
                         val nextFilter = it

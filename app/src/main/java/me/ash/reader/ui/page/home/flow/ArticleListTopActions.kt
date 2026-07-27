@@ -6,6 +6,7 @@ import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -42,6 +43,7 @@ fun ArticleListTopActions(
     onAiSummary: () -> Unit,
     onMarkAllRead: () -> Unit,
     onSearch: () -> Unit,
+    onRefresh: () -> Unit,
 ) {
     val configuration = LocalConfiguration.current
     val fontScale = LocalDensity.current.fontScale
@@ -57,6 +59,7 @@ fun ArticleListTopActions(
             NavigationItemIds.AI_SUMMARY -> !searchActive && (isUnread || isAll)
             NavigationItemIds.MARK_ALL_READ -> !isStarred
             NavigationItemIds.SEARCH -> true
+            NavigationItemIds.REFRESH -> !searchActive
             else -> false
         }
     }
@@ -82,7 +85,8 @@ fun ArticleListTopActions(
                 NavigationItemIds.HISTORY -> onHistory
                 NavigationItemIds.AI_SUMMARY -> onAiSummary
                 NavigationItemIds.MARK_ALL_READ -> onMarkAllRead
-                else -> onSearch
+                NavigationItemIds.SEARCH -> onSearch
+                else -> onRefresh
             },
         )
     }
@@ -109,6 +113,7 @@ fun ArticleListTopActions(
                             NavigationItemIds.AI_SUMMARY -> onAiSummary()
                             NavigationItemIds.MARK_ALL_READ -> onMarkAllRead()
                             NavigationItemIds.SEARCH -> onSearch()
+                            NavigationItemIds.REFRESH -> onRefresh()
                         }
                     },
                 )
@@ -136,12 +141,14 @@ private fun ActionIcon(
             NavigationItemIds.HISTORY -> Icons.Rounded.History
             NavigationItemIds.AI_SUMMARY -> Icons.Outlined.AutoAwesome
             NavigationItemIds.MARK_ALL_READ -> Icons.Rounded.DoneAll
+            NavigationItemIds.REFRESH -> Icons.Rounded.Refresh
             else -> Icons.Rounded.Search
         },
         contentDescription = when (id) {
             NavigationItemIds.HISTORY -> stringResource(R.string.reading_history)
             NavigationItemIds.AI_SUMMARY -> stringResource(R.string.ai_summary)
             NavigationItemIds.MARK_ALL_READ -> stringResource(R.string.mark_all_as_read)
+            NavigationItemIds.REFRESH -> stringResource(R.string.refresh)
             else -> stringResource(R.string.search)
         },
         tint = if (active) MaterialTheme.colorScheme.primary
@@ -154,6 +161,7 @@ private fun NavigationItemPreference.label(): String = when (id) {
     NavigationItemIds.HISTORY -> "History"
     NavigationItemIds.AI_SUMMARY -> "AI summary"
     NavigationItemIds.MARK_ALL_READ -> "Mark all as read"
+    NavigationItemIds.REFRESH -> "Refresh"
     else -> "Search"
 }
 
@@ -161,5 +169,6 @@ private fun NavigationItemPreference.icon() = when (id) {
     NavigationItemIds.HISTORY -> Icons.Rounded.History
     NavigationItemIds.AI_SUMMARY -> Icons.Outlined.AutoAwesome
     NavigationItemIds.MARK_ALL_READ -> Icons.Rounded.DoneAll
+    NavigationItemIds.REFRESH -> Icons.Rounded.Refresh
     else -> Icons.Rounded.Search
 }

@@ -28,11 +28,14 @@ object NavigationItemIds {
 
     const val SUBSCRIPTION_REPORT = "subscriptionReport"
     const val ADD_SUBSCRIPTION = "addSubscription"
+    const val SETTINGS = "settings"
+    const val SYNC = "sync"
 
     const val HISTORY = "history"
     const val AI_SUMMARY = "aiSummary"
     const val MARK_ALL_READ = "markAllRead"
     const val SEARCH = "search"
+    const val REFRESH = "refresh"
 
     const val TAGS = "tags"
     const val ADD_NOTE = "addNote"
@@ -40,6 +43,9 @@ object NavigationItemIds {
     const val SHARE = "share"
     const val FULL_CONTENT = "fullContent"
     const val TEXT_TO_SPEECH = "textToSpeech"
+    const val OPEN_IN_BROWSER = "openInBrowser"
+    const val PREVIOUS_ARTICLE = "previousArticle"
+    const val NEXT_ARTICLE = "nextArticle"
 }
 
 object NavigationPreferenceKeys {
@@ -51,8 +57,10 @@ object NavigationPreferenceKeys {
 
     val mainTopIconSize = intPreferencesKey("navigation_main_top_icon_size")
     val mainBottomIconSize = intPreferencesKey("navigation_main_bottom_icon_size")
+    val mainBottomHeight = intPreferencesKey("navigation_main_bottom_height")
     val readingTopIconSize = intPreferencesKey("navigation_reading_top_icon_size")
     val readingBottomIconSize = intPreferencesKey("navigation_reading_bottom_icon_size")
+    val readingBottomHeight = intPreferencesKey("navigation_reading_bottom_height")
 
     val mainTopElevation = intPreferencesKey("navigation_main_top_elevation")
     val mainBottomElevation = intPreferencesKey("navigation_main_bottom_elevation")
@@ -68,8 +76,10 @@ data class NavigationCustomization(
     val readingBottomActions: List<NavigationItemPreference> = Defaults.readingBottomActions,
     val mainTopIconSize: Int = DEFAULT_TOP_ICON_SIZE,
     val mainBottomIconSize: Int = DEFAULT_BOTTOM_ICON_SIZE,
+    val mainBottomHeight: Int = AUTOMATIC_BOTTOM_HEIGHT,
     val readingTopIconSize: Int = DEFAULT_TOP_ICON_SIZE,
     val readingBottomIconSize: Int = DEFAULT_BOTTOM_ICON_SIZE,
+    val readingBottomHeight: Int = DEFAULT_READING_BOTTOM_HEIGHT,
     val mainTopElevation: Int = 0,
     val mainBottomElevation: Int = 0,
     val readingTopElevation: Int = 0,
@@ -82,33 +92,49 @@ data class NavigationCustomization(
             NavigationItemIds.ALL,
             NavigationItemIds.READ_LATER,
         )
-        val feedTopActions = toolbarItems(
-            NavigationItemIds.SUBSCRIPTION_REPORT,
-            NavigationItemIds.ADD_SUBSCRIPTION,
-        )
-        val articleTopActions = toolbarItems(
-            NavigationItemIds.HISTORY,
-            NavigationItemIds.AI_SUMMARY,
-            NavigationItemIds.MARK_ALL_READ,
-            NavigationItemIds.SEARCH,
-        )
+        val feedTopActions =
+            toolbarItems(
+                NavigationItemIds.SUBSCRIPTION_REPORT,
+                NavigationItemIds.ADD_SUBSCRIPTION,
+            ) + hiddenItems(
+                NavigationItemIds.SETTINGS,
+                NavigationItemIds.SYNC,
+            )
+        val articleTopActions =
+            toolbarItems(
+                NavigationItemIds.HISTORY,
+                NavigationItemIds.AI_SUMMARY,
+                NavigationItemIds.MARK_ALL_READ,
+                NavigationItemIds.SEARCH,
+            ) + hiddenItems(NavigationItemIds.REFRESH)
         val readingTopActions = listOf(
             NavigationItemPreference(NavigationItemIds.AI_SUMMARY, ActionPlacement.Toolbar),
             NavigationItemPreference(NavigationItemIds.TAGS, ActionPlacement.Toolbar),
             NavigationItemPreference(NavigationItemIds.ADD_NOTE, ActionPlacement.More),
             NavigationItemPreference(NavigationItemIds.STYLE, ActionPlacement.More),
             NavigationItemPreference(NavigationItemIds.SHARE, ActionPlacement.More),
+            NavigationItemPreference(
+                NavigationItemIds.OPEN_IN_BROWSER,
+                ActionPlacement.Hidden,
+            ),
         )
-        val readingBottomActions = toolbarItems(
-            NavigationItemIds.STARRED,
-            NavigationItemIds.UNREAD,
-            NavigationItemIds.FULL_CONTENT,
-            NavigationItemIds.TEXT_TO_SPEECH,
-            NavigationItemIds.READ_LATER,
-        )
+        val readingBottomActions =
+            toolbarItems(
+                NavigationItemIds.STARRED,
+                NavigationItemIds.UNREAD,
+                NavigationItemIds.FULL_CONTENT,
+                NavigationItemIds.TEXT_TO_SPEECH,
+                NavigationItemIds.READ_LATER,
+            ) + hiddenItems(
+                NavigationItemIds.PREVIOUS_ARTICLE,
+                NavigationItemIds.NEXT_ARTICLE,
+            )
 
         private fun toolbarItems(vararg ids: String) =
             ids.map { NavigationItemPreference(it, ActionPlacement.Toolbar) }
+
+        private fun hiddenItems(vararg ids: String) =
+            ids.map { NavigationItemPreference(it, ActionPlacement.Hidden) }
     }
 
     companion object {
@@ -116,6 +142,10 @@ data class NavigationCustomization(
         const val MAX_ICON_SIZE = 32
         const val DEFAULT_TOP_ICON_SIZE = 22
         const val DEFAULT_BOTTOM_ICON_SIZE = 24
+        const val AUTOMATIC_BOTTOM_HEIGHT = 0
+        const val DEFAULT_READING_BOTTOM_HEIGHT = 60
+        const val MIN_BOTTOM_HEIGHT = 56
+        const val MAX_BOTTOM_HEIGHT = 96
         const val MIN_ELEVATION = 0
         const val MAX_ELEVATION = 8
     }
@@ -153,6 +183,11 @@ fun Preferences.toNavigationCustomization(): NavigationCustomization {
             NavigationPreferenceKeys.mainBottomIconSize,
             defaults.mainBottomIconSize,
         ),
+        mainBottomHeight = bottomHeight(
+            NavigationPreferenceKeys.mainBottomHeight,
+            defaults.mainBottomHeight,
+            allowAutomatic = true,
+        ),
         readingTopIconSize = iconSize(
             NavigationPreferenceKeys.readingTopIconSize,
             defaults.readingTopIconSize,
@@ -160,6 +195,10 @@ fun Preferences.toNavigationCustomization(): NavigationCustomization {
         readingBottomIconSize = iconSize(
             NavigationPreferenceKeys.readingBottomIconSize,
             defaults.readingBottomIconSize,
+        ),
+        readingBottomHeight = bottomHeight(
+            NavigationPreferenceKeys.readingBottomHeight,
+            defaults.readingBottomHeight,
         ),
         mainTopElevation = elevation(
             NavigationPreferenceKeys.mainTopElevation,
@@ -194,6 +233,21 @@ private fun Preferences.elevation(key: Preferences.Key<Int>, default: Int): Int 
         NavigationCustomization.MIN_ELEVATION,
         NavigationCustomization.MAX_ELEVATION,
     )
+
+private fun Preferences.bottomHeight(
+    key: Preferences.Key<Int>,
+    default: Int,
+    allowAutomatic: Boolean = false,
+): Int {
+    val value = this[key] ?: default
+    if (allowAutomatic && value == NavigationCustomization.AUTOMATIC_BOTTOM_HEIGHT) {
+        return value
+    }
+    return value.coerceIn(
+        NavigationCustomization.MIN_BOTTOM_HEIGHT,
+        NavigationCustomization.MAX_BOTTOM_HEIGHT,
+    )
+}
 
 private fun parseItems(
     stored: String?,

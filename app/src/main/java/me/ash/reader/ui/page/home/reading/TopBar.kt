@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.rounded.MenuOpen
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Label
 import androidx.compose.material.icons.outlined.NoteAdd
+import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.rounded.Close
@@ -52,6 +53,8 @@ import androidx.compose.ui.zIndex
 import me.ash.reader.R
 import me.ash.reader.infrastructure.preference.ActionPlacement
 import me.ash.reader.infrastructure.preference.LocalReadingPageTonalElevation
+import me.ash.reader.infrastructure.preference.LocalOpenLink
+import me.ash.reader.infrastructure.preference.LocalOpenLinkSpecificBrowser
 import me.ash.reader.infrastructure.preference.LocalSettings
 import me.ash.reader.infrastructure.preference.LocalSharedContent
 import me.ash.reader.infrastructure.preference.NavigationItemIds
@@ -61,6 +64,7 @@ import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.component.navigationTonalElevation
 import me.ash.reader.ui.component.responsiveToolbarCapacity
 import me.ash.reader.ui.ext.surfaceColorAtElevation
+import me.ash.reader.ui.ext.openURL
 import me.ash.reader.ui.motion.VerticalEdge
 import me.ash.reader.ui.motion.slideInFromVerticalEdge
 import me.ash.reader.ui.motion.slideOutToVerticalEdge
@@ -84,6 +88,8 @@ fun TopBar(
 ) {
     val context = LocalContext.current
     val sharedContent = LocalSharedContent.current
+    val openLink = LocalOpenLink.current
+    val openLinkSpecificBrowser = LocalOpenLinkSpecificBrowser.current
     val navigationCustomization = LocalSettings.current.navigationCustomization
     val configuration = LocalConfiguration.current
     val fontScale = LocalDensity.current.fontScale
@@ -154,6 +160,7 @@ fun TopBar(
                                 NavigationItemIds.AI_SUMMARY,
                                 NavigationItemIds.STYLE,
                                 NavigationItemIds.SHARE -> true
+                                NavigationItemIds.OPEN_IN_BROWSER -> !link.isNullOrBlank()
                                 else -> false
                             }
                         }
@@ -201,6 +208,13 @@ fun TopBar(
                                         onAddNote = onAddNote,
                                         onStyle = onNavigateToStylePage,
                                         onShare = { sharedContent.share(context, title, link) },
+                                        onOpenInBrowser = {
+                                            context.openURL(
+                                                link,
+                                                openLink,
+                                                openLinkSpecificBrowser,
+                                            )
+                                        },
                                     )
                                 },
                             )
@@ -235,6 +249,13 @@ fun TopBar(
                                             onShare = {
                                                 sharedContent.share(context, title, link)
                                             },
+                                            onOpenInBrowser = {
+                                                context.openURL(
+                                                    link,
+                                                    openLink,
+                                                    openLinkSpecificBrowser,
+                                                )
+                                            },
                                         )
                                     },
                                 )
@@ -259,6 +280,7 @@ private fun NavigationItemPreference.label(): String = when (id) {
     NavigationItemIds.TAGS -> "Tags"
     NavigationItemIds.ADD_NOTE -> "Add note"
     NavigationItemIds.STYLE -> "Style"
+    NavigationItemIds.OPEN_IN_BROWSER -> "Open in browser"
     else -> "Share"
 }
 
@@ -267,6 +289,7 @@ private fun NavigationItemPreference.icon() = when (id) {
     NavigationItemIds.TAGS -> Icons.Outlined.Label
     NavigationItemIds.ADD_NOTE -> Icons.Outlined.NoteAdd
     NavigationItemIds.STYLE -> Icons.Outlined.Palette
+    NavigationItemIds.OPEN_IN_BROWSER -> Icons.Outlined.OpenInBrowser
     else -> Icons.Outlined.Share
 }
 
@@ -276,10 +299,12 @@ private fun NavigationItemPreference.performAction(
     onAddNote: () -> Unit,
     onStyle: () -> Unit,
     onShare: () -> Unit,
+    onOpenInBrowser: () -> Unit,
 ) = when (id) {
     NavigationItemIds.AI_SUMMARY -> onAiSummary()
     NavigationItemIds.TAGS -> onManageTags()
     NavigationItemIds.ADD_NOTE -> onAddNote()
     NavigationItemIds.STYLE -> onStyle()
+    NavigationItemIds.OPEN_IN_BROWSER -> onOpenInBrowser()
     else -> onShare()
 }

@@ -26,6 +26,7 @@ class NavigationCustomizationTest {
                 NavigationItemPreference(NavigationItemIds.HISTORY, ActionPlacement.Hidden),
                 NavigationItemPreference(NavigationItemIds.AI_SUMMARY, ActionPlacement.Toolbar),
                 NavigationItemPreference(NavigationItemIds.MARK_ALL_READ, ActionPlacement.Toolbar),
+                NavigationItemPreference(NavigationItemIds.REFRESH, ActionPlacement.Hidden),
             ),
             actions,
         )
@@ -52,6 +53,8 @@ class NavigationCustomizationTest {
                 "starred:more,unread:hidden,all:hidden,readLater:hidden",
             NavigationPreferenceKeys.mainTopIconSize to 100,
             NavigationPreferenceKeys.readingBottomIconSize to 1,
+            NavigationPreferenceKeys.mainBottomHeight to 1,
+            NavigationPreferenceKeys.readingBottomHeight to 200,
             NavigationPreferenceKeys.mainTopElevation to -1,
             NavigationPreferenceKeys.readingBottomElevation to 99,
         )
@@ -61,6 +64,11 @@ class NavigationCustomizationTest {
         assertEquals(ActionPlacement.Toolbar, customization.mainBottomItems.first().placement)
         assertEquals(NavigationCustomization.MAX_ICON_SIZE, customization.mainTopIconSize)
         assertEquals(NavigationCustomization.MIN_ICON_SIZE, customization.readingBottomIconSize)
+        assertEquals(NavigationCustomization.MIN_BOTTOM_HEIGHT, customization.mainBottomHeight)
+        assertEquals(
+            NavigationCustomization.MAX_BOTTOM_HEIGHT,
+            customization.readingBottomHeight,
+        )
         assertEquals(NavigationCustomization.MIN_ELEVATION, customization.mainTopElevation)
         assertEquals(
             NavigationCustomization.MAX_ELEVATION,

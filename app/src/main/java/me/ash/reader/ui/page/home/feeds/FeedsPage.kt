@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material.icons.rounded.UnfoldLess
 import androidx.compose.material.icons.rounded.UnfoldMore
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -56,6 +57,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -82,6 +85,7 @@ import me.ash.reader.infrastructure.preference.LocalSettings
 import me.ash.reader.infrastructure.preference.NavigationItemIds
 import me.ash.reader.ui.component.FilterBar
 import me.ash.reader.ui.component.navigationTonalElevation
+import me.ash.reader.ui.component.responsiveToolbarCapacity
 import me.ash.reader.ui.component.visibleMainFilters
 import me.ash.reader.ui.component.RefreshIndicatorResult
 import me.ash.reader.ui.component.base.DisplayText
@@ -332,15 +336,35 @@ fun FeedsPage(
                     }
                 },
                 actions = {
+                    val configuration = LocalConfiguration.current
+                    val fontScale = LocalDensity.current.fontScale
                     val availableActions = navigationCustomization.feedTopActions.filter { item ->
                         when (item.id) {
                             NavigationItemIds.SUBSCRIPTION_REPORT -> filterState.filter.isAll()
                             NavigationItemIds.ADD_SUBSCRIPTION ->
                                 subscribeViewModel.rssService.get().addSubscription
+                            NavigationItemIds.SETTINGS,
+                            NavigationItemIds.SYNC -> true
                             else -> false
                         }
                     }
-                    availableActions.filter { it.placement == ActionPlacement.Toolbar }
+                    val capacity = responsiveToolbarCapacity(
+                        iconSize = navigationCustomization.mainTopIconSize,
+                        screenWidthDp = configuration.screenWidthDp,
+                        fontScale = fontScale,
+                        normalCapacity = 4,
+                    )
+                    val configuredToolbar = availableActions.filter {
+                        it.placement == ActionPlacement.Toolbar
+                    }
+                    val hasOverflow = availableActions.any {
+                        it.placement == ActionPlacement.More
+                    } || configuredToolbar.size > capacity
+                    val toolbarCapacity =
+                        if (hasOverflow) (capacity - 1).coerceAtLeast(1) else capacity
+                    val toolbarActions = configuredToolbar.take(toolbarCapacity)
+                    val toolbarIds = toolbarActions.mapTo(mutableSetOf()) { it.id }
+                    toolbarActions
                         .forEach { item ->
                             when (item.id) {
                                 NavigationItemIds.SUBSCRIPTION_REPORT -> FeedbackIconButton(
@@ -363,10 +387,30 @@ fun FeedsPage(
                                     tint = MaterialTheme.colorScheme.onSurface,
                                     onClick = subscribeViewModel::showDrawer,
                                 )
+                                NavigationItemIds.SETTINGS -> FeedbackIconButton(
+                                    modifier = Modifier.size(
+                                        navigationCustomization.mainTopIconSize.dp
+                                    ),
+                                    imageVector = Icons.Outlined.Settings,
+                                    contentDescription = stringResource(R.string.settings),
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    onClick = navigateToSettings,
+                                )
+                                NavigationItemIds.SYNC -> FeedbackIconButton(
+                                    modifier = Modifier.size(
+                                        navigationCustomization.mainTopIconSize.dp
+                                    ),
+                                    imageVector = Icons.Rounded.Sync,
+                                    contentDescription = stringResource(R.string.sync_interval),
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    enabled = !indicatorRunning,
+                                    onClick = doSync,
+                                )
                             }
                         }
                     val moreActions = availableActions.filter {
-                        it.placement == ActionPlacement.More
+                        it.placement == ActionPlacement.More ||
+                            it.placement == ActionPlacement.Toolbar && it.id !in toolbarIds
                     }
                     if (moreActions.isNotEmpty()) {
                         FeedbackIconButton(
@@ -396,6 +440,23 @@ fun FeedsPage(
                                         onClick = {
                                             actionMenuExpanded = false
                                             subscribeViewModel.showDrawer()
+                                        },
+                                    )
+                                    NavigationItemIds.SETTINGS -> DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.settings)) },
+                                        leadingIcon = { Icon(Icons.Outlined.Settings, null) },
+                                        onClick = {
+                                            actionMenuExpanded = false
+                                            navigateToSettings()
+                                        },
+                                    )
+                                    NavigationItemIds.SYNC -> DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.sync_interval)) },
+                                        leadingIcon = { Icon(Icons.Rounded.Sync, null) },
+                                        enabled = !indicatorRunning,
+                                        onClick = {
+                                            actionMenuExpanded = false
+                                            doSync()
                                         },
                                     )
                                 }
@@ -619,6 +680,9 @@ fun FeedsPage(
                     navigationCustomization.mainBottomElevation,
                 ).navigationTonalElevation(),
                 iconSize = navigationCustomization.mainBottomIconSize.dp,
+                backgroundHeight = navigationCustomization.mainBottomHeight
+                    .takeIf { it > 0 }
+                    ?.dp,
             ) {
                 feedsViewModel.changeFilter(filterState.copy(filter = it))
             }
