@@ -146,8 +146,6 @@ fun ReadingPage(
                         title = readerState.title,
                         link = readerState.link,
                         isAiSummaryAvailable = isArticleContentAvailable,
-                        showNotesAction = featureSettings.showNotesAction,
-                        showTagsAction = featureSettings.showArticleTags,
                         onClick = { bringToTop = true },
                         navigationAction = navigationAction,
                         onNavButtonClick = onNavAction,
@@ -335,7 +333,6 @@ fun ReadingPage(
                             readerState.content is ReaderState.Error,
                         isFullContentLoading = readerState.content is ReaderState.Loading,
                         isReadLater = readingUiState.isReadLater,
-                        showReadLaterAction = featureSettings.showReadLaterIcon,
                         onUnread = { viewModel.updateReadStatus(it) },
                         onStarred = { viewModel.updateStarredStatus(it) },
                         onReadLater = viewModel::updateReadLaterStatus,
@@ -343,8 +340,9 @@ fun ReadingPage(
                             if (it) viewModel.renderFullContent()
                             else viewModel.renderDescriptionContent()
                         },
-                        ttsButton = {
+                        ttsButton = { iconSize ->
                             TtsButton(
+                                iconSize = iconSize,
                                 onClick = {
                                     when (it) {
                                         TextToSpeechManager.State.Error -> {

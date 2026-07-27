@@ -67,6 +67,7 @@ import me.ash.reader.ui.page.settings.color.reading.ReadingTextPage
 import me.ash.reader.ui.page.settings.color.reading.ReadingTitlePage
 import me.ash.reader.ui.page.settings.color.reading.ReadingVideoPage
 import me.ash.reader.ui.page.settings.interaction.InteractionPage
+import me.ash.reader.ui.page.settings.interaction.NavigationActionsPage
 import me.ash.reader.ui.page.settings.languages.LanguagesPage
 import me.ash.reader.ui.page.settings.tips.LicenseListPage
 import me.ash.reader.ui.page.settings.tips.TipsAndSupportPage
@@ -394,8 +395,13 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                             InteractionPage(
                                 onBack = onBack,
                                 navigateToLanguages = { backStack.add(Route.Languages) },
+                                navigateToNavigationActions = {
+                                    backStack.add(Route.NavigationActions)
+                                },
                             )
                         }
+                    Route.NavigationActions ->
+                        NavEntry(key) { NavigationActionsPage(onBack = onBack) }
                     Route.Languages -> NavEntry(key) { LanguagesPage(onBack = onBack) }
                     Route.Troubleshooting -> NavEntry(key) { TroubleshootingPage(onBack = onBack) }
                     Route.TipsAndSupport ->

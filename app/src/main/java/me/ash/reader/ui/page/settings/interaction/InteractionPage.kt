@@ -56,6 +56,7 @@ import me.ash.reader.ui.theme.palette.onLight
 fun InteractionPage(
     onBack: () -> Unit,
     navigateToLanguages: () -> Unit,
+    navigateToNavigationActions: () -> Unit,
 ) {
     val context = LocalContext.current
     val initialPage = LocalInitialPage.current
@@ -120,6 +121,17 @@ fun InteractionPage(
                         onClick = {
                             initialFilterDialogVisible = true
                         },
+                    ) {}
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Subtitle(
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        text = "Navigation",
+                    )
+                    SettingItem(
+                        title = "Navigation and actions",
+                        desc = "Bottom filters, toolbar actions, icon sizes and elevation",
+                        onClick = navigateToNavigationActions,
                     ) {}
                     Spacer(modifier = Modifier.height(24.dp))
 

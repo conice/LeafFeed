@@ -65,9 +65,6 @@ fun ReadingOptionsPage(
         toggle("Prefer parsed full content", settings.preferFullContent) { write(FeaturePreferenceKeys.preferFullContent, it) }
 
         section("Article controls")
-        toggle("Show article tags", settings.showArticleTags) { write(FeaturePreferenceKeys.showArticleTags, it) }
-        toggle("Show notes action", settings.showNotesAction) { write(FeaturePreferenceKeys.showNotesAction, it) }
-        toggle("Show read later action", settings.showReadLaterIcon) { write(FeaturePreferenceKeys.showReadLaterIcon, it) }
 
         section("Management")
         action("Tags and notes", "Manage reading data", navigateToCollections)

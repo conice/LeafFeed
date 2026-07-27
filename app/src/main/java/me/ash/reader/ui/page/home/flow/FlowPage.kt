@@ -36,11 +36,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.rounded.DoneAll
-import androidx.compose.material.icons.rounded.History
-import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
@@ -103,6 +99,8 @@ import me.ash.reader.infrastructure.preference.LocalSettings
 import me.ash.reader.infrastructure.preference.LocalSharedContent
 import me.ash.reader.infrastructure.preference.PullToLoadNextFeedPreference
 import me.ash.reader.ui.component.FilterBar
+import me.ash.reader.ui.component.navigationTonalElevation
+import me.ash.reader.ui.component.visibleMainFilters
 import me.ash.reader.ui.component.AiSummaryDialog
 import me.ash.reader.ui.component.CompactStatusIndicator
 import me.ash.reader.ui.component.RefreshIndicatorResult
@@ -115,6 +113,7 @@ import me.ash.reader.ui.component.scrollbar.scrollIndicator
 import me.ash.reader.ui.ext.collectAsStateValue
 import me.ash.reader.ui.ext.openURL
 import me.ash.reader.ui.ext.showToast
+import me.ash.reader.ui.ext.surfaceColorAtElevation
 import me.ash.reader.ui.motion.Direction
 import me.ash.reader.ui.motion.sharedYAxisTransitionExpressive
 import me.ash.reader.ui.page.adaptive.ArticleListReaderViewModel
@@ -162,6 +161,8 @@ fun FlowPage(
 
     val settings = LocalSettings.current
     val pullToSwitchFeed = settings.pullToSwitchFeed
+    val navigationCustomization = settings.navigationCustomization
+    val visibleFilters = navigationCustomization.visibleMainFilters()
 
     val flowUiState = viewModel.flowUiState.collectAsStateValue()
     if (flowUiState == null) return
@@ -186,9 +187,14 @@ fun FlowPage(
             listStates.getOrPut(listStateKey) { LazyListState(0, 0) }
         }
 
-    val isTopBarElevated = topBarTonalElevation.value > 0
     val scrolledTopBarContainerColor =
-        with(MaterialTheme.colorScheme) { if (isTopBarElevated) surfaceContainer else surface }
+        with(MaterialTheme.colorScheme) {
+            if (navigationCustomization.mainTopElevation > 0) {
+                surfaceColorAtElevation(
+                    navigationCustomization.mainTopElevation.navigationTonalElevation()
+                )
+            } else if (topBarTonalElevation.value > 0) surfaceContainer else surface
+        }
 
     val titleText =
         when {
@@ -202,6 +208,45 @@ fun FlowPage(
     var markAsRead by remember { mutableStateOf(false) }
     var onSearch by rememberSaveable { mutableStateOf(false) }
     var selectedSavedSearchId by rememberSaveable { mutableStateOf<String?>(null) }
+
+    val onHistoryAction = {
+        navigateToReadingHistory(
+            filterUiState.feed?.accountId
+                ?: filterUiState.group?.accountId
+                ?: viewModel.currentAccountId(),
+            filterUiState.group?.id,
+            filterUiState.feed?.id,
+            filterUiState.contentType == ArticleContentType.AUDIO,
+        )
+    }
+    val onMarkAllReadAction = {
+        if (markAsRead) {
+            markAsRead = false
+        } else {
+            scope.launch {
+                if (listState.firstVisibleItemIndex != 0) listState.animateScrollToItem(0)
+            }.invokeOnCompletion {
+                markAsRead = true
+                onSearch = false
+            }
+        }
+    }
+    val onSearchAction = {
+        if (onSearch) {
+            onSearch = false
+        } else {
+            scope.launch {
+                if (listState.firstVisibleItemIndex != 0) listState.animateScrollToItem(0)
+            }.invokeOnCompletion {
+                scope.launch {
+                    onSearch = true
+                    markAsRead = false
+                    delay(100)
+                    focusRequester.requestFocus()
+                }
+            }
+        }
+    }
 
     var currentPullToLoadState: PullToLoadState? by remember { mutableStateOf(null) }
     var currentLoadAction: LoadAction? by remember { mutableStateOf(null) }
@@ -275,6 +320,12 @@ fun FlowPage(
     LaunchedEffect(savedSearches, selectedSavedSearchId) {
         if (selectedSavedSearchId != null && savedSearches.none { it.id == selectedSavedSearchId }) {
             selectedSavedSearchId = null
+        }
+    }
+
+    LaunchedEffect(visibleFilters, filterUiState.filter) {
+        if (filterUiState.filter !in visibleFilters) {
+            viewModel.changeFilter(filterUiState.copy(filter = visibleFilters.first()))
         }
     }
 
@@ -457,104 +508,29 @@ fun FlowPage(
                                     },
                                 )
                             }
-                            RYExtensibleVisibility(
-                                visible = selectedSavedSearchId == null &&
-                                    !onSearch && filterUiState.filter.isUnread()
-                            ) {
-                                FeedbackIconButton(
-                                    imageVector = Icons.Rounded.History,
-                                    contentDescription = stringResource(R.string.reading_history),
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    onClick = {
-                                        navigateToReadingHistory(
-                                            filterUiState.feed?.accountId
-                                                ?: filterUiState.group?.accountId
-                                                ?: viewModel.currentAccountId(),
-                                            filterUiState.group?.id,
-                                            filterUiState.feed?.id,
-                                            filterUiState.contentType == ArticleContentType.AUDIO,
-                                        )
-                                    },
+                            if (selectedSavedSearchId == null) {
+                                ArticleListTopActions(
+                                    actions = navigationCustomization.articleTopActions,
+                                    iconSize = navigationCustomization.mainTopIconSize,
+                                    isUnread = filterUiState.filter.isUnread(),
+                                    isAll = filterUiState.filter.isAll(),
+                                    isStarred = filterUiState.filter.isStarred(),
+                                    searchActive = onSearch,
+                                    markAsReadActive = markAsRead,
+                                    onHistory = onHistoryAction,
+                                    onAiSummary = viewModel::summarizeCurrentTitles,
+                                    onMarkAllRead = onMarkAllReadAction,
+                                    onSearch = onSearchAction,
                                 )
-                            }
-                            RYExtensibleVisibility(
-                                visible =
-                                    selectedSavedSearchId == null && !onSearch &&
-                                        (filterUiState.filter.isUnread() ||
-                                            filterUiState.filter.isAll())
-                            ) {
-                                FeedbackIconButton(
-                                    imageVector = Icons.Outlined.AutoAwesome,
-                                    contentDescription = stringResource(R.string.ai_summary),
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    onClick = { viewModel.summarizeCurrentTitles() },
-                                )
-                            }
-                            RYExtensibleVisibility(
-                                visible = selectedSavedSearchId == null &&
-                                    !filterUiState.filter.isStarred()
-                            ) {
-                                FeedbackIconButton(
-                                    imageVector = Icons.Rounded.DoneAll,
-                                    contentDescription = stringResource(R.string.mark_all_as_read),
-                                    tint =
-                                        if (markAsRead) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurface
-                                        },
-                                ) {
-                                    if (markAsRead) {
-                                        markAsRead = false
-                                    } else {
-                                        scope
-                                            .launch {
-                                                if (listState.firstVisibleItemIndex != 0) {
-                                                    listState.animateScrollToItem(0)
-                                                }
-                                            }
-                                            .invokeOnCompletion {
-                                                markAsRead = true
-                                                onSearch = false
-                                            }
-                                    }
-                                }
-                            }
-                            RYExtensibleVisibility(visible = selectedSavedSearchId == null) {
-                                FeedbackIconButton(
-                                    imageVector = Icons.Rounded.Search,
-                                    contentDescription = stringResource(R.string.search),
-                                    tint =
-                                        if (onSearch) {
-                                            MaterialTheme.colorScheme.primary
-                                        } else {
-                                            MaterialTheme.colorScheme.onSurface
-                                        },
-                                ) {
-                                    if (onSearch) {
-                                        onSearch = false
-                                    } else {
-                                        scope
-                                            .launch {
-                                                if (listState.firstVisibleItemIndex != 0) {
-                                                    listState.animateScrollToItem(0)
-                                                }
-                                            }
-                                            .invokeOnCompletion {
-                                                scope.launch {
-                                                    onSearch = true
-                                                    markAsRead = false
-                                                    delay(100)
-                                                    focusRequester.requestFocus()
-                                                }
-                                            }
-                                    }
-                                }
                             }
                         },
                         colors =
                             TopAppBarDefaults.topAppBarColors(
-                                scrolledContainerColor = scrolledTopBarContainerColor
+                                containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(
+                                    navigationCustomization.mainTopElevation
+                                        .navigationTonalElevation()
+                                ),
+                                scrolledContainerColor = scrolledTopBarContainerColor,
                             ),
                     )
                 }
@@ -916,8 +892,12 @@ fun FlowPage(
                         filterBarStyle = filterBarStyle.value,
                         filterBarFilled = true,
                         filterBarPadding = filterBarPadding.dp,
-                        filterBarTonalElevation = filterBarTonalElevation.value.dp,
-                        filters = Filter.articleValues,
+                        filterBarTonalElevation = maxOf(
+                            filterBarTonalElevation.value,
+                            navigationCustomization.mainBottomElevation,
+                        ).navigationTonalElevation(),
+                        iconSize = navigationCustomization.mainBottomIconSize.dp,
+                        filters = visibleFilters,
                     ) {
                         val nextFilter = it
                         if (nextFilter != null && filterUiState.filter != nextFilter) {

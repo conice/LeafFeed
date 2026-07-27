@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import me.ash.reader.R
 import me.ash.reader.infrastructure.android.TextToSpeechManager
@@ -43,6 +44,7 @@ import me.ash.reader.ui.motion.sharedYAxisTransitionSlow
 @Composable
 fun TtsButton(
     modifier: Modifier = Modifier,
+    iconSize: Dp = 24.dp,
     onClick: (TextToSpeechManager.State) -> Unit,
     state: TextToSpeechManager.State
 ) {
@@ -72,12 +74,13 @@ fun TtsButton(
                 ) {
                     TtsProgressIndicator(
                         { state.progress },
-                        modifier = Modifier
+                        modifier = Modifier,
+                        size = iconSize,
                     )
                     Icon(
                         Icons.Rounded.Stop,
                         null,
-                        modifier = Modifier.size(14.dp),
+                        modifier = Modifier.size((iconSize.value * 0.58f).dp),
                         tint = MaterialTheme.colorScheme.tertiary
                     )
                 }
@@ -110,6 +113,7 @@ fun TtsButton(
                     Icon(
                         Icons.Outlined.Headphones,
                         stringResource(R.string.read_aloud),
+                        modifier = Modifier.size(iconSize),
                         tint = MaterialTheme.colorScheme.outline
                     )
                 }
@@ -121,7 +125,11 @@ fun TtsButton(
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun TtsProgressIndicator(progress: (() -> Float), modifier: Modifier = Modifier) {
+fun TtsProgressIndicator(
+    progress: (() -> Float),
+    modifier: Modifier = Modifier,
+    size: Dp = 24.dp,
+) {
 
     val animatedProgress by animateFloatAsState(
         targetValue = progress(),
@@ -129,7 +137,7 @@ fun TtsProgressIndicator(progress: (() -> Float), modifier: Modifier = Modifier)
     )
     CircularProgressIndicator(
         progress = { animatedProgress },
-        modifier = modifier.size(24.dp),
+        modifier = modifier.size(size),
         gapSize = 0.dp,
         strokeCap = StrokeCap.Butt,
         trackColor = MaterialTheme.colorScheme.outlineVariant,

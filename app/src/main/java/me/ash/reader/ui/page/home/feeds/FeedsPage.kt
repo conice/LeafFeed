@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.UnfoldLess
 import androidx.compose.material.icons.rounded.UnfoldMore
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +35,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.Text
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -65,7 +68,6 @@ import androidx.work.WorkInfo
 import kotlin.collections.set
 import kotlinx.coroutines.launch
 import me.ash.reader.R
-import me.ash.reader.domain.model.general.Filter
 import me.ash.reader.domain.service.OpmlImportPhase
 import me.ash.reader.infrastructure.preference.LocalFeedsFilterBarPadding
 import me.ash.reader.infrastructure.preference.LocalFeedsFilterBarStyle
@@ -75,7 +77,12 @@ import me.ash.reader.infrastructure.preference.LocalFeedsGroupListTonalElevation
 import me.ash.reader.infrastructure.preference.LocalFeedsTopBarTonalElevation
 import me.ash.reader.infrastructure.preference.LocalNewVersionNumber
 import me.ash.reader.infrastructure.preference.LocalSkipVersionNumber
+import me.ash.reader.infrastructure.preference.ActionPlacement
+import me.ash.reader.infrastructure.preference.LocalSettings
+import me.ash.reader.infrastructure.preference.NavigationItemIds
 import me.ash.reader.ui.component.FilterBar
+import me.ash.reader.ui.component.navigationTonalElevation
+import me.ash.reader.ui.component.visibleMainFilters
 import me.ash.reader.ui.component.RefreshIndicatorResult
 import me.ash.reader.ui.component.base.DisplayText
 import me.ash.reader.ui.component.base.AnimatedIcon
@@ -128,6 +135,9 @@ fun FeedsPage(
     val filterBarStyle = LocalFeedsFilterBarStyle.current
     val filterBarPadding = LocalFeedsFilterBarPadding.current
     val filterBarTonalElevation = LocalFeedsFilterBarTonalElevation.current
+    val navigationCustomization = LocalSettings.current.navigationCustomization
+    val visibleFilters = navigationCustomization.visibleMainFilters()
+    var actionMenuExpanded by remember { mutableStateOf(false) }
 
     val accounts = accountViewModel.accounts.collectAsStateValue(initial = emptyList())
 
@@ -155,6 +165,12 @@ fun FeedsPage(
     val syncingState = rememberPullToRefreshState()
     val doSync: () -> Unit = {
         feedsViewModel.sync()
+    }
+
+    LaunchedEffect(visibleFilters, filterState.filter) {
+        if (filterState.filter !in visibleFilters) {
+            feedsViewModel.changeFilter(filterState.copy(filter = visibleFilters.first()))
+        }
     }
 
     DisposableEffect(owner) {
@@ -316,21 +332,74 @@ fun FeedsPage(
                     }
                 },
                 actions = {
-                    if (filterState.filter.isAll()) {
-                        FeedbackIconButton(
-                            imageVector = Icons.Outlined.BarChart,
-                            contentDescription = stringResource(R.string.subscription_report),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            onClick = navigateToSubscriptionReport,
-                        )
+                    val availableActions = navigationCustomization.feedTopActions.filter { item ->
+                        when (item.id) {
+                            NavigationItemIds.SUBSCRIPTION_REPORT -> filterState.filter.isAll()
+                            NavigationItemIds.ADD_SUBSCRIPTION ->
+                                subscribeViewModel.rssService.get().addSubscription
+                            else -> false
+                        }
                     }
-                    if (subscribeViewModel.rssService.get().addSubscription) {
+                    availableActions.filter { it.placement == ActionPlacement.Toolbar }
+                        .forEach { item ->
+                            when (item.id) {
+                                NavigationItemIds.SUBSCRIPTION_REPORT -> FeedbackIconButton(
+                                    modifier = Modifier.size(
+                                        navigationCustomization.mainTopIconSize.dp
+                                    ),
+                                    imageVector = Icons.Outlined.BarChart,
+                                    contentDescription = stringResource(
+                                        R.string.subscription_report
+                                    ),
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    onClick = navigateToSubscriptionReport,
+                                )
+                                NavigationItemIds.ADD_SUBSCRIPTION -> FeedbackIconButton(
+                                    modifier = Modifier.size(
+                                        navigationCustomization.mainTopIconSize.dp
+                                    ),
+                                    imageVector = Icons.Rounded.Add,
+                                    contentDescription = stringResource(R.string.subscribe),
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    onClick = subscribeViewModel::showDrawer,
+                                )
+                            }
+                        }
+                    val moreActions = availableActions.filter {
+                        it.placement == ActionPlacement.More
+                    }
+                    if (moreActions.isNotEmpty()) {
                         FeedbackIconButton(
-                            imageVector = Icons.Rounded.Add,
-                            contentDescription = stringResource(R.string.subscribe),
+                            modifier = Modifier.size(navigationCustomization.mainTopIconSize.dp),
+                            imageVector = Icons.Rounded.MoreVert,
+                            contentDescription = stringResource(R.string.more),
                             tint = MaterialTheme.colorScheme.onSurface,
+                            onClick = { actionMenuExpanded = true },
+                        )
+                        DropdownMenu(
+                            expanded = actionMenuExpanded,
+                            onDismissRequest = { actionMenuExpanded = false },
                         ) {
-                            subscribeViewModel.showDrawer()
+                            moreActions.forEach { item ->
+                                when (item.id) {
+                                    NavigationItemIds.SUBSCRIPTION_REPORT -> DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.subscription_report)) },
+                                        leadingIcon = { Icon(Icons.Outlined.BarChart, null) },
+                                        onClick = {
+                                            actionMenuExpanded = false
+                                            navigateToSubscriptionReport()
+                                        },
+                                    )
+                                    NavigationItemIds.ADD_SUBSCRIPTION -> DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.subscribe)) },
+                                        leadingIcon = { Icon(Icons.Rounded.Add, null) },
+                                        onClick = {
+                                            actionMenuExpanded = false
+                                            subscribeViewModel.showDrawer()
+                                        },
+                                    )
+                                }
+                            }
                         }
                     }
                 },
@@ -338,7 +407,10 @@ fun FeedsPage(
                     TopAppBarDefaults.topAppBarColors(
                         containerColor =
                             MaterialTheme.colorScheme.surfaceColorAtElevation(
-                                topBarTonalElevation.value.dp
+                                maxOf(
+                                    topBarTonalElevation.value,
+                                    navigationCustomization.mainTopElevation,
+                                ).navigationTonalElevation()
                             )
                     ),
             )
@@ -538,11 +610,15 @@ fun FeedsPage(
                         )
                     },
                 filter = filterState.filter,
-                filters = Filter.articleValues,
+                filters = visibleFilters,
                 filterBarStyle = filterBarStyle.value,
                 filterBarFilled = true,
                 filterBarPadding = filterBarPadding.dp,
-                filterBarTonalElevation = filterBarTonalElevation.value.dp,
+                filterBarTonalElevation = maxOf(
+                    filterBarTonalElevation.value,
+                    navigationCustomization.mainBottomElevation,
+                ).navigationTonalElevation(),
+                iconSize = navigationCustomization.mainBottomIconSize.dp,
             ) {
                 feedsViewModel.changeFilter(filterState.copy(filter = it))
             }

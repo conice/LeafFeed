@@ -15,6 +15,7 @@ import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.first
 import me.ash.reader.infrastructure.preference.AiPreferenceKeys
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
+import me.ash.reader.infrastructure.preference.NavigationPreferenceKeys
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
@@ -354,6 +355,59 @@ sealed interface PreferencesKey {
                 BooleanKey(
                     FeaturePreferenceKeys.diagnosticIncludeFeedUrls.name,
                     FeaturePreferenceKeys.diagnosticIncludeFeedUrls,
+                ),
+                // Navigation and actions
+                StringKey(
+                    NavigationPreferenceKeys.mainBottomItems.name,
+                    NavigationPreferenceKeys.mainBottomItems,
+                ),
+                StringKey(
+                    NavigationPreferenceKeys.feedTopActions.name,
+                    NavigationPreferenceKeys.feedTopActions,
+                ),
+                StringKey(
+                    NavigationPreferenceKeys.articleTopActions.name,
+                    NavigationPreferenceKeys.articleTopActions,
+                ),
+                StringKey(
+                    NavigationPreferenceKeys.readingTopActions.name,
+                    NavigationPreferenceKeys.readingTopActions,
+                ),
+                StringKey(
+                    NavigationPreferenceKeys.readingBottomActions.name,
+                    NavigationPreferenceKeys.readingBottomActions,
+                ),
+                IntKey(
+                    NavigationPreferenceKeys.mainTopIconSize.name,
+                    NavigationPreferenceKeys.mainTopIconSize,
+                ),
+                IntKey(
+                    NavigationPreferenceKeys.mainBottomIconSize.name,
+                    NavigationPreferenceKeys.mainBottomIconSize,
+                ),
+                IntKey(
+                    NavigationPreferenceKeys.readingTopIconSize.name,
+                    NavigationPreferenceKeys.readingTopIconSize,
+                ),
+                IntKey(
+                    NavigationPreferenceKeys.readingBottomIconSize.name,
+                    NavigationPreferenceKeys.readingBottomIconSize,
+                ),
+                IntKey(
+                    NavigationPreferenceKeys.mainTopElevation.name,
+                    NavigationPreferenceKeys.mainTopElevation,
+                ),
+                IntKey(
+                    NavigationPreferenceKeys.mainBottomElevation.name,
+                    NavigationPreferenceKeys.mainBottomElevation,
+                ),
+                IntKey(
+                    NavigationPreferenceKeys.readingTopElevation.name,
+                    NavigationPreferenceKeys.readingTopElevation,
+                ),
+                IntKey(
+                    NavigationPreferenceKeys.readingBottomElevation.name,
+                    NavigationPreferenceKeys.readingBottomElevation,
                 ),
             )
 

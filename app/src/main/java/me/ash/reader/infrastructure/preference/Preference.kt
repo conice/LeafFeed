@@ -86,6 +86,7 @@ fun Preferences.toSettings(): Settings {
         openLink = OpenLinkPreference.fromPreferences(this),
         openLinkSpecificBrowser = OpenLinkSpecificBrowserPreference.fromPreferences(this),
         sharedContent = SharedContentPreference.fromPreferences(this),
+        navigationCustomization = toNavigationCustomization(),
 
         // Languages
         languages = LanguagesPreference.fromPreferences(this),

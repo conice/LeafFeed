@@ -38,6 +38,7 @@ fun FilterBar(
     filterBarFilled: Boolean,
     filterBarPadding: Dp,
     filterBarTonalElevation: Dp,
+    iconSize: Dp = 24.dp,
     filters: List<Filter> = Filter.values,
     filterOnClick: (Filter) -> Unit = {},
 ) {
@@ -93,6 +94,7 @@ fun FilterBar(
                     },
                     icon = {
                         AnimatedIcon(
+                            modifier = Modifier.size(iconSize),
                             imageVector = if (filter == item && filterBarFilled) {
                                 item.iconFilled
                             } else {

@@ -79,8 +79,8 @@ data class Settings(
     val openLink: OpenLinkPreference = OpenLinkPreference.default,
     val openLinkSpecificBrowser: OpenLinkSpecificBrowserPreference = OpenLinkSpecificBrowserPreference.default,
     val sharedContent: SharedContentPreference = SharedContentPreference.default,
+    val navigationCustomization: NavigationCustomization = NavigationCustomization(),
 
     // Languages
     val languages: LanguagesPreference = LanguagesPreference.default,
 )
-

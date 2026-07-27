@@ -90,6 +90,7 @@ sealed interface Route : NavKey {
 
     // Interaction
     @Serializable data object Interaction : Route
+    @Serializable data object NavigationActions : Route
 
     // Languages
     @Serializable data object Languages : Route

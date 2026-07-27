@@ -2,6 +2,7 @@ package me.ash.reader.ui.ext
 
 import me.ash.reader.infrastructure.preference.AiPreferenceKeys
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
+import me.ash.reader.infrastructure.preference.NavigationPreferenceKeys
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -64,6 +65,30 @@ class DataStoreExportTest {
             )
 
         featureKeys.forEach { key ->
+            assertTrue("Missing preference registration: ${key.name}", key.name in PreferencesKey.keys)
+        }
+    }
+
+    @Test
+    fun `registers every navigation preference for import`() {
+        val navigationKeys =
+            listOf(
+                NavigationPreferenceKeys.mainBottomItems,
+                NavigationPreferenceKeys.feedTopActions,
+                NavigationPreferenceKeys.articleTopActions,
+                NavigationPreferenceKeys.readingTopActions,
+                NavigationPreferenceKeys.readingBottomActions,
+                NavigationPreferenceKeys.mainTopIconSize,
+                NavigationPreferenceKeys.mainBottomIconSize,
+                NavigationPreferenceKeys.readingTopIconSize,
+                NavigationPreferenceKeys.readingBottomIconSize,
+                NavigationPreferenceKeys.mainTopElevation,
+                NavigationPreferenceKeys.mainBottomElevation,
+                NavigationPreferenceKeys.readingTopElevation,
+                NavigationPreferenceKeys.readingBottomElevation,
+            )
+
+        navigationKeys.forEach { key ->
             assertTrue("Missing preference registration: ${key.name}", key.name in PreferencesKey.keys)
         }
     }

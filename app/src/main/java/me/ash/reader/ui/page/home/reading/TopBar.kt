@@ -43,15 +43,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import me.ash.reader.R
+import me.ash.reader.infrastructure.preference.ActionPlacement
 import me.ash.reader.infrastructure.preference.LocalReadingPageTonalElevation
+import me.ash.reader.infrastructure.preference.LocalSettings
 import me.ash.reader.infrastructure.preference.LocalSharedContent
+import me.ash.reader.infrastructure.preference.NavigationItemIds
+import me.ash.reader.infrastructure.preference.NavigationItemPreference
 import me.ash.reader.infrastructure.preference.ReadingPageTonalElevationPreference
 import me.ash.reader.ui.component.base.FeedbackIconButton
+import me.ash.reader.ui.component.navigationTonalElevation
+import me.ash.reader.ui.component.responsiveToolbarCapacity
+import me.ash.reader.ui.ext.surfaceColorAtElevation
 import me.ash.reader.ui.motion.VerticalEdge
 import me.ash.reader.ui.motion.slideInFromVerticalEdge
 import me.ash.reader.ui.motion.slideOutToVerticalEdge
@@ -65,8 +74,6 @@ fun TopBar(
     title: String? = "",
     link: String? = "",
     isAiSummaryAvailable: Boolean = false,
-    showNotesAction: Boolean = true,
-    showTagsAction: Boolean = true,
     navigationAction: NavigationAction,
     onClick: (() -> Unit)? = null,
     onNavButtonClick: (NavigationAction) -> Unit = {},
@@ -77,6 +84,9 @@ fun TopBar(
 ) {
     val context = LocalContext.current
     val sharedContent = LocalSharedContent.current
+    val navigationCustomization = LocalSettings.current.navigationCustomization
+    val configuration = LocalConfiguration.current
+    val fontScale = LocalDensity.current.fontScale
     var menuExpanded by remember { mutableStateOf(false) }
     val isOutlined =
         LocalReadingPageTonalElevation.current == ReadingPageTonalElevationPreference.Outlined
@@ -84,7 +94,11 @@ fun TopBar(
     val containerColor by
         animateColorAsState(
             with(MaterialTheme.colorScheme) {
-                if (isOutlined || !isScrolled) surface else surfaceContainer
+                if (navigationCustomization.readingTopElevation > 0) {
+                    surfaceColorAtElevation(
+                        navigationCustomization.readingTopElevation.navigationTonalElevation()
+                    )
+                } else if (isOutlined || !isScrolled) surface else surfaceContainer
             },
             label = "readingTopBarColor",
             animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
@@ -133,61 +147,104 @@ fun TopBar(
                         }
                     },
                     actions = {
-                        FeedbackIconButton(
-                            modifier = Modifier.size(22.dp),
-                            imageVector = Icons.Outlined.AutoAwesome,
-                            contentDescription = stringResource(R.string.ai_summary_article),
-                            tint =
-                                if (isAiSummaryAvailable) MaterialTheme.colorScheme.tertiary
-                                else MaterialTheme.colorScheme.outline,
-                            enabled = isAiSummaryAvailable,
-                        ) {
-                            onAiSummary()
-                        }
-                        if (showTagsAction) {
-                            FeedbackIconButton(
-                                modifier = Modifier.size(22.dp),
-                                imageVector = Icons.Outlined.Label,
-                                contentDescription = stringResource(R.string.manage_tags),
-                                tint = MaterialTheme.colorScheme.onSurface,
-                            ) { onManageTags() }
-                        }
-                        FeedbackIconButton(
-                            modifier = Modifier.size(22.dp),
-                            imageVector = Icons.Rounded.MoreVert,
-                            contentDescription = stringResource(R.string.more),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                        ) { menuExpanded = true }
-                        DropdownMenu(
-                            expanded = menuExpanded,
-                            onDismissRequest = { menuExpanded = false },
-                        ) {
-                            if (showNotesAction) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.add_note)) },
-                                    leadingIcon = { Icon(Icons.Outlined.NoteAdd, null) },
-                                    onClick = { menuExpanded = false; onAddNote() },
-                                )
+                        val availableActions = navigationCustomization.readingTopActions.filter {
+                            it.placement != ActionPlacement.Hidden && when (it.id) {
+                                NavigationItemIds.TAGS,
+                                NavigationItemIds.ADD_NOTE,
+                                NavigationItemIds.AI_SUMMARY,
+                                NavigationItemIds.STYLE,
+                                NavigationItemIds.SHARE -> true
+                                else -> false
                             }
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.style)) },
-                                leadingIcon = { Icon(Icons.Outlined.Palette, null) },
-                                onClick = { menuExpanded = false; onNavigateToStylePage() },
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(R.string.share)) },
-                                leadingIcon = { Icon(Icons.Outlined.Share, null) },
+                        }
+                        val capacity = responsiveToolbarCapacity(
+                            iconSize = navigationCustomization.readingTopIconSize,
+                            screenWidthDp = configuration.screenWidthDp,
+                            fontScale = fontScale,
+                            normalCapacity = 3,
+                        )
+                        val configuredToolbar = availableActions.filter {
+                            it.placement == ActionPlacement.Toolbar
+                        }
+                        val hasOverflow = availableActions.any {
+                            it.placement == ActionPlacement.More
+                        } || configuredToolbar.size > capacity
+                        val toolbarCapacity =
+                            if (hasOverflow) (capacity - 1).coerceAtLeast(1) else capacity
+                        val toolbarActions = configuredToolbar.take(toolbarCapacity)
+                        val toolbarIds = toolbarActions.mapTo(mutableSetOf()) { it.id }
+                        val moreActions = availableActions.filter {
+                            it.placement == ActionPlacement.More ||
+                                it.placement == ActionPlacement.Toolbar &&
+                                it.id !in toolbarIds
+                        }
+                        toolbarActions.forEach { action ->
+                            FeedbackIconButton(
+                                modifier = Modifier.size(
+                                    navigationCustomization.readingTopIconSize.dp
+                                ),
+                                imageVector = action.icon(),
+                                contentDescription = action.label(),
+                                tint = when {
+                                    action.id == NavigationItemIds.AI_SUMMARY &&
+                                        isAiSummaryAvailable -> MaterialTheme.colorScheme.tertiary
+                                    action.id == NavigationItemIds.AI_SUMMARY ->
+                                        MaterialTheme.colorScheme.outline
+                                    else -> MaterialTheme.colorScheme.onSurface
+                                },
+                                enabled = action.id != NavigationItemIds.AI_SUMMARY ||
+                                    isAiSummaryAvailable,
                                 onClick = {
-                                    menuExpanded = false
-                                    sharedContent.share(context, title, link)
+                                    action.performAction(
+                                        onAiSummary = onAiSummary,
+                                        onManageTags = onManageTags,
+                                        onAddNote = onAddNote,
+                                        onStyle = onNavigateToStylePage,
+                                        onShare = { sharedContent.share(context, title, link) },
+                                    )
                                 },
                             )
+                        }
+                        if (moreActions.isNotEmpty()) {
+                            FeedbackIconButton(
+                                modifier = Modifier.size(
+                                    navigationCustomization.readingTopIconSize.dp
+                                ),
+                                imageVector = Icons.Rounded.MoreVert,
+                                contentDescription = stringResource(R.string.more),
+                                tint = MaterialTheme.colorScheme.onSurface,
+                            ) { menuExpanded = true }
+                        }
+                        DropdownMenu(
+                            expanded = menuExpanded && moreActions.isNotEmpty(),
+                            onDismissRequest = { menuExpanded = false },
+                        ) {
+                            moreActions.forEach { action ->
+                                DropdownMenuItem(
+                                    text = { Text(action.label()) },
+                                    leadingIcon = { Icon(action.icon(), null) },
+                                    enabled = action.id != NavigationItemIds.AI_SUMMARY ||
+                                        isAiSummaryAvailable,
+                                    onClick = {
+                                        menuExpanded = false
+                                        action.performAction(
+                                            onAiSummary = onAiSummary,
+                                            onManageTags = onManageTags,
+                                            onAddNote = onAddNote,
+                                            onStyle = onNavigateToStylePage,
+                                            onShare = {
+                                                sharedContent.share(context, title, link)
+                                            },
+                                        )
+                                    },
+                                )
+                            }
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 )
             }
-            if (isOutlined && isScrolled) {
+            if (isOutlined && isScrolled && navigationCustomization.readingTopElevation == 0) {
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
                     thickness = 0.5f.dp,
@@ -195,4 +252,34 @@ fun TopBar(
             }
         }
     }
+}
+
+private fun NavigationItemPreference.label(): String = when (id) {
+    NavigationItemIds.AI_SUMMARY -> "AI summary"
+    NavigationItemIds.TAGS -> "Tags"
+    NavigationItemIds.ADD_NOTE -> "Add note"
+    NavigationItemIds.STYLE -> "Style"
+    else -> "Share"
+}
+
+private fun NavigationItemPreference.icon() = when (id) {
+    NavigationItemIds.AI_SUMMARY -> Icons.Outlined.AutoAwesome
+    NavigationItemIds.TAGS -> Icons.Outlined.Label
+    NavigationItemIds.ADD_NOTE -> Icons.Outlined.NoteAdd
+    NavigationItemIds.STYLE -> Icons.Outlined.Palette
+    else -> Icons.Outlined.Share
+}
+
+private fun NavigationItemPreference.performAction(
+    onAiSummary: () -> Unit,
+    onManageTags: () -> Unit,
+    onAddNote: () -> Unit,
+    onStyle: () -> Unit,
+    onShare: () -> Unit,
+) = when (id) {
+    NavigationItemIds.AI_SUMMARY -> onAiSummary()
+    NavigationItemIds.TAGS -> onManageTags()
+    NavigationItemIds.ADD_NOTE -> onAddNote()
+    NavigationItemIds.STYLE -> onStyle()
+    else -> onShare()
 }
