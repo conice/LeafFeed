@@ -207,7 +207,17 @@ fun DataPrivacySettingsPage(
         }
 
         section("Cache controls")
-        info("Database storage", formatBytes(cacheUsage.databaseBytes))
+        info(
+            "Database storage",
+            buildString {
+                append(formatBytes(cacheUsage.databaseBytes))
+                if (cacheUsage.reclaimableDatabaseBytes > 0L) {
+                    append("; ")
+                    append(formatBytes(cacheUsage.reclaimableDatabaseBytes))
+                    append(" reclaimable")
+                }
+            },
+        )
         action(
             "Clear temporary cache",
             "${cacheUsage.temporaryFiles} files, ${formatBytes(cacheUsage.temporaryBytes)}",

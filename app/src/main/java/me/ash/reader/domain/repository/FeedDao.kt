@@ -200,13 +200,17 @@ interface FeedDao {
             .let { updateAll(it) }
     }
 
-    @Insert suspend fun insertArchivedArticles(links: List<ArchivedArticle>)
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertArchivedArticles(links: List<ArchivedArticle>)
+
+    @Query("DELETE FROM archived_article WHERE archivedAt < :before")
+    suspend fun deleteArchivedArticlesBefore(before: java.util.Date): Int
 
     @Query(
         """
-        SELECT * FROM archived_article
+        SELECT link FROM archived_article
         WHERE feedId = :feedId
         """
     )
-    suspend fun queryArchivedArticles(feedId: String): List<ArchivedArticle>
+    suspend fun queryArchivedArticleLinks(feedId: String): List<String>
 }

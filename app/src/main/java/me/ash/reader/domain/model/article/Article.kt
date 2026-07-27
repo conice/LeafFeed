@@ -47,7 +47,7 @@ data class Article(
     var link: String,
     @ColumnInfo(index = true)
     var feedId: String,
-    @ColumnInfo(index = true)
+    @ColumnInfo
     var accountId: Int,
     @ColumnInfo
     var isUnread: Boolean = true,

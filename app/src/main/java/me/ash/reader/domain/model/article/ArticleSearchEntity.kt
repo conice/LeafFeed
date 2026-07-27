@@ -14,5 +14,4 @@ data class ArticleSearchEntity(
     val articleId: String,
     val title: String,
     val shortDescription: String,
-    val rawDescription: String,
 )

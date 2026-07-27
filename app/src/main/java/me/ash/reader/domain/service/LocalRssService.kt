@@ -121,8 +121,8 @@ constructor(
                                     val feedWithArticles = semaphore.withPermit {
                                         val archivedArticles =
                                             feedDao
-                                                .queryArchivedArticles(currentFeed.id)
-                                                .map { normalizeArticleUrl(it.link) }
+                                                .queryArchivedArticleLinks(currentFeed.id)
+                                                .map(::normalizeArticleUrl)
                                                 .toSet()
                                         val fetchedFeed = syncFeed(currentFeed, preDate)
                                         val deduplicationMode =

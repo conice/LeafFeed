@@ -164,11 +164,14 @@ constructor(
         }
     }
 
-    suspend fun deleteCacheFor(articleId: String): Boolean {
+    suspend fun deleteCacheFor(
+        articleId: String,
+        accountId: Int = accountService.getCurrentAccountId(),
+    ): Boolean {
         return withContext(ioDispatcher) {
             runSuspendCatching {
-                    val file = currentCacheDir.resolve(getFileNameFor(articleId))
-                    val legacy = currentLegacyCacheDir.resolve(getFileNameFor(articleId))
+                    val file = cacheDir(accountId).resolve(getFileNameFor(articleId))
+                    val legacy = accountLegacyCacheDir(accountId).resolve(getFileNameFor(articleId))
                     val deleted = file.delete()
                     val legacyDeleted = legacy.delete()
                     return@runSuspendCatching deleted || legacyDeleted

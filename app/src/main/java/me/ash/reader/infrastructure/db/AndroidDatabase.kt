@@ -28,7 +28,7 @@ import java.util.*
         Group::class,
         ArchivedArticle::class,
     ],
-    version = 11,
+    version = 12,
     autoMigrations = [
         AutoMigration(from = 5, to = 6),
         AutoMigration(from = 5, to = 7),
@@ -94,36 +94,76 @@ val allMigrations = arrayOf(
     MIGRATION_8_9,
     MIGRATION_9_10,
     MIGRATION_10_11,
+    MIGRATION_11_12,
 )
+
+@Suppress("ClassName")
+object MIGRATION_11_12 : Migration(11, 12) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        dropArticleSearchTriggers(db)
+        db.execSQL("DROP TABLE IF EXISTS `article_fts`")
+        createArticleSearchTable(db)
+        db.execSQL(
+            "INSERT INTO `article_fts` (`articleId`, `title`, `shortDescription`) " +
+                "SELECT `id`, `title`, `shortDescription` FROM `article`"
+        )
+        createArticleSearchTriggers(db)
+
+        // fullContent has been unused for years; discard legacy duplicate article bodies.
+        db.execSQL("UPDATE `article` SET `fullContent` = NULL WHERE `fullContent` IS NOT NULL")
+        db.execSQL("DROP INDEX IF EXISTS `index_article_accountId`")
+
+        db.execSQL("ALTER TABLE `archived_article` RENAME TO `archived_article_old`")
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `archived_article` (" +
+                "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                "`feedId` TEXT NOT NULL, `link` TEXT NOT NULL, `archivedAt` INTEGER NOT NULL, " +
+                "FOREIGN KEY(`feedId`) REFERENCES `feed`(`id`) " +
+                "ON UPDATE CASCADE ON DELETE CASCADE)"
+        )
+        db.execSQL(
+            "INSERT INTO `archived_article` (`feedId`, `link`, `archivedAt`) " +
+                "SELECT `feedId`, `link`, ${System.currentTimeMillis()} " +
+                "FROM `archived_article_old` GROUP BY `feedId`, `link`"
+        )
+        db.execSQL("DROP TABLE `archived_article_old`")
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_archived_article_feedId` " +
+                "ON `archived_article` (`feedId`)"
+        )
+        db.execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_archived_article_feedId_link` " +
+                "ON `archived_article` (`feedId`, `link`)"
+        )
+        db.execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_archived_article_archivedAt` " +
+                "ON `archived_article` (`archivedAt`)"
+        )
+    }
+}
 
 @Suppress("ClassName")
 object MIGRATION_10_11 : Migration(10, 11) {
     override fun migrate(db: SupportSQLiteDatabase) {
-        db.execSQL(
-            "CREATE VIRTUAL TABLE IF NOT EXISTS `article_fts` USING FTS4(" +
-                "`articleId` TEXT NOT NULL, `title` TEXT NOT NULL, " +
-                "`shortDescription` TEXT NOT NULL, `rawDescription` TEXT NOT NULL)"
-        )
+        createLegacyArticleSearchTable(db)
         db.execSQL(
             "INSERT INTO `article_fts` (`articleId`, `title`, `shortDescription`, " +
                 "`rawDescription`) SELECT `id`, `title`, `shortDescription`, " +
                 "`rawDescription` FROM `article`"
         )
-        createArticleSearchTriggers(db)
+        createLegacyArticleSearchTriggers(db)
     }
 }
 
-private val ARTICLE_SEARCH_CALLBACK = object : RoomDatabase.Callback() {
-    override fun onCreate(db: SupportSQLiteDatabase) {
-        createArticleSearchTriggers(db)
-    }
-
-    override fun onOpen(db: SupportSQLiteDatabase) {
-        createArticleSearchTriggers(db)
-    }
+private fun createLegacyArticleSearchTable(db: SupportSQLiteDatabase) {
+    db.execSQL(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS `article_fts` USING FTS4(" +
+            "`articleId` TEXT NOT NULL, `title` TEXT NOT NULL, " +
+            "`shortDescription` TEXT NOT NULL, `rawDescription` TEXT NOT NULL)"
+    )
 }
 
-private fun createArticleSearchTriggers(db: SupportSQLiteDatabase) {
+private fun createLegacyArticleSearchTriggers(db: SupportSQLiteDatabase) {
     db.execSQL(
         "CREATE TRIGGER IF NOT EXISTS `article_fts_after_insert` AFTER INSERT ON `article` " +
             "BEGIN INSERT INTO `article_fts` (`articleId`, `title`, `shortDescription`, " +
@@ -142,6 +182,49 @@ private fun createArticleSearchTriggers(db: SupportSQLiteDatabase) {
             "`rawDescription`) VALUES (new.`id`, new.`title`, new.`shortDescription`, " +
             "new.`rawDescription`); END"
     )
+}
+
+private fun createArticleSearchTable(db: SupportSQLiteDatabase) {
+    db.execSQL(
+        "CREATE VIRTUAL TABLE IF NOT EXISTS `article_fts` USING FTS4(" +
+            "`articleId` TEXT NOT NULL, `title` TEXT NOT NULL, " +
+            "`shortDescription` TEXT NOT NULL)"
+    )
+}
+
+private val ARTICLE_SEARCH_CALLBACK = object : RoomDatabase.Callback() {
+    override fun onCreate(db: SupportSQLiteDatabase) {
+        createArticleSearchTriggers(db)
+    }
+
+    override fun onOpen(db: SupportSQLiteDatabase) {
+        createArticleSearchTriggers(db)
+    }
+}
+
+private fun createArticleSearchTriggers(db: SupportSQLiteDatabase) {
+    db.execSQL(
+        "CREATE TRIGGER IF NOT EXISTS `article_fts_after_insert` AFTER INSERT ON `article` " +
+            "BEGIN INSERT INTO `article_fts` (`articleId`, `title`, `shortDescription`) " +
+            "VALUES (new.`id`, new.`title`, new.`shortDescription`); END"
+    )
+    db.execSQL(
+        "CREATE TRIGGER IF NOT EXISTS `article_fts_after_delete` AFTER DELETE ON `article` " +
+            "BEGIN DELETE FROM `article_fts` WHERE `articleId` = old.`id`; END"
+    )
+    db.execSQL(
+        "CREATE TRIGGER IF NOT EXISTS `article_fts_after_update` AFTER UPDATE OF " +
+            "`id`, `title`, `shortDescription` ON `article` " +
+            "BEGIN DELETE FROM `article_fts` WHERE `articleId` = old.`id`; " +
+            "INSERT INTO `article_fts` (`articleId`, `title`, `shortDescription`) " +
+            "VALUES (new.`id`, new.`title`, new.`shortDescription`); END"
+    )
+}
+
+private fun dropArticleSearchTriggers(db: SupportSQLiteDatabase) {
+    db.execSQL("DROP TRIGGER IF EXISTS `article_fts_after_insert`")
+    db.execSQL("DROP TRIGGER IF EXISTS `article_fts_after_delete`")
+    db.execSQL("DROP TRIGGER IF EXISTS `article_fts_after_update`")
 }
 
 @Suppress("ClassName")

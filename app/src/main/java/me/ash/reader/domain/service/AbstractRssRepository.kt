@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import me.ash.reader.domain.model.account.Account
 import me.ash.reader.domain.model.article.ArchivedArticle
+import me.ash.reader.domain.model.article.ArchivedArticleCleanupCandidate
 import me.ash.reader.domain.model.article.Article
 import me.ash.reader.domain.model.article.ArticleWithFeed
 import me.ash.reader.domain.data.ArticleContentType
@@ -170,17 +171,20 @@ abstract class AbstractRssRepository(
         )
     }
 
-    suspend fun clearKeepArchivedArticles(): List<Article> {
-        val accountId = accountService.getCurrentAccountId()
-        val currentAccount = accountService.getCurrentAccount()
+    suspend fun clearKeepArchivedArticles(
+        accountId: Int = accountService.getCurrentAccountId(),
+    ): List<ArchivedArticleCleanupCandidate> {
+        val currentAccount = accountService.getAccountById(accountId) ?: return emptyList()
         val keepArchived = currentAccount.keepArchived
+        feedDao.deleteArchivedArticlesBefore(
+            Date(System.currentTimeMillis() - ARCHIVED_ARTICLE_TOMBSTONE_RETENTION_MILLIS)
+        )
         if (!keepArchived.keepForever) {
             val archivedArticles =
-                articleDao.queryArchivedArticleBefore(
+                articleDao.cleanArchivedArticlesBefore(
                     accountId,
                     Date(System.currentTimeMillis() - keepArchived.value),
                 )
-            articleDao.delete(*archivedArticles.toTypedArray())
             return archivedArticles.also {
                 feedDao.insertArchivedArticles(
                     it.map { ArchivedArticle(feedId = it.feedId, link = it.link) }
@@ -538,6 +542,10 @@ abstract class AbstractRssRepository(
     }
 
 }
+
+private const val ARCHIVED_ARTICLE_TOMBSTONE_RETENTION_DAYS = 365L
+private const val ARCHIVED_ARTICLE_TOMBSTONE_RETENTION_MILLIS =
+    ARCHIVED_ARTICLE_TOMBSTONE_RETENTION_DAYS * 24L * 60L * 60L * 1000L
 
 data class SyncProgress(
     val completed: Int,

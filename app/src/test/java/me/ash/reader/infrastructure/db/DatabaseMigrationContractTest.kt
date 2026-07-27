@@ -67,4 +67,37 @@ class DatabaseMigrationContractTest {
                 "`rawDescription` FROM `article`"
         )
     }
+
+    @Test
+    fun `storage migration replaces the full body index and bounds tombstones`() {
+        val db = mock<SupportSQLiteDatabase>()
+
+        MIGRATION_11_12.migrate(db)
+
+        assertEquals(11, MIGRATION_11_12.startVersion)
+        assertEquals(12, MIGRATION_11_12.endVersion)
+        assertTrue(allMigrations.contains(MIGRATION_11_12))
+        verify(db).execSQL("DROP TABLE IF EXISTS `article_fts`")
+        verify(db).execSQL(
+            "CREATE VIRTUAL TABLE IF NOT EXISTS `article_fts` USING FTS4(" +
+                "`articleId` TEXT NOT NULL, `title` TEXT NOT NULL, " +
+                "`shortDescription` TEXT NOT NULL)"
+        )
+        verify(db).execSQL(
+            "INSERT INTO `article_fts` (`articleId`, `title`, `shortDescription`) " +
+                "SELECT `id`, `title`, `shortDescription` FROM `article`"
+        )
+        verify(db).execSQL(
+            "UPDATE `article` SET `fullContent` = NULL WHERE `fullContent` IS NOT NULL"
+        )
+        verify(db).execSQL("DROP INDEX IF EXISTS `index_article_accountId`")
+        verify(db).execSQL(
+            "CREATE UNIQUE INDEX IF NOT EXISTS `index_archived_article_feedId_link` " +
+                "ON `archived_article` (`feedId`, `link`)"
+        )
+        verify(db).execSQL(
+            "CREATE INDEX IF NOT EXISTS `index_archived_article_archivedAt` " +
+                "ON `archived_article` (`archivedAt`)"
+        )
+    }
 }

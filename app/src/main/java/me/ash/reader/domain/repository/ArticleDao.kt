@@ -19,6 +19,7 @@ import me.ash.reader.domain.model.article.ArticleMeta
 import me.ash.reader.domain.model.article.ArticleReadingStateRow
 import me.ash.reader.domain.model.article.ArticleReadingStateUpdate
 import me.ash.reader.domain.model.article.ArticleWithFeed
+import me.ash.reader.domain.model.article.ArchivedArticleCleanupCandidate
 import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.model.feed.FeedWithArticle
 import java.util.Date
@@ -482,33 +483,31 @@ interface ArticleDao {
 
     @Query(
         """
-        DELETE FROM article
+        SELECT id, feedId, link FROM article
         WHERE accountId = :accountId
-        AND updateAt < :before
+        AND COALESCE(updateAt, date) < :before
         AND isUnread = 0
         AND isStarred = 0
         AND isReadLater = 0
         """
     )
-    suspend fun deleteAllArchivedBeforeThan(
+    suspend fun queryArchivedArticleCleanupCandidates(
         accountId: Int,
         before: Date,
-    )
+    ): List<ArchivedArticleCleanupCandidate>
 
-    @Query(
-        """
-        select * FROM article
-        WHERE accountId = :accountId
-        AND updateAt < :before
-        AND isUnread = 0
-        AND isStarred = 0
-        AND isReadLater = 0
-        """
-    )
-    suspend fun queryArchivedArticleBefore(
+    @Query("DELETE FROM article WHERE id IN (:articleIds)")
+    suspend fun deleteByIds(articleIds: List<String>): Int
+
+    @Transaction
+    suspend fun cleanArchivedArticlesBefore(
         accountId: Int,
         before: Date,
-    ): List<Article>
+    ): List<ArchivedArticleCleanupCandidate> {
+        val candidates = queryArchivedArticleCleanupCandidates(accountId, before)
+        candidates.chunked(500).forEach { deleteByIds(it.map { candidate -> candidate.id }) }
+        return candidates
+    }
 
     @Transaction
     @Query(

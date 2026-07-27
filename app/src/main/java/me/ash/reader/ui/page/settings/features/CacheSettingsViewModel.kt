@@ -60,6 +60,7 @@ class CacheSettingsViewModel @Inject constructor(
                     temporaryFiles = temporaryDirectories.sumOf(::fileCount),
                     temporaryBytes = temporaryDirectories.sumOf(::fileSize),
                     databaseBytes = databaseFiles().sumOf { it.length() },
+                    reclaimableDatabaseBytes = reclaimableDatabaseBytes(),
                 )
             }
             _usage.value = storage
@@ -102,7 +103,9 @@ class CacheSettingsViewModel @Inject constructor(
                 runSuspendCatching {
                     rssService.get().clearKeepArchivedArticles().also { articles ->
                         articles.forEach { readerCache.deleteCacheFor(it.id) }
-                    }.size
+                    }.size.also {
+                        compactDatabases(force = false)
+                    }
                 }
             }
             refreshUsage()
@@ -114,20 +117,7 @@ class CacheSettingsViewModel @Inject constructor(
         launchStorageOperation {
             val result = withContext(ioDispatcher) {
                 runSuspendCatching {
-                    val databaseFiles = databaseFiles()
-                    val requiredBytes = databaseFiles.sumOf { it.length() }
-                    val databaseDirectory = context.getDatabasePath("Reader").parentFile
-                        ?: error("Database directory is unavailable")
-                    check(StatFs(databaseDirectory.path).availableBytes > requiredBytes) {
-                        "Insufficient free space to optimize databases"
-                    }
-                    listOf(database, collectionDatabase).forEach { roomDatabase ->
-                        val sqliteDatabase = roomDatabase.openHelper.writableDatabase
-                        sqliteDatabase.query("PRAGMA wal_checkpoint(TRUNCATE)").use { cursor ->
-                            cursor.moveToFirst()
-                        }
-                        sqliteDatabase.execSQL("VACUUM")
-                    }
+                    compactDatabases(force = true)
                 }
             }
             refreshUsage()
@@ -160,6 +150,46 @@ class CacheSettingsViewModel @Inject constructor(
         }
     }
 
+    private fun reclaimableDatabaseBytes(): Long =
+        listOf(database, collectionDatabase).sumOf { roomDatabase ->
+            val sqliteDatabase = roomDatabase.openHelper.writableDatabase
+            pragmaLong(sqliteDatabase, "freelist_count") * pragmaLong(sqliteDatabase, "page_size")
+        }
+
+    private fun compactDatabases(force: Boolean) {
+        val databaseDirectory = context.getDatabasePath("Reader").parentFile
+            ?: error("Database directory is unavailable")
+        listOf(database, collectionDatabase).forEach { roomDatabase ->
+            val sqliteDatabase = roomDatabase.openHelper.writableDatabase
+            sqliteDatabase.query("PRAGMA wal_checkpoint(TRUNCATE)").use { it.moveToFirst() }
+            val pageSize = pragmaLong(sqliteDatabase, "page_size")
+            val pageCount = pragmaLong(sqliteDatabase, "page_count")
+            val reclaimableBytes = pragmaLong(sqliteDatabase, "freelist_count") * pageSize
+            val databaseBytes = pageCount * pageSize
+            val worthCompacting = shouldAutoCompactDatabase(
+                databaseBytes = databaseBytes,
+                reclaimableBytes = reclaimableBytes,
+            )
+            val hasVacuumSpace = StatFs(databaseDirectory.path).availableBytes > databaseBytes
+            if (force) {
+                check(hasVacuumSpace) {
+                    "Insufficient free space to optimize databases"
+                }
+                sqliteDatabase.execSQL("VACUUM")
+            } else if (worthCompacting && hasVacuumSpace) {
+                sqliteDatabase.execSQL("VACUUM")
+            }
+        }
+    }
+
+    private fun pragmaLong(
+        database: androidx.sqlite.db.SupportSQLiteDatabase,
+        name: String,
+    ): Long = database.query("PRAGMA $name").use { cursor ->
+        check(cursor.moveToFirst()) { "Unable to read PRAGMA $name" }
+        cursor.getLong(0)
+    }
+
     private fun fileCount(directory: java.io.File): Int =
         directory.takeIf { it.exists() }?.walkTopDown()?.count { it.isFile } ?: 0
 
@@ -176,4 +206,12 @@ data class CacheUsageState(
     val temporaryFiles: Int = 0,
     val temporaryBytes: Long = 0,
     val databaseBytes: Long = 0,
+    val reclaimableDatabaseBytes: Long = 0,
 )
+
+private const val AUTO_VACUUM_MIN_BYTES = 16L * 1024L * 1024L
+private const val AUTO_VACUUM_MIN_PERCENT = 15L
+
+internal fun shouldAutoCompactDatabase(databaseBytes: Long, reclaimableBytes: Long): Boolean =
+    reclaimableBytes >= AUTO_VACUUM_MIN_BYTES &&
+        reclaimableBytes * 100L >= databaseBytes * AUTO_VACUUM_MIN_PERCENT

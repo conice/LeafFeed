@@ -122,13 +122,17 @@ constructor(
                             scope = scope,
                         )
                     )
-                    // Widget data and archived-cache cleanup resolve the selected account. Keep
-                    // post-sync work scoped to it; ReaderWorker also receives the explicit ID so
-                    // a later account switch cannot redirect an already queued prefetch.
-                    if (succeeded && accountService.getCurrentAccountId() == accountId) {
-                        accountRssService.clearKeepArchivedArticles().forEach {
-                            readerCacheHelper.deleteCacheFor(articleId = it.id)
+                    if (succeeded) {
+                        accountRssService.clearKeepArchivedArticles(accountId).forEach {
+                            readerCacheHelper.deleteCacheFor(
+                                articleId = it.id,
+                                accountId = accountId,
+                            )
                         }
+                    }
+                    // Widget data still reflects the selected account. ReaderWorker receives the
+                    // explicit ID so a later account switch cannot redirect queued prefetch work.
+                    if (succeeded && accountService.getCurrentAccountId() == accountId) {
                         workManager
                             .beginUniqueWork(
                                 uniqueWorkName = postSyncWorkName(accountId),
