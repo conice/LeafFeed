@@ -16,7 +16,13 @@ class AiSettingsTest {
 
         val settings = preferences.toAiSettings("title prompt", "article prompt")
 
-        assertEquals(settings.titleSummary.copy(prompt = "article prompt"), settings.articleSummary)
+        assertEquals(
+            settings.titleSummary.copy(
+                prompt = "article prompt",
+                inputTemplate = DEFAULT_AI_ARTICLE_INPUT_TEMPLATE,
+            ),
+            settings.articleSummary,
+        )
     }
 
     @Test
@@ -36,5 +42,19 @@ class AiSettingsTest {
         assertEquals("article-url", settings.articleSummary.url)
         assertEquals("article-key", settings.articleSummary.apiKey)
         assertEquals("article-model", settings.articleSummary.model)
+    }
+
+    @Test
+    fun taskSpecificInputTemplatesAreLoaded() {
+        val preferences =
+            mutablePreferencesOf(
+                AiPreferenceKeys.titleInputTemplate to "{序号}: {标题}",
+                AiPreferenceKeys.articleInputTemplate to "{标题}\n{正文}",
+            )
+
+        val settings = preferences.toAiSettings("title", "article")
+
+        assertEquals("{序号}: {标题}", settings.titleSummary.inputTemplate)
+        assertEquals("{标题}\n{正文}", settings.articleSummary.inputTemplate)
     }
 }

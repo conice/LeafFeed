@@ -92,6 +92,7 @@ class SettingsProvider @Inject constructor(
 
             // Flow page
             LocalFlowTopBarTonalElevation provides settings.flowTopBarTonalElevation,
+            LocalFlowMarkAsReadFabPosition provides settings.flowMarkAsReadFabPosition,
             LocalFlowArticleListFeedIcon provides settings.flowArticleListFeedIcon,
             LocalFlowArticleListFeedName provides settings.flowArticleListFeedName,
             LocalFlowArticleListImage provides settings.flowArticleListImage,

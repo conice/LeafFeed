@@ -778,6 +778,7 @@ constructor(
                 _titleSummaryState.update {
                     it.copy(
                         articleIds = articles.map(Article::id),
+                        articleTitles = articles.map(Article::title),
                         unreadArticleIds =
                             articles.filter(Article::isUnread).mapTo(mutableSetOf(), Article::id),
                     )
@@ -929,6 +930,7 @@ data class TitleSummaryUiState(
     val loading: Boolean = false,
     val summary: String = "",
     val articleIds: List<String> = emptyList(),
+    val articleTitles: List<String> = emptyList(),
     val unreadArticleIds: Set<String> = emptySet(),
     val scrollOffset: Int = 0,
     val failure: AiSummaryFailure? = null,

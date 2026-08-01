@@ -95,6 +95,7 @@ sealed interface PreferencesKey {
         const val flowFilterBarPadding = "flowFilterBarPadding"
         const val flowFilterBarTonalElevation = "flowFilterBarTonalElevation"
         const val flowTopBarTonalElevation = "flowTopBarTonalElevation"
+        const val flowMarkAsReadFabPosition = "flowMarkAsReadFabPosition"
         const val flowArticleListFeedIcon = "flowArticleListFeedIcon"
         const val flowArticleListFeedName = "flowArticleListFeedName"
         const val flowArticleListImage = "flowArticleListImage"
@@ -173,6 +174,7 @@ sealed interface PreferencesKey {
                 IntKey(flowFilterBarPadding),
                 IntKey(flowFilterBarTonalElevation),
                 IntKey(flowTopBarTonalElevation),
+                IntKey(flowMarkAsReadFabPosition),
                 BooleanKey(flowArticleListFeedIcon),
                 BooleanKey(flowArticleListFeedName),
                 BooleanKey(flowArticleListImage),
@@ -223,10 +225,18 @@ sealed interface PreferencesKey {
                 StringKey(AiPreferenceKeys.apiKey.name, AiPreferenceKeys.apiKey),
                 StringKey(AiPreferenceKeys.model.name, AiPreferenceKeys.model),
                 StringKey(AiPreferenceKeys.titlePrompt.name, AiPreferenceKeys.titlePrompt),
+                StringKey(
+                    AiPreferenceKeys.titleInputTemplate.name,
+                    AiPreferenceKeys.titleInputTemplate,
+                ),
                 StringKey(AiPreferenceKeys.articleUrl.name, AiPreferenceKeys.articleUrl),
                 StringKey(AiPreferenceKeys.articleApiKey.name, AiPreferenceKeys.articleApiKey),
                 StringKey(AiPreferenceKeys.articleModel.name, AiPreferenceKeys.articleModel),
                 StringKey(AiPreferenceKeys.articlePrompt.name, AiPreferenceKeys.articlePrompt),
+                StringKey(
+                    AiPreferenceKeys.articleInputTemplate.name,
+                    AiPreferenceKeys.articleInputTemplate,
+                ),
                 IntKey(AiPreferenceKeys.articleCount.name, AiPreferenceKeys.articleCount),
                 // Reading and articles
                 BooleanKey(

@@ -29,6 +29,7 @@ fun FlowPageStylePage(
     val filterBarPadding = LocalFlowFilterBarPadding.current
     val filterBarTonalElevation = LocalFlowFilterBarTonalElevation.current
     val topBarTonalElevation = LocalFlowTopBarTonalElevation.current
+    val markAsReadFabPosition = LocalFlowMarkAsReadFabPosition.current
     val articleListFeedIcon = LocalFlowArticleListFeedIcon.current
     val articleListFeedName = LocalFlowArticleListFeedName.current
     val articleListImage = LocalFlowArticleListImage.current
@@ -43,6 +44,7 @@ fun FlowPageStylePage(
     var filterBarPaddingDialogVisible by remember { mutableStateOf(false) }
     var filterBarTonalElevationDialogVisible by remember { mutableStateOf(false) }
     var topBarTonalElevationDialogVisible by remember { mutableStateOf(false) }
+    var markAsReadFabPositionDialogVisible by remember { mutableStateOf(false) }
     var articleListTonalElevationDialogVisible by remember { mutableStateOf(false) }
     var articleListReadIndicatorDialogVisible by remember { mutableStateOf(false) }
     var showArticleListDescDialog by remember { mutableStateOf(false) }
@@ -86,6 +88,7 @@ fun FlowPageStylePage(
                             filterBarFilled = true,
                             filterBarPadding = filterBarPadding.dp,
                             filterBarTonalElevation = filterBarTonalElevation.value.dp,
+                            markAsReadFabPosition = markAsReadFabPosition,
                         )
                     }
                     Spacer(modifier = Modifier.height(24.dp))
@@ -97,12 +100,6 @@ fun FlowPageStylePage(
                         modifier = Modifier.padding(horizontal = 24.dp),
                         text = stringResource(R.string.top_bar)
                     )
-                    SettingItem(
-                        title = stringResource(R.string.mark_as_read_button_position),
-                        desc = stringResource(R.string.top),
-                        enabled = false,
-                        onClick = {},
-                    ) {}
                     SettingItem(
                         title = stringResource(R.string.tonal_elevation),
                         desc = "${topBarTonalElevation.value}dp",
@@ -120,6 +117,11 @@ fun FlowPageStylePage(
                         modifier = Modifier.padding(horizontal = 24.dp),
                         text = stringResource(R.string.article_list)
                     )
+                    SettingItem(
+                        title = stringResource(R.string.mark_as_read_button_position),
+                        desc = markAsReadFabPosition.toDesc(context),
+                        onClick = { markAsReadFabPositionDialogVisible = true },
+                    ) {}
                     SettingItem(
                         title = stringResource(R.string.feed_favicons),
                         onClick = {
@@ -231,6 +233,21 @@ fun FlowPageStylePage(
             }
         }
     )
+
+    RadioDialog(
+        visible = markAsReadFabPositionDialogVisible,
+        title = stringResource(R.string.mark_as_read_button_position),
+        options = FlowMarkAsReadFabPositionPreference.values.map {
+            RadioDialogOption(
+                text = it.toDesc(context),
+                selected = it == markAsReadFabPosition,
+            ) {
+                it.put(context, scope)
+            }
+        },
+    ) {
+        markAsReadFabPositionDialogVisible = false
+    }
 
     RadioDialog(
         visible = filterBarStyleDialogVisible,

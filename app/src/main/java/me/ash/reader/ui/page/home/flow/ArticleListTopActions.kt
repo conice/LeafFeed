@@ -34,13 +34,10 @@ fun ArticleListTopActions(
     iconSize: Int,
     isUnread: Boolean,
     isAll: Boolean,
-    isStarred: Boolean,
     isReadLater: Boolean,
     searchActive: Boolean,
-    markAsReadActive: Boolean,
     onHistory: () -> Unit,
     onAiSummary: () -> Unit,
-    onMarkAllRead: () -> Unit,
     onClearReadLater: () -> Unit,
     onSearch: () -> Unit,
     onRefresh: () -> Unit,
@@ -53,11 +50,10 @@ fun ArticleListTopActions(
         fontScale = fontScale,
         normalCapacity = 4,
     )
-    val availableIds = remember(isUnread, isAll, isStarred, searchActive) {
+    val availableIds = remember(isUnread, isAll, searchActive) {
         buildSet {
             if (!searchActive && isUnread) add(NavigationItemIds.HISTORY)
             if (!searchActive && (isUnread || isAll)) add(NavigationItemIds.AI_SUMMARY)
-            if (!isStarred) add(NavigationItemIds.MARK_ALL_READ)
             add(NavigationItemIds.SEARCH)
             if (!searchActive) add(NavigationItemIds.REFRESH)
         }
@@ -73,11 +69,9 @@ fun ArticleListTopActions(
             id = action.id,
             iconSize = iconSize,
             searchActive = searchActive,
-            markAsReadActive = markAsReadActive,
             onClick = when (action.id) {
                 NavigationItemIds.HISTORY -> onHistory
                 NavigationItemIds.AI_SUMMARY -> onAiSummary
-                NavigationItemIds.MARK_ALL_READ -> onMarkAllRead
                 NavigationItemIds.SEARCH -> onSearch
                 else -> onRefresh
             },
@@ -104,7 +98,6 @@ fun ArticleListTopActions(
                         when (action.id) {
                             NavigationItemIds.HISTORY -> onHistory()
                             NavigationItemIds.AI_SUMMARY -> onAiSummary()
-                            NavigationItemIds.MARK_ALL_READ -> onMarkAllRead()
                             NavigationItemIds.SEARCH -> onSearch()
                             NavigationItemIds.REFRESH -> onRefresh()
                         }
@@ -130,21 +123,15 @@ private fun ActionIcon(
     id: String,
     iconSize: Int,
     searchActive: Boolean,
-    markAsReadActive: Boolean,
     onClick: () -> Unit,
 ) {
-    val active = when (id) {
-        NavigationItemIds.SEARCH -> searchActive
-        NavigationItemIds.MARK_ALL_READ -> markAsReadActive
-        else -> false
-    }
+    val active = id == NavigationItemIds.SEARCH && searchActive
     FeedbackIconButton(
         modifier = Modifier.size(iconSize.dp),
         imageVector = navigationActionIcon(id),
         contentDescription = when (id) {
             NavigationItemIds.HISTORY -> stringResource(R.string.reading_history)
             NavigationItemIds.AI_SUMMARY -> stringResource(R.string.ai_summary)
-            NavigationItemIds.MARK_ALL_READ -> stringResource(R.string.mark_all_as_read)
             NavigationItemIds.REFRESH -> stringResource(R.string.refresh)
             else -> stringResource(R.string.search)
         },

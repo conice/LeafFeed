@@ -40,7 +40,6 @@ import androidx.compose.material.icons.outlined.BookmarkRemove
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LargeTopAppBar
 import androidx.compose.material3.LocalContentColor
@@ -93,6 +92,7 @@ import me.ash.reader.infrastructure.preference.LocalFlowArticleListTonalElevatio
 import me.ash.reader.infrastructure.preference.LocalFlowFilterBarPadding
 import me.ash.reader.infrastructure.preference.LocalFlowFilterBarStyle
 import me.ash.reader.infrastructure.preference.LocalFlowFilterBarTonalElevation
+import me.ash.reader.infrastructure.preference.LocalFlowMarkAsReadFabPosition
 import me.ash.reader.infrastructure.preference.LocalFlowTopBarTonalElevation
 import me.ash.reader.infrastructure.preference.LocalMarkAsReadOnScroll
 import me.ash.reader.infrastructure.preference.LocalOpenLink
@@ -154,6 +154,7 @@ fun FlowPage(
     val filterBarStyle = LocalFlowFilterBarStyle.current
     val filterBarPadding = LocalFlowFilterBarPadding.current
     val filterBarTonalElevation = LocalFlowFilterBarTonalElevation.current
+    val markAsReadFabPosition = LocalFlowMarkAsReadFabPosition.current
     val sharedContent = LocalSharedContent.current
     val markAsReadOnScroll = LocalMarkAsReadOnScroll.current.value
     val context = LocalContext.current
@@ -210,12 +211,13 @@ fun FlowPage(
 
     val scope = rememberCoroutineScope()
     val focusRequester = remember { FocusRequester() }
-    var markAsRead by remember { mutableStateOf(false) }
+    var markAsReadExpanded by remember { mutableStateOf(false) }
     var onSearch by rememberSaveable { mutableStateOf(false) }
     var selectedSavedSearchId by rememberSaveable { mutableStateOf<String?>(null) }
     var clearReadLaterDialogVisible by rememberSaveable { mutableStateOf(false) }
 
     val onHistoryAction: () -> Unit = {
+        markAsReadExpanded = false
         navigateToReadingHistory(
             filterUiState.feed?.accountId
                 ?: filterUiState.group?.accountId
@@ -224,18 +226,6 @@ fun FlowPage(
             filterUiState.feed?.id,
             filterUiState.contentType == ArticleContentType.AUDIO,
         )
-    }
-    val onMarkAllReadAction: () -> Unit = {
-        if (markAsRead) {
-            markAsRead = false
-        } else {
-            scope.launch {
-                if (listState.firstVisibleItemIndex != 0) listState.animateScrollToItem(0)
-            }.invokeOnCompletion {
-                markAsRead = true
-                onSearch = false
-            }
-        }
     }
     val onSearchAction: () -> Unit = {
         if (onSearch) {
@@ -249,7 +239,7 @@ fun FlowPage(
                 scope.launch {
                     viewModel.beginSearch(searchScope)
                     onSearch = true
-                    markAsRead = false
+                    markAsReadExpanded = false
                     delay(100)
                     focusRequester.requestFocus()
                 }
@@ -324,6 +314,22 @@ fun FlowPage(
             keyboardController?.hide()
             viewModel.endSearch()
         }
+    }
+
+    val pullToLoadIdle = currentPullToLoadState?.status.let {
+        it == null || it == PullToLoadState.Status.Idle
+    }
+    val showMarkAsReadFab =
+        !onSearch && !filterUiState.filter.isStarred() && pullToLoadIdle
+    LaunchedEffect(showMarkAsReadFab) {
+        if (!showMarkAsReadFab) markAsReadExpanded = false
+    }
+    LaunchedEffect(
+        filterUiState.filter,
+        filterUiState.group?.id,
+        filterUiState.feed?.id,
+    ) {
+        markAsReadExpanded = false
     }
 
     LaunchedEffect(savedSearches, selectedSavedSearchId) {
@@ -456,6 +462,7 @@ fun FlowPage(
                         modifier =
                             Modifier.clickable(
                                 onClick = {
+                                    markAsReadExpanded = false
                                     scope.launch {
                                         if (listState.firstVisibleItemIndex != 0) {
                                             listState.animateScrollToItem(0)
@@ -501,6 +508,7 @@ fun FlowPage(
                                 tint = MaterialTheme.colorScheme.onSurface,
                             ) {
                                 onSearch = false
+                                markAsReadExpanded = false
                                 viewModel.endSearch()
                                 onNavigateUp()
                             }
@@ -524,16 +532,22 @@ fun FlowPage(
                                     iconSize = navigationCustomization.mainTopIconSize,
                                     isUnread = filterUiState.filter.isUnread(),
                                     isAll = filterUiState.filter.isAll(),
-                                    isStarred = filterUiState.filter.isStarred(),
                                     isReadLater = filterUiState.filter.isReadLater(),
                                     searchActive = onSearch,
-                                    markAsReadActive = markAsRead,
                                     onHistory = onHistoryAction,
-                                    onAiSummary = viewModel::summarizeCurrentTitles,
-                                    onMarkAllRead = onMarkAllReadAction,
-                                    onClearReadLater = { clearReadLaterDialogVisible = true },
+                                    onAiSummary = {
+                                        markAsReadExpanded = false
+                                        viewModel.summarizeCurrentTitles()
+                                    },
+                                    onClearReadLater = {
+                                        markAsReadExpanded = false
+                                        clearReadLaterDialogVisible = true
+                                    },
                                     onSearch = onSearchAction,
-                                    onRefresh = viewModel::sync,
+                                    onRefresh = {
+                                        markAsReadExpanded = false
+                                        viewModel.sync()
+                                    },
                                 )
                             }
                         },
@@ -607,25 +621,6 @@ fun FlowPage(
                     }
                 }
 
-                RYExtensibleVisibility(markAsRead) {
-                    BackHandler(markAsRead) { markAsRead = false }
-
-                    MarkAsReadBar {
-                        markAsRead = false
-                        viewModel.updateReadStatus(
-                            filterState = filterUiState,
-                            articleId = null,
-                            conditions = it,
-                            isUnread = false,
-                        )
-                        if (
-                            it == MarkAsReadConditions.All &&
-                                (filterUiState.group != null || filterUiState.feed != null)
-                        ) {
-                            onNavigateUp()
-                        }
-                    }
-                }
                 val contentTransitionVertical =
                     sharedYAxisTransitionExpressive(direction = Direction.Forward)
                 AnimatedContent(
@@ -777,7 +772,7 @@ fun FlowPage(
                                         },
                                         onScroll = {
                                             if (it < -10f) {
-                                                markAsRead = false
+                                                markAsReadExpanded = false
                                             }
                                         },
                                     )
@@ -811,6 +806,7 @@ fun FlowPage(
                                 isShowStickyHeader = articleListDateStickyHeader.value,
                                 articleListTonalElevation = articleListTonalElevation.value,
                                 onClick = { articleWithFeed, index ->
+                                    markAsReadExpanded = false
                                     if (articleWithFeed.feed.isBrowser) {
                                         viewModel.diffMapHolder.updateDiff(
                                             articleWithFeed,
@@ -890,7 +886,29 @@ fun FlowPage(
                     }
                 }
             },
-            floatingActionButtonPosition = FabPosition.Center,
+            floatingActionButton = {
+                if (showMarkAsReadFab) {
+                    MarkAsReadFab(
+                        expanded = markAsReadExpanded,
+                        onExpandedChange = { markAsReadExpanded = it },
+                        onItemClick = {
+                            viewModel.updateReadStatus(
+                                filterState = filterUiState,
+                                articleId = null,
+                                conditions = it,
+                                isUnread = false,
+                            )
+                            if (
+                                it == MarkAsReadConditions.All &&
+                                    (filterUiState.group != null || filterUiState.feed != null)
+                            ) {
+                                onNavigateUp()
+                            }
+                        },
+                    )
+                }
+            },
+            floatingActionButtonPosition = markAsReadFabPosition.toFabPosition(),
             bottomBar = {
                 Column {
                     FilterBar(
@@ -915,6 +933,7 @@ fun FlowPage(
                             ?.dp,
                         filters = visibleFilters,
                     ) {
+                        markAsReadExpanded = false
                         val nextFilter = it
                         if (nextFilter != null && filterUiState.filter != nextFilter) {
                             viewModel.changeFilter(
@@ -965,6 +984,7 @@ fun FlowPage(
         onDismiss = viewModel::hideTitleSummary,
         sourceDescription = stringResource(R.string.ai_summary_source_titles),
         articleIds = titleSummaryState.articleIds,
+        articleTitles = titleSummaryState.articleTitles,
         initialScrollOffset = titleSummaryState.scrollOffset,
         onArticleClick = { articleId, scrollOffset ->
             viewModel.saveTitleSummaryScrollOffset(scrollOffset)

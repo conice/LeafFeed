@@ -4,12 +4,13 @@ package me.ash.reader.ui.page.settings.color.flow
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -17,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -30,12 +32,14 @@ import me.ash.reader.domain.model.article.ArticleWithFeed
 import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.model.general.Filter
 import me.ash.reader.infrastructure.preference.FlowArticleListTonalElevationPreference
+import me.ash.reader.infrastructure.preference.FlowMarkAsReadFabPositionPreference
 import me.ash.reader.infrastructure.preference.FlowTopBarTonalElevationPreference
 import me.ash.reader.ui.component.FilterBar
 import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.ext.formatAsString
 import me.ash.reader.ui.ext.surfaceColorAtElevation
 import me.ash.reader.ui.page.home.flow.ArticleItem
+import me.ash.reader.ui.page.home.flow.MarkAsReadFab
 import me.ash.reader.ui.theme.palette.onDark
 import java.util.*
 
@@ -48,10 +52,11 @@ fun FlowPagePreview(
     filterBarFilled: Boolean,
     filterBarPadding: Dp,
     filterBarTonalElevation: Dp,
+    markAsReadFabPosition: FlowMarkAsReadFabPositionPreference,
 ) {
     var filter by remember { mutableStateOf(Filter.Unread) }
 
-    Column(
+    Box(
         modifier = Modifier
             .animateContentSize(animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec())
             .background(
@@ -61,69 +66,82 @@ fun FlowPagePreview(
                 shape = MaterialTheme.shapes.extraLarge
             )
     ) {
-        val preview = generateArticleWithFeedPreview()
-        val feed = preview.feed
-        val article = preview.article
+        Column {
+            val preview = generateArticleWithFeedPreview()
+            val feed = preview.feed
+            val article = preview.article
 
-        TopAppBar(
-            title = {
-                Text(
-                    text = feed.name,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+            TopAppBar(
+                title = {
+                    Text(
+                        text = feed.name,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                    )
+                },
+                navigationIcon = {
+                    FeedbackIconButton(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = stringResource(R.string.back),
+                        tint = MaterialTheme.colorScheme.onSurface
+                    ) {}
+                },
+                actions = {
+                    FeedbackIconButton(
+                        imageVector = Icons.Rounded.Search,
+                        contentDescription = stringResource(R.string.search),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    ) {}
+                }, colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(
+                        topBarTonalElevation.value.dp
+                    ),
                 )
-            },
-            navigationIcon = {
-                FeedbackIconButton(
-                    imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = stringResource(R.string.back),
-                    tint = MaterialTheme.colorScheme.onSurface
-                ) {}
-            },
-            actions = {
-                FeedbackIconButton(
-                    imageVector = Icons.Rounded.DoneAll,
-                    contentDescription = stringResource(R.string.mark_all_as_read),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                ) {}
-                FeedbackIconButton(
-                    imageVector = Icons.Rounded.Search,
-                    contentDescription = stringResource(R.string.search),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                ) {}
-            }, colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(
-                    topBarTonalElevation.value.dp
-                ),
             )
-        )
-        Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-        ArticleItem(
-            modifier = Modifier,
-            feedName = feed.name,
-            feedIconUrl = feed.icon,
-            title = article.title,
-            shortDescription = article.shortDescription,
-            timeString = article.dateString,
-            imgData = R.drawable.animation,
-            isStarred = article.isStarred,
-            isUnread = article.isUnread,
-            onClick = {},
-            onLongClick = null
-        )
+            ArticleItem(
+                modifier = Modifier,
+                feedName = feed.name,
+                feedIconUrl = feed.icon,
+                title = article.title,
+                shortDescription = article.shortDescription,
+                timeString = article.dateString,
+                imgData = R.drawable.animation,
+                isStarred = article.isStarred,
+                isUnread = article.isUnread,
+                onClick = {},
+                onLongClick = null
+            )
 
-        Spacer(modifier = Modifier.height(12.dp))
-        FilterBar(
-            filter = filter,
-            filterBarStyle = filterBarStyle,
-            filterBarFilled = filterBarFilled,
-            filterBarPadding = filterBarPadding,
-            filterBarTonalElevation = filterBarTonalElevation,
-        ) {
-            filter = it
+            Spacer(modifier = Modifier.height(12.dp))
+            FilterBar(
+                filter = filter,
+                filterBarStyle = filterBarStyle,
+                filterBarFilled = filterBarFilled,
+                filterBarPadding = filterBarPadding,
+                filterBarTonalElevation = filterBarTonalElevation,
+            ) {
+                filter = it
+            }
         }
+
+        MarkAsReadFab(
+            modifier = Modifier
+                .align(
+                    when (markAsReadFabPosition) {
+                        FlowMarkAsReadFabPositionPreference.Left -> Alignment.BottomStart
+                        FlowMarkAsReadFabPositionPreference.Center -> Alignment.BottomCenter
+                        FlowMarkAsReadFabPositionPreference.Right -> Alignment.BottomEnd
+                    }
+                )
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 64.dp),
+            expanded = false,
+            onExpandedChange = {},
+            onItemClick = {},
+        )
     }
 }
 

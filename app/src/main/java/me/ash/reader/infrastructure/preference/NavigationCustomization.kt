@@ -55,13 +55,11 @@ object NavigationItemIds {
     const val READ_LATER = "readLater"
 
     const val SUBSCRIPTION_REPORT = "subscriptionReport"
-    const val ADD_SUBSCRIPTION = "addSubscription"
     const val SETTINGS = "settings"
     const val SYNC = "sync"
 
     const val HISTORY = "history"
     const val AI_SUMMARY = "aiSummary"
-    const val MARK_ALL_READ = "markAllRead"
     const val SEARCH = "search"
     const val REFRESH = "refresh"
 
@@ -99,8 +97,7 @@ object NavigationActionCatalog {
         register(
             NavigationSurface.FeedTop,
             ActionPlacement.Toolbar,
-            NavigationItemIds.SUBSCRIPTION_REPORT to "Subscription report",
-            NavigationItemIds.ADD_SUBSCRIPTION to "Add subscription",
+            NavigationItemIds.SUBSCRIPTION_REPORT to "Information intake",
         )
         register(
             NavigationSurface.FeedTop,
@@ -113,7 +110,6 @@ object NavigationActionCatalog {
             ActionPlacement.Toolbar,
             NavigationItemIds.HISTORY to "History",
             NavigationItemIds.AI_SUMMARY to "AI summary",
-            NavigationItemIds.MARK_ALL_READ to "Mark all as read",
             NavigationItemIds.SEARCH to "Search",
         )
         register(

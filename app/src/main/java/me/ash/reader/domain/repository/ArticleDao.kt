@@ -737,47 +737,48 @@ interface ArticleDao {
         endExclusive: Date,
     ): Flow<Map<@MapColumn("feedId") String, @MapColumn("important") Int>>
 
-    data class ReportFeedStats(
+    data class IntakeFeedStats(
         val feedId: String,
-        val total: Int,
-        val opened: Int,
-        val engaged: Int,
-        val periodUnread: Int,
+        val currentReceived: Int,
+        val previousReceived: Int,
+        val currentOpened: Int,
+        val previousOpened: Int,
+        val clearedWithoutOpening: Int,
+        val saved: Int,
+        val currentPending: Int,
         val unreadBacklog: Int,
-        val starred: Int,
-        val readLater: Int,
-        val latestDate: Date?,
-        val firstDate: Date?,
-        val lifetimeTotal: Int,
-        val lastOpenedAt: Date?,
     )
 
     @Query(
         """SELECT feedId,
-            SUM(CASE WHEN date >= :start AND date < :endExclusive THEN 1 ELSE 0 END) AS total,
-            SUM(CASE WHEN lastOpenedAt >= :start AND lastOpenedAt < :endExclusive THEN 1 ELSE 0 END) AS opened,
-            SUM(CASE WHEN
-                (lastOpenedAt >= :start AND lastOpenedAt < :endExclusive)
-                OR (date >= :start AND date < :endExclusive AND
-                    (isStarred = 1 OR isReadLater = 1 OR playbackPositionMs > 0 OR isPlayed = 1))
-                THEN 1 ELSE 0 END) AS engaged,
-            SUM(CASE WHEN date >= :start AND date < :endExclusive AND isUnread = 1 THEN 1 ELSE 0 END) AS periodUnread,
-            SUM(CASE WHEN isUnread = 1 THEN 1 ELSE 0 END) AS unreadBacklog,
-            SUM(CASE WHEN date >= :start AND date < :endExclusive AND isStarred = 1 THEN 1 ELSE 0 END) AS starred,
-            SUM(CASE WHEN date >= :start AND date < :endExclusive AND isReadLater = 1 THEN 1 ELSE 0 END) AS readLater,
-            MAX(date) AS latestDate,
-            MIN(date) AS firstDate,
-            COUNT(*) AS lifetimeTotal,
-            MAX(lastOpenedAt) AS lastOpenedAt
+            SUM(CASE WHEN date >= :currentStart AND date < :currentEndExclusive
+                THEN 1 ELSE 0 END) AS currentReceived,
+            SUM(CASE WHEN date >= :previousStart AND date < :currentStart
+                THEN 1 ELSE 0 END) AS previousReceived,
+            SUM(CASE WHEN lastOpenedAt >= :currentStart AND lastOpenedAt < :currentEndExclusive
+                THEN 1 ELSE 0 END) AS currentOpened,
+            SUM(CASE WHEN lastOpenedAt >= :previousStart AND lastOpenedAt < :currentStart
+                THEN 1 ELSE 0 END) AS previousOpened,
+            SUM(CASE WHEN date >= :currentStart AND date < :currentEndExclusive
+                AND isUnread = 0 AND lastOpenedAt IS NULL
+                THEN 1 ELSE 0 END) AS clearedWithoutOpening,
+            SUM(CASE WHEN date >= :currentStart AND date < :currentEndExclusive
+                AND (isStarred = 1 OR isReadLater = 1)
+                THEN 1 ELSE 0 END) AS saved,
+            SUM(CASE WHEN date >= :currentStart AND date < :currentEndExclusive
+                AND isUnread = 1
+                THEN 1 ELSE 0 END) AS currentPending,
+            SUM(CASE WHEN isUnread = 1 THEN 1 ELSE 0 END) AS unreadBacklog
         FROM article
         WHERE accountId = :accountId
         GROUP BY feedId"""
     )
-    fun queryReportFeedStats(
+    fun queryIntakeFeedStats(
         accountId: Int,
-        start: Date,
-        endExclusive: Date,
-    ): Flow<List<ReportFeedStats>>
+        previousStart: Date,
+        currentStart: Date,
+        currentEndExclusive: Date,
+    ): Flow<List<IntakeFeedStats>>
 
     @Transaction
     @Query(

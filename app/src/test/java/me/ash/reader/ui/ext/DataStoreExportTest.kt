@@ -17,10 +17,12 @@ class DataStoreExportTest {
                 AiPreferenceKeys.apiKey,
                 AiPreferenceKeys.model,
                 AiPreferenceKeys.titlePrompt,
+                AiPreferenceKeys.titleInputTemplate,
                 AiPreferenceKeys.articleUrl,
                 AiPreferenceKeys.articleApiKey,
                 AiPreferenceKeys.articleModel,
                 AiPreferenceKeys.articlePrompt,
+                AiPreferenceKeys.articleInputTemplate,
                 AiPreferenceKeys.articleCount,
             )
 
@@ -140,6 +142,10 @@ class DataStoreExportTest {
     fun `uses current types for migrated preferences`() {
         assertTrue(
             PreferencesKey.keys.getValue(PreferencesKey.flowArticleListDesc) is
+                PreferencesKey.IntKey
+        )
+        assertTrue(
+            PreferencesKey.keys.getValue(PreferencesKey.flowMarkAsReadFabPosition) is
                 PreferencesKey.IntKey
         )
         assertTrue(

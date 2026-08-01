@@ -40,6 +40,8 @@ class AiSummaryService @Inject constructor(
     suspend fun settings(): AiSettings = context.dataStore.data.first().toAiSettings(
         defaultTitlePrompt = context.getString(R.string.ai_default_prompt),
         defaultArticlePrompt = context.getString(R.string.ai_default_article_prompt),
+        defaultTitleInputTemplate = context.getString(R.string.ai_default_title_input_template),
+        defaultArticleInputTemplate = context.getString(R.string.ai_default_article_input_template),
     )
 
     suspend fun summarizeTitles(
@@ -49,25 +51,33 @@ class AiSummaryService @Inject constructor(
         onUpdate: (String) -> Unit = {},
     ): String {
         require(titles.isNotEmpty()) { "No articles to summarize" }
-        val settings = settings()
+        val settings = settings().titleSummary
+        val titleInputs =
+            titles.mapIndexed { index, (_, title) ->
+                renderAiInputTemplate(
+                    template = settings.inputTemplate,
+                    index = index + 1,
+                    title = title,
+                    body = "",
+                )
+            }.joinToString("\n")
         val userContent =
             "The input contains exactly ${titles.size} article titles. Summarize exactly these ${titles.size} titles only, once each. Do not infer facts not present in the titles.\n\n" +
-                titles.mapIndexed { index, (_, title) -> "${index + 1}. $title" }
-                    .joinToString("\n")
+                titleInputs
         val articleIdentity = titles.joinToString("\u0000") { (id, title) -> "$id\u0001$title" }
         val result = cache.getOrPut(
             accountId = accountId,
             fingerprint = fingerprint(
                 "titles",
                 "$articleIdentity\u0000$userContent",
-                settings.titleSummary,
+                settings,
             ),
             forceRefresh = forceRefresh,
         ) {
             complete(
                 userContent,
-                settings.titleSummary.prompt,
-                settings.titleSummary,
+                settings.prompt,
+                settings,
                 onUpdate,
             )
         }
@@ -94,7 +104,13 @@ class AiSummaryService @Inject constructor(
         val linkLine = if (featureSettings.aiIncludeArticleLink && !link.isNullOrBlank()) {
             "\n\nLink: $link"
         } else ""
-        val userContent = "Summarize this article.\n\nTitle: $title\n\n$selectedContent$linkLine"
+        val userContent =
+            renderAiInputTemplate(
+                template = settings.articleSummary.inputTemplate,
+                index = 1,
+                title = title,
+                body = selectedContent,
+            ) + linkLine
         val result = cache.getOrPut(
             accountId = accountId,
             fingerprint = fingerprint(
@@ -204,6 +220,23 @@ class AiSummaryService @Inject constructor(
         }
     }
 }
+
+private val AiInputField = Regex("\\{(?:序号|标题|正文)}")
+
+internal fun renderAiInputTemplate(
+    template: String,
+    index: Int,
+    title: String,
+    body: String,
+): String =
+    AiInputField.replace(template) { field ->
+        when (field.value) {
+            "{序号}" -> index.toString()
+            "{标题}" -> title
+            "{正文}" -> body
+            else -> field.value
+        }
+    }
 
 internal fun readChatCompletionStream(
     source: BufferedSource,

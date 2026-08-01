@@ -34,6 +34,7 @@ data class Settings(
     val flowFilterBarPadding: Int = FlowFilterBarPaddingPreference.default,
     val flowFilterBarTonalElevation: FlowFilterBarTonalElevationPreference = FlowFilterBarTonalElevationPreference.default,
     val flowTopBarTonalElevation: FlowTopBarTonalElevationPreference = FlowTopBarTonalElevationPreference.default,
+    val flowMarkAsReadFabPosition: FlowMarkAsReadFabPositionPreference = FlowMarkAsReadFabPositionPreference.default,
     val flowArticleListFeedIcon: FlowArticleListFeedIconPreference = FlowArticleListFeedIconPreference.default,
     val flowArticleListFeedName: FlowArticleListFeedNamePreference = FlowArticleListFeedNamePreference.default,
     val flowArticleListImage: FlowArticleListImagePreference = FlowArticleListImagePreference.default,

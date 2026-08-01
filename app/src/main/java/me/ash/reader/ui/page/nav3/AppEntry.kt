@@ -155,9 +155,6 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                             SubscriptionReportPage(
                                 onBack = onBack,
                                 onOpenReading = { backStack.add(Route.Reading(null)) },
-                                onCreateAutomation = { feedId ->
-                                    backStack.add(Route.Automations(feedId))
-                                },
                             )
                         }
                     is Route.Reading -> {

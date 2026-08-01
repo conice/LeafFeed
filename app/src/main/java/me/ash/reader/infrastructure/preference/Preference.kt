@@ -39,6 +39,7 @@ fun Preferences.toSettings(): Settings {
         flowFilterBarPadding = FlowFilterBarPaddingPreference.fromPreferences(this),
         flowFilterBarTonalElevation = FlowFilterBarTonalElevationPreference.fromPreferences(this),
         flowTopBarTonalElevation = FlowTopBarTonalElevationPreference.fromPreferences(this),
+        flowMarkAsReadFabPosition = FlowMarkAsReadFabPositionPreference.fromPreferences(this),
         flowArticleListFeedIcon = FlowArticleListFeedIconPreference.fromPreferences(this),
         flowArticleListFeedName = FlowArticleListFeedNamePreference.fromPreferences(this),
         flowArticleListImage = FlowArticleListImagePreference.fromPreferences(this),

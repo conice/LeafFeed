@@ -26,7 +26,6 @@ class NavigationCustomizationTest {
                 NavigationItemPreference(NavigationItemIds.SEARCH, ActionPlacement.More),
                 NavigationItemPreference(NavigationItemIds.HISTORY, ActionPlacement.Hidden),
                 NavigationItemPreference(NavigationItemIds.AI_SUMMARY, ActionPlacement.Hidden),
-                NavigationItemPreference(NavigationItemIds.MARK_ALL_READ, ActionPlacement.Hidden),
                 NavigationItemPreference(NavigationItemIds.REFRESH, ActionPlacement.Hidden),
             ),
             actions,
@@ -94,7 +93,7 @@ class NavigationCustomizationTest {
     }
 
     @Test
-    fun `loads legacy comma separated values`() {
+    fun `loads legacy comma separated values and drops removed actions`() {
         val preferences = mutablePreferencesOf(
             NavigationPreferenceKeys.feedTopActions to
                 "addSubscription:more,subscriptionReport:hidden",
@@ -102,10 +101,23 @@ class NavigationCustomizationTest {
 
         val actions = preferences.toNavigationCustomization().feedTopActions
 
-        assertEquals(NavigationItemIds.ADD_SUBSCRIPTION, actions[0].id)
-        assertEquals(ActionPlacement.More, actions[0].placement)
-        assertEquals(NavigationItemIds.SUBSCRIPTION_REPORT, actions[1].id)
-        assertEquals(ActionPlacement.Hidden, actions[1].placement)
+        assertEquals(NavigationItemIds.SUBSCRIPTION_REPORT, actions[0].id)
+        assertEquals(ActionPlacement.Hidden, actions[0].placement)
+        assertFalse(actions.any { it.id == "addSubscription" })
+    }
+
+    @Test
+    fun `drops legacy mark all read action now provided by the floating button`() {
+        val preferences = mutablePreferencesOf(
+            NavigationPreferenceKeys.articleTopActions to
+                "markAllRead:toolbar,search:more",
+        )
+
+        val actions = preferences.toNavigationCustomization().articleTopActions
+
+        assertFalse(actions.any { it.id == "markAllRead" })
+        assertEquals(NavigationItemIds.SEARCH, actions.first().id)
+        assertEquals(ActionPlacement.More, actions.first().placement)
     }
 
     @Test

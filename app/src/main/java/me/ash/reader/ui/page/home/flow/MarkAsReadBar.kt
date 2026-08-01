@@ -1,118 +1,90 @@
 package me.ash.reader.ui.page.home.flow
 
-import android.view.HapticFeedbackConstants
-import android.view.SoundEffectConstants
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import me.ash.reader.R
 import me.ash.reader.domain.model.general.MarkAsReadConditions
-import me.ash.reader.ui.component.base.AnimatedPopup
-import me.ash.reader.ui.component.base.RYExtensibleVisibility
-import me.ash.reader.ui.theme.palette.alwaysLight
 
 @Composable
-fun MarkAsReadBar(
-    onItemClick: (MarkAsReadConditions) -> Unit = {},
+fun MarkAsReadFab(
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onItemClick: (MarkAsReadConditions) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = Modifier
-            .padding(horizontal = 24.dp)
-            .padding(vertical = 12.dp)
-            .fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        MarkAsReadBarItem(
-            modifier = Modifier.width(56.dp),
-            text = stringResource(R.string.seven_days),
+    Box(modifier = modifier) {
+        FloatingActionButton(
+            onClick = { onExpandedChange(!expanded) },
+            shape = CircleShape,
+            elevation = FloatingActionButtonDefaults.elevation(),
+            containerColor = if (expanded) {
+                MaterialTheme.colorScheme.primaryFixed
+            } else {
+                MaterialTheme.colorScheme.primaryFixedDim
+            },
+            contentColor = MaterialTheme.colorScheme.onPrimaryFixedVariant,
         ) {
-            onItemClick(MarkAsReadConditions.SevenDays)
+            Icon(
+                imageVector = Icons.Rounded.DoneAll,
+                contentDescription = stringResource(R.string.mark_as_read),
+            )
         }
-        MarkAsReadBarItem(
-            modifier = Modifier.width(56.dp),
-            text = stringResource(R.string.three_days),
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { onExpandedChange(false) },
         ) {
-            onItemClick(MarkAsReadConditions.ThreeDays)
-        }
-        MarkAsReadBarItem(
-            modifier = Modifier.width(56.dp),
-            text = stringResource(R.string.one_day),
-        ) {
-            onItemClick(MarkAsReadConditions.OneDay)
-        }
-        MarkAsReadBarItem(
-            modifier = Modifier.weight(1f),
-            text = stringResource(R.string.mark_all_as_read),
-            isPrimary = true,
-        ) {
-            onItemClick(MarkAsReadConditions.All)
+            MarkAsReadMenuItem(
+                text = stringResource(R.string.mark_as_read_seven_days),
+                conditions = MarkAsReadConditions.SevenDays,
+                onExpandedChange = onExpandedChange,
+                onItemClick = onItemClick,
+            )
+            MarkAsReadMenuItem(
+                text = stringResource(R.string.mark_as_read_three_days),
+                conditions = MarkAsReadConditions.ThreeDays,
+                onExpandedChange = onExpandedChange,
+                onItemClick = onItemClick,
+            )
+            MarkAsReadMenuItem(
+                text = stringResource(R.string.mark_as_read_one_day),
+                conditions = MarkAsReadConditions.OneDay,
+                onExpandedChange = onExpandedChange,
+                onItemClick = onItemClick,
+            )
+            MarkAsReadMenuItem(
+                text = stringResource(R.string.mark_all_as_read),
+                conditions = MarkAsReadConditions.All,
+                onExpandedChange = onExpandedChange,
+                onItemClick = onItemClick,
+            )
         }
     }
 }
 
 @Composable
-fun MarkAsReadBarItem(
-    modifier: Modifier = Modifier,
+private fun MarkAsReadMenuItem(
     text: String,
-    isPrimary: Boolean = false,
-    onClick: () -> Unit = {},
+    conditions: MarkAsReadConditions,
+    onExpandedChange: (Boolean) -> Unit,
+    onItemClick: (MarkAsReadConditions) -> Unit,
 ) {
-    val view = LocalView.current
-
-    Surface(
-        modifier = modifier
-            .height(56.dp)
-            .clip(MaterialTheme.shapes.large)
-            .clickable {
-                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                view.playSoundEffect(SoundEffectConstants.CLICK)
-                onClick()
-            },
-        tonalElevation = 2.dp,
-        shape = MaterialTheme.shapes.large,
-        color = if (isPrimary) {
-            MaterialTheme.colorScheme.primaryContainer alwaysLight true
-        } else {
-            MaterialTheme.colorScheme.surface
-        }
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .padding(horizontal = 5.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = text,
-                style = MaterialTheme.typography.titleSmall.copy(
-                    textAlign = TextAlign.Center,
-                ),
-                color = if (isPrimary) {
-                    MaterialTheme.colorScheme.onSurface alwaysLight true
-                } else {
-                    MaterialTheme.colorScheme.secondary
-                },
-            )
-        }
-    }
-    if (!isPrimary) {
-        Spacer(modifier = Modifier.width(8.dp))
-    }
+    DropdownMenuItem(
+        text = { Text(text) },
+        onClick = {
+            onExpandedChange(false)
+            onItemClick(conditions)
+        },
+    )
 }

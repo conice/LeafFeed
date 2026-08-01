@@ -67,12 +67,27 @@ fun AiSettingsPage(onBack: () -> Unit) {
             AiTask.TitleSummary to stringResource(R.string.ai_default_prompt),
             AiTask.ArticleSummary to stringResource(R.string.ai_default_article_prompt),
         )
+    val defaultInputTemplates =
+        mapOf(
+            AiTask.TitleSummary to stringResource(R.string.ai_default_title_input_template),
+            AiTask.ArticleSummary to stringResource(R.string.ai_default_article_input_template),
+        )
 
     var titleSummary by remember {
-        mutableStateOf(AiTaskSettings(prompt = defaultPrompts.getValue(AiTask.TitleSummary)))
+        mutableStateOf(
+            AiTaskSettings(
+                prompt = defaultPrompts.getValue(AiTask.TitleSummary),
+                inputTemplate = defaultInputTemplates.getValue(AiTask.TitleSummary),
+            ),
+        )
     }
     var articleSummary by remember {
-        mutableStateOf(AiTaskSettings(prompt = defaultPrompts.getValue(AiTask.ArticleSummary)))
+        mutableStateOf(
+            AiTaskSettings(
+                prompt = defaultPrompts.getValue(AiTask.ArticleSummary),
+                inputTemplate = defaultInputTemplates.getValue(AiTask.ArticleSummary),
+            ),
+        )
     }
     var articleCount by remember { mutableStateOf(DEFAULT_AI_ARTICLE_COUNT) }
     var editTarget by remember { mutableStateOf<EditTarget?>(null) }
@@ -106,6 +121,10 @@ fun AiSettingsPage(onBack: () -> Unit) {
             preferences.toAiSettings(
                 defaultTitlePrompt = defaultPrompts.getValue(AiTask.TitleSummary),
                 defaultArticlePrompt = defaultPrompts.getValue(AiTask.ArticleSummary),
+                defaultTitleInputTemplate =
+                    defaultInputTemplates.getValue(AiTask.TitleSummary),
+                defaultArticleInputTemplate =
+                    defaultInputTemplates.getValue(AiTask.ArticleSummary),
             )
         titleSummary = settings.titleSummary
         articleSummary = settings.articleSummary
@@ -134,6 +153,8 @@ fun AiSettingsPage(onBack: () -> Unit) {
                         title = stringResource(R.string.ai_title_summary),
                         settings = titleSummary,
                         defaultPrompt = defaultPrompts.getValue(AiTask.TitleSummary),
+                        defaultInputTemplate =
+                            defaultInputTemplates.getValue(AiTask.TitleSummary),
                         onEdit = { openEditor(AiTask.TitleSummary, it) },
                     )
                     SettingItem(
@@ -150,6 +171,8 @@ fun AiSettingsPage(onBack: () -> Unit) {
                         title = stringResource(R.string.ai_article_summary_settings),
                         settings = articleSummary,
                         defaultPrompt = defaultPrompts.getValue(AiTask.ArticleSummary),
+                        defaultInputTemplate =
+                            defaultInputTemplates.getValue(AiTask.ArticleSummary),
                         onEdit = { openEditor(AiTask.ArticleSummary, it) },
                     )
                 }
@@ -216,16 +239,19 @@ fun AiSettingsPage(onBack: () -> Unit) {
 
     editTarget?.let { target ->
         val defaultPrompt = defaultPrompts.getValue(target.task)
+        val defaultInputTemplate = defaultInputTemplates.getValue(target.task)
+        val restorableValue =
+            when (target.field) {
+                AiField.Prompt -> defaultPrompt
+                AiField.InputTemplate -> defaultInputTemplate
+                else -> null
+            }
         AiEditDialog(
+            task = target.task,
             field = target.field,
             value = editValue,
             onValueChange = { editValue = it },
-            onRestoreDefault =
-                if (target.field == AiField.Prompt) {
-                    { editValue = defaultPrompt }
-                } else {
-                    null
-                },
+            onRestoreDefault = restorableValue?.let { value -> { editValue = value } },
             onDismiss = { editTarget = null },
             onConfirm = {
                 if (target.field == AiField.ArticleCount) {
@@ -240,6 +266,8 @@ fun AiSettingsPage(onBack: () -> Unit) {
                     val normalizedValue =
                         when (target.field) {
                             AiField.Prompt -> editValue.ifBlank { defaultPrompt }
+                            AiField.InputTemplate ->
+                                editValue.ifBlank { defaultInputTemplate }
                             else -> editValue.trim()
                         }
                     saveTask(
@@ -258,6 +286,7 @@ private fun AiTaskSection(
     title: String,
     settings: AiTaskSettings,
     defaultPrompt: String,
+    defaultInputTemplate: String,
     onEdit: (AiField) -> Unit,
 ) {
     Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = title)
@@ -288,10 +317,23 @@ private fun AiTaskSection(
             ),
         onClick = { onEdit(AiField.Prompt) },
     ) {}
+    SettingItem(
+        title = stringResource(R.string.ai_input_template),
+        desc =
+            stringResource(
+                if (settings.inputTemplate == defaultInputTemplate) {
+                    R.string.ai_default_value
+                } else {
+                    R.string.ai_custom_value
+                }
+            ),
+        onClick = { onEdit(AiField.InputTemplate) },
+    ) {}
 }
 
 @Composable
 private fun AiEditDialog(
+    task: AiTask,
     field: AiField,
     value: String,
     onValueChange: (String) -> Unit,
@@ -299,6 +341,7 @@ private fun AiEditDialog(
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
+    val isMultiline = field == AiField.Prompt || field == AiField.InputTemplate
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(text = field.title()) },
@@ -311,8 +354,25 @@ private fun AiEditDialog(
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = field != AiField.Prompt,
-                minLines = if (field == AiField.Prompt) 6 else 1,
+                singleLine = !isMultiline,
+                minLines = if (isMultiline) 6 else 1,
+                supportingText =
+                    if (field == AiField.InputTemplate) {
+                        {
+                            Text(
+                                stringResource(
+                                    when (task) {
+                                        AiTask.TitleSummary ->
+                                            R.string.ai_title_input_template_fields
+                                        AiTask.ArticleSummary ->
+                                            R.string.ai_article_input_template_fields
+                                    }
+                                )
+                            )
+                        }
+                    } else {
+                        null
+                    },
                 visualTransformation =
                     if (field == AiField.ApiKey) {
                         PasswordVisualTransformation()
@@ -354,6 +414,7 @@ private fun AiField.title(): String =
             AiField.ApiKey -> R.string.ai_api_key
             AiField.Model -> R.string.ai_model
             AiField.Prompt -> R.string.ai_prompt
+            AiField.InputTemplate -> R.string.ai_input_template
             AiField.ArticleCount -> R.string.ai_article_count
         }
     )
@@ -364,6 +425,7 @@ private fun AiTaskSettings.valueOf(field: AiField): String =
         AiField.ApiKey -> apiKey
         AiField.Model -> model
         AiField.Prompt -> prompt
+        AiField.InputTemplate -> inputTemplate
         AiField.ArticleCount -> ""
     }
 
@@ -373,6 +435,7 @@ private fun AiTaskSettings.withValue(field: AiField, value: String): AiTaskSetti
         AiField.ApiKey -> copy(apiKey = value)
         AiField.Model -> copy(model = value)
         AiField.Prompt -> copy(prompt = value)
+        AiField.InputTemplate -> copy(inputTemplate = value)
         AiField.ArticleCount -> this
     }
 
@@ -383,12 +446,14 @@ private fun MutablePreferences.writeTask(task: AiTask, value: AiTaskSettings) {
             this[AiPreferenceKeys.apiKey] = value.apiKey
             this[AiPreferenceKeys.model] = value.model
             this[AiPreferenceKeys.titlePrompt] = value.prompt
+            this[AiPreferenceKeys.titleInputTemplate] = value.inputTemplate
         }
         AiTask.ArticleSummary -> {
             this[AiPreferenceKeys.articleUrl] = value.url
             this[AiPreferenceKeys.articleApiKey] = value.apiKey
             this[AiPreferenceKeys.articleModel] = value.model
             this[AiPreferenceKeys.articlePrompt] = value.prompt
+            this[AiPreferenceKeys.articleInputTemplate] = value.inputTemplate
         }
     }
 }
@@ -408,5 +473,6 @@ private enum class AiField {
     ApiKey,
     Model,
     Prompt,
+    InputTemplate,
     ArticleCount,
 }

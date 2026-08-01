@@ -36,6 +36,8 @@ import me.ash.reader.R
 import me.ash.reader.ui.component.base.ExpressiveIconButton
 import me.ash.reader.ui.theme.MotionTokens
 
+private val LeadingAiSummaryIndex = Regex("^\\s*(\\d+)[.、)]")
+
 @Composable
 fun AiSummaryDialog(
     visible: Boolean,
@@ -44,6 +46,7 @@ fun AiSummaryDialog(
     failure: AiSummaryFailure? = null,
     onDismiss: () -> Unit,
     articleIds: List<String> = emptyList(),
+    articleTitles: List<String> = emptyList(),
     initialScrollOffset: Int = 0,
     onArticleClick: (String, Int) -> Unit = { _, _ -> },
     onMarkSummarizedAsRead: (() -> Unit)? = null,
@@ -133,16 +136,43 @@ fun AiSummaryDialog(
                             if (failure != null) Spacer(Modifier.height(12.dp))
                             val lines = summary.lines()
                             lines.forEachIndexed { index, line ->
-                                val number = Regex("^\\s*(\\d+)[.、)]").find(line)?.groupValues?.getOrNull(1)?.toIntOrNull()
+                                val number = findAiSummaryArticleNumber(
+                                    line = line,
+                                    articleTitles = articleTitles,
+                                    articleCount = articleIds.size,
+                                )
                                 val articleId = if (loading) null else {
                                     number?.let { articleIds.getOrNull(it - 1) }
                                 }
-                                Text(
-                                    text = if (loading && index == lines.lastIndex) "$line ▍" else line,
-                                    modifier = if (articleId != null) Modifier.clickable {
-                                        onArticleClick(articleId, scrollState.value)
-                                    } else Modifier,
-                                )
+                                val trimmedLine = line.trim()
+                                val topicHeading = trimmedLine
+                                    .takeIf {
+                                        it.length > 4 &&
+                                            it.startsWith("**") &&
+                                            it.endsWith("**")
+                                    }
+                                    ?.removePrefix("**")
+                                    ?.removeSuffix("**")
+                                    ?.trim()
+                                    ?.takeIf { it.isNotEmpty() }
+                                val displayLine = topicHeading ?: line
+                                val showCursor = loading && index == lines.lastIndex
+                                if (line.isBlank() && !showCursor) {
+                                    Spacer(Modifier.height(8.dp))
+                                } else {
+                                    Text(
+                                        text = if (showCursor) "$displayLine ▍" else displayLine,
+                                        style = when {
+                                            topicHeading != null ->
+                                                MaterialTheme.typography.titleMedium
+                                            number != null -> MaterialTheme.typography.titleSmall
+                                            else -> MaterialTheme.typography.bodyMedium
+                                        },
+                                        modifier = if (articleId != null) Modifier.clickable {
+                                            onArticleClick(articleId, scrollState.value)
+                                        } else Modifier,
+                                    )
+                                }
                             }
                         }
                     }
@@ -160,4 +190,26 @@ fun AiSummaryDialog(
             }
         },
     )
+}
+
+internal fun findAiSummaryArticleNumber(
+    line: String,
+    articleTitles: List<String>,
+    articleCount: Int,
+): Int? {
+    val normalizedLine = line.trim()
+    val titleIndex = articleTitles.indices.firstOrNull { index ->
+        val title = articleTitles[index].trim()
+        val number = index + 1
+        normalizedLine == "$title · $number" || normalizedLine == "$title$number"
+    }
+    if (titleIndex != null) return titleIndex + 1
+
+    LeadingAiSummaryIndex.find(line)
+        ?.groupValues
+        ?.getOrNull(1)
+        ?.toIntOrNull()
+        ?.takeIf { it in 1..articleCount }
+        ?.let { return it }
+    return null
 }

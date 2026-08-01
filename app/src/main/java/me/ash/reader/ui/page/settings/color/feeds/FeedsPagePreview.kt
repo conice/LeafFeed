@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -71,11 +70,6 @@ fun FeedsPagePreview(
                 FeedbackIconButton(
                     imageVector = Icons.Rounded.Refresh,
                     contentDescription = stringResource(R.string.refresh),
-                    tint = MaterialTheme.colorScheme.onSurface,
-                )
-                FeedbackIconButton(
-                    imageVector = Icons.Rounded.Add,
-                    contentDescription = stringResource(R.string.subscribe),
                     tint = MaterialTheme.colorScheme.onSurface,
                 )
             }, colors = TopAppBarDefaults.topAppBarColors(
