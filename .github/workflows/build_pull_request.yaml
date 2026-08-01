@@ -1,6 +1,9 @@
 name: "Build Pull Request"
 on: pull_request
 
+permissions:
+    contents: read
+
 concurrency:
     group: build-pr-${{ github.event.pull_request.number }}
     cancel-in-progress: true
@@ -20,12 +23,16 @@ jobs:
                   java-version: 17
 
             - uses: gradle/actions/setup-gradle@v5
-            - name: Verify and assemble GitHub debug snapshot
+            - name: Test, lint, and assemble all distribution channels
               run: >-
                   sh ./gradlew
                   testGithubDebugUnitTest
                   lintGithubDebug
+                  lintFdroidDebug
+                  lintGooglePlayDebug
                   assembleGithubDebug
+                  assembleFdroidDebug
+                  assembleGooglePlayDebug
                   --build-cache
 
             - uses: actions/upload-artifact@v5

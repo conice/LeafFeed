@@ -17,6 +17,14 @@
 -keepattributes SourceFile,LineNumberTable
 -keepattributes Signature,*Annotation*
 
+# Debug and informational logs must not ship in minified release builds. Warning and error logs are
+# retained for actionable failures, so their messages must remain free of credentials and content.
+-assumenosideeffects class android.util.Log {
+    public static int v(...);
+    public static int d(...);
+    public static int i(...);
+}
+
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 -renamesourcefileattribute SourceFile

@@ -1,14 +1,15 @@
 package me.ash.reader.ui.component.webview
 
-import android.util.Log
+import android.text.TextUtils
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -32,21 +33,19 @@ import me.ash.reader.ui.ext.ExternalFonts
 import me.ash.reader.ui.ext.openURL
 import me.ash.reader.ui.ext.surfaceColorAtElevation
 import me.ash.reader.ui.theme.palette.alwaysLight
+import java.net.URI
 
 @Composable
 fun RYWebView(
     modifier: Modifier = Modifier,
     content: String,
-    refererDomain: String? = null,
+    baseUrl: String? = null,
     onImageClick: ((imgUrl: String, altText: String) -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val maxWidth = LocalConfiguration.current.screenWidthDp.dp.value
     val openLink = LocalOpenLink.current
     val openLinkSpecificBrowser = LocalOpenLinkSpecificBrowser.current
     val tonalElevation = LocalReadingPageTonalElevation.current
-    val backgroundColor =
-        MaterialTheme.colorScheme.surfaceColorAtElevation(tonalElevation.value.dp).toArgb()
     val selectionTextColor =
         (MaterialTheme.colorScheme.onTertiaryContainer alwaysLight true).toArgb()
     val selectionBgColor = (MaterialTheme.colorScheme.tertiaryContainer alwaysLight true).toArgb()
@@ -68,25 +67,64 @@ fun RYWebView(
     val codeBgColor: Int =
         MaterialTheme.colorScheme.surfaceColorAtElevation((tonalElevation.value + 6).dp).toArgb()
     val boldCharacters = LocalReadingBoldCharacters.current
+    val safeBaseUri =
+        remember(baseUrl) {
+            baseUrl?.trim()?.let { candidate ->
+                runCatching { URI(candidate) }.getOrNull()?.takeIf { uri ->
+                    uri.scheme?.lowercase() in HTTP_SCHEMES &&
+                        !uri.isOpaque &&
+                        !uri.rawAuthority.isNullOrBlank() &&
+                        uri.rawUserInfo == null
+                }
+            }
+        }
+    val safeBaseUrl = safeBaseUri?.toString()
+    val refererUrl =
+        remember(safeBaseUri) {
+            safeBaseUri?.let { uri ->
+                "${uri.scheme.lowercase()}://${uri.rawAuthority}/"
+            }
+        }
+    val escapedBaseUrl = remember(safeBaseUrl) { TextUtils.htmlEncode(safeBaseUrl.orEmpty()) }
+    val currentOpenLink by rememberUpdatedState(openLink)
+    val currentOpenLinkSpecificBrowser by rememberUpdatedState(openLinkSpecificBrowser)
+    val currentOnImageClick by rememberUpdatedState(onImageClick)
 
-    val webView by
-        remember(backgroundColor) {
-            mutableStateOf(
-                WebViewLayout.get(
-                    context = context,
-                    readingFontsPreference = readingFonts,
-                    webViewClient =
-                        WebViewClient(
-                            context = context,
-                            refererDomain = refererDomain,
-                            onOpenLink = { url ->
-                                context.openURL(url, openLink, openLinkSpecificBrowser)
-                            },
-                        ),
-                    onImageClick = onImageClick,
-                )
+    val webView =
+        remember(context, readingFonts, refererUrl, onImageClick != null) {
+            WebViewLayout.get(
+                context = context,
+                readingFontsPreference = readingFonts,
+                webViewClient =
+                    WebViewClient(
+                        refererUrl = refererUrl,
+                        imageClicksEnabled = onImageClick != null,
+                        onOpenLink = { url ->
+                            context.openURL(
+                                url,
+                                currentOpenLink,
+                                currentOpenLinkSpecificBrowser,
+                            )
+                        },
+                    ),
+                onImageClick =
+                    if (onImageClick != null) {
+                        { imageUrl, altText ->
+                            currentOnImageClick?.invoke(imageUrl, altText)
+                        }
+                    } else {
+                        null
+                    },
             )
         }
+
+    DisposableEffect(webView) {
+        onDispose {
+            webView.stopLoading()
+            webView.removeJavascriptInterface(JavaScriptInterface.NAME)
+            webView.destroy()
+        }
+    }
 
     val fontPath =
         if (readingFonts is ReadingFontsPreference.External)
@@ -94,49 +132,51 @@ fun RYWebView(
         else if (readingFonts is ReadingFontsPreference.GoogleSans) {
             "/android_res/font/google_sans_flex.ttf"
         } else null
+    val sanitizedContent = remember(content) { sanitizeWebViewContent(content) }
 
-    AndroidView(
-        modifier = modifier,
-        factory = { webView },
-        update = {
-            it.apply {
-                Log.i("RLog", "maxWidth: ${maxWidth}")
-                Log.i("RLog", "readingFont: ${context.filesDir.absolutePath}")
-                Log.i("RLog", "CustomWebView: ${content}")
-                settings.defaultFontSize = fontSize
-                loadDataWithBaseURL(
-                    null,
-                    WebViewHtml.HTML.format(
-                        WebViewStyle.get(
-                            fontSize = fontSize,
-                            fontPath = fontPath,
-                            lineHeight = lineHeight,
-                            letterSpacing = letterSpacing,
-                            textMargin = textMargin,
-                            textColor = textColor,
-                            textBold = textBold,
-                            textAlign = textAlign,
-                            boldTextColor = boldTextColor,
-                            subheadBold = subheadBold,
-                            subheadUpperCase = subheadUpperCase,
-                            imgMargin = imgMargin,
-                            imgBorderRadius = imgBorderRadius,
-                            linkTextColor = linkTextColor,
-                            codeTextColor = codeTextColor,
-                            codeBgColor = codeBgColor,
-                            tableMargin = textMargin,
-                            selectionTextColor = selectionTextColor,
-                            selectionBgColor = selectionBgColor,
+    key(webView) {
+        AndroidView(
+            modifier = modifier,
+            factory = { webView },
+            update = {
+                it.apply {
+                    settings.defaultFontSize = fontSize
+                    loadDataWithBaseURL(
+                        null,
+                        WebViewHtml.HTML.format(
+                            WebViewStyle.get(
+                                fontSize = fontSize,
+                                fontPath = fontPath,
+                                lineHeight = lineHeight,
+                                letterSpacing = letterSpacing,
+                                textMargin = textMargin,
+                                textColor = textColor,
+                                textBold = textBold,
+                                textAlign = textAlign,
+                                boldTextColor = boldTextColor,
+                                subheadBold = subheadBold,
+                                subheadUpperCase = subheadUpperCase,
+                                imgMargin = imgMargin,
+                                imgBorderRadius = imgBorderRadius,
+                                linkTextColor = linkTextColor,
+                                codeTextColor = codeTextColor,
+                                codeBgColor = codeBgColor,
+                                tableMargin = textMargin,
+                                selectionTextColor = selectionTextColor,
+                                selectionBgColor = selectionBgColor,
+                            ),
+                            escapedBaseUrl,
+                            sanitizedContent,
+                            WebViewScript.get(boldCharacters.value),
                         ),
-                        url,
-                        content,
-                        WebViewScript.get(boldCharacters.value),
-                    ),
-                    "text/HTML",
-                    "UTF-8",
-                    null,
-                )
-            }
-        },
-    )
+                        "text/HTML",
+                        "UTF-8",
+                        null,
+                    )
+                }
+            },
+        )
+    }
 }
+
+private val HTTP_SCHEMES = setOf("http", "https")

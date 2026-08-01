@@ -6,6 +6,10 @@ full-page parser request.
 ## Data
 
 - Room data is the source of truth for subscriptions, articles, reading state, and account data.
+- Account credentials use versioned AES-GCM encryption backed by an Android Keystore key. Legacy DES
+  rows are readable only for in-place migration and are never used for new writes.
+- Android system backup and device transfer are excluded because the credential key is device-local;
+  users move subscriptions and settings through LeafFeed's explicit exports and re-enter credentials.
 - Reading collections use the versioned `leaffeed.collections` format. Version 2 includes a SHA-256
   integrity value; version 1 remains importable for existing backups.
 - API keys are excluded from preference exports unless the user explicitly opts in.
@@ -21,6 +25,16 @@ full-page parser request.
   still contains them and exposes retry access.
 - A process death may leave a `RUNNING` summary temporarily; the next WorkManager attempt replaces
   it. No post-sync cleanup runs unless synchronization succeeds.
+
+## Reader content safety
+
+- Feed HTML is untrusted input. The WebView renderer removes scripts, embedded browsing contexts,
+  event handlers, form controls, and active URL schemes before loading an article.
+- A restrictive content security policy blocks frames, objects, form submissions, external styles,
+  and fetch/XHR/WebSocket connections. Reader-provided JavaScript is limited to formatting and the
+  optional image-click bridge.
+- Relative resources use only a validated HTTP(S) article URL. Proxied image requests send an
+  origin-only referrer, never the article path, query, credentials, or body content.
 
 ## Offline content
 

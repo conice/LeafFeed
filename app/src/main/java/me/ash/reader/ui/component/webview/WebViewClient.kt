@@ -1,24 +1,22 @@
 package me.ash.reader.ui.component.webview
 
-import android.content.Context
 import android.net.http.SslError
-import android.util.Log
 import android.webkit.SslErrorHandler
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import me.ash.reader.ui.ext.isUrl
-import java.io.DataInputStream
+import java.io.ByteArrayInputStream
+import java.io.FilterInputStream
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URI
-
-const val INJECTION_TOKEN = "/android_asset_font/"
+import timber.log.Timber
 
 class WebViewClient(
-    private val context: Context,
-    private val refererDomain: String?,
+    private val refererUrl: String?,
+    private val imageClicksEnabled: Boolean,
     private val onOpenLink: (url: String) -> Unit,
 ) : WebViewClient() {
 
@@ -26,47 +24,30 @@ class WebViewClient(
         view: WebView?,
         request: WebResourceRequest?,
     ): WebResourceResponse? {
-        val url = request?.url?.toString()
-        if (url != null && url.contains(INJECTION_TOKEN)) {
-            try {
-                val assetPath = url.substring(
-                    url.indexOf(INJECTION_TOKEN) + INJECTION_TOKEN.length,
-                    url.length
-                )
-                return WebResourceResponse(
-                    "text/HTML",
-                    "UTF-8",
-                    context.assets.open(assetPath)
-                )
-            } catch (e: Exception) {
-                Log.e("RLog", "WebView shouldInterceptRequest: $e")
-            }
-        } else if (url != null && url.isUrl()) {
-            try {
-                var connection = URI.create(url).toURL().openConnection() as HttpURLConnection
-                if (connection.responseCode == 403) {
-                    connection.disconnect()
-                    connection = URI.create(url).toURL().openConnection() as HttpURLConnection
-                    connection.setRequestProperty("Referer", refererDomain)
-                    val inputStream = DataInputStream(connection.inputStream)
-                    return WebResourceResponse(connection.contentType, "UTF-8", inputStream)
-                }
-            } catch (e: Exception) {
-                Log.e("RLog", "shouldInterceptRequest url: $e")
-            }
+        val url = request?.url?.toString() ?: return super.shouldInterceptRequest(view, request)
+        val referrer = refererUrl?.takeIf { it.isNotBlank() }
+        if (
+            referrer != null &&
+                request.method.equals("GET", ignoreCase = true) &&
+                url.isHttpUrl() &&
+                request.isLikelyImageRequest()
+        ) {
+            return loadWithReferer(url, request, referrer)
+                ?: super.shouldInterceptRequest(view, request)
         }
         return super.shouldInterceptRequest(view, request)
     }
 
     override fun onPageFinished(view: WebView?, url: String?) {
         super.onPageFinished(view, url)
-        view!!.evaluateJavascript(OnImgClickScript, null)
+        if (imageClicksEnabled) view?.evaluateJavascript(OnImgClickScript, null)
     }
 
     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-        if (null == request?.url) return false
-        val url = request.url.toString()
-        if (url.isNotEmpty()) onOpenLink(url)
+        val uri = request?.url ?: return false
+        if (uri.scheme?.lowercase() in EXTERNAL_LINK_SCHEMES) {
+            onOpenLink(uri.toString())
+        }
         return true
     }
 
@@ -76,14 +57,123 @@ class WebViewClient(
         error: WebResourceError?,
     ) {
         super.onReceivedError(view, request, error)
-        Log.e("RLog", "RYWebView onReceivedError: $error")
+        if (request?.isForMainFrame == true) {
+            Timber.w("Reader WebView failed with error code %s", error?.errorCode)
+        }
     }
 
     override fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
         handler?.cancel()
     }
 
+    private fun loadWithReferer(
+        url: String,
+        request: WebResourceRequest,
+        referrer: String,
+    ): WebResourceResponse? {
+        val connection =
+            try {
+                (URI.create(url).toURL().openConnection() as? HttpURLConnection) ?: return null
+            } catch (error: Exception) {
+                Timber.w(
+                    "Unable to open a reader resource connection (%s)",
+                    error.javaClass.simpleName,
+                )
+                return null
+            }
+        return try {
+            connection.connectTimeout = NETWORK_TIMEOUT_MILLIS
+            connection.readTimeout = NETWORK_TIMEOUT_MILLIS
+            connection.instanceFollowRedirects = true
+            request.requestHeaders.forEach { (name, value) ->
+                if (
+                    REQUEST_HEADERS_HANDLED_BY_CONNECTION.none {
+                        it.equals(name, ignoreCase = true)
+                    }
+                ) {
+                    connection.setRequestProperty(name, value)
+                }
+            }
+            connection.setRequestProperty("Referer", referrer)
+
+            val statusCode = connection.responseCode
+            val stream =
+                (if (statusCode >= 400) connection.errorStream else connection.inputStream)
+                    ?: ByteArrayInputStream(ByteArray(0))
+            val contentType = connection.contentType.orEmpty()
+            val mimeType = contentType.substringBefore(';').ifBlank { "application/octet-stream" }
+            val encoding =
+                contentType.substringAfter("charset=", missingDelimiterValue = "")
+                    .substringBefore(';')
+                    .trim()
+                    .ifBlank { null }
+            val headers =
+                connection.headerFields.entries
+                    .mapNotNull { (name, values) ->
+                        name?.let { it to values.filterNotNull().joinToString(",") }
+                    }
+                    .toMap()
+            WebResourceResponse(
+                mimeType,
+                encoding,
+                statusCode,
+                connection.responseMessage
+                    ?.filter { it.code in 0x20..0x7E }
+                    ?.takeIf { it.isNotBlank() }
+                    ?: "Response",
+                headers,
+                DisconnectingInputStream(stream, connection),
+            )
+        } catch (error: Exception) {
+            connection.disconnect()
+            Timber.w(
+                "Unable to load a reader resource with its referrer (%s)",
+                error.javaClass.simpleName,
+            )
+            null
+        }
+    }
+
+    private fun String.isHttpUrl(): Boolean =
+        runCatching {
+            URI(this).let { uri ->
+                uri.scheme?.lowercase() in HTTP_SCHEMES &&
+                    !uri.isOpaque &&
+                    !uri.rawAuthority.isNullOrBlank() &&
+                    uri.rawUserInfo == null
+            }
+        }.getOrDefault(false)
+
+    private fun WebResourceRequest.isLikelyImageRequest(): Boolean {
+        val acceptsImages =
+            requestHeaders.entries.any { (name, value) ->
+                name.equals("Accept", ignoreCase = true) && value.contains("image/", true)
+            }
+        if (acceptsImages) return true
+        val extension = url.path?.substringAfterLast('.', missingDelimiterValue = "")?.lowercase()
+        return extension in IMAGE_EXTENSIONS
+    }
+
     companion object {
+        private const val NETWORK_TIMEOUT_MILLIS = 15_000
+        private val HTTP_SCHEMES = setOf("http", "https")
+        private val EXTERNAL_LINK_SCHEMES = setOf("http", "https", "mailto", "tel")
+        private val REQUEST_HEADERS_HANDLED_BY_CONNECTION =
+            setOf(
+                "Accept-Encoding",
+                "Connection",
+                "Host",
+                "If-Modified-Since",
+                "If-None-Match",
+                "Proxy-Connection",
+                "Referer",
+                "TE",
+                "Trailer",
+                "Transfer-Encoding",
+                "Upgrade",
+            )
+        private val IMAGE_EXTENSIONS =
+            setOf("avif", "bmp", "gif", "heic", "heif", "jpeg", "jpg", "png", "svg", "webp")
         private const val OnImgClickScript = """
             javascript:(function() {
                 var imgs = document.getElementsByTagName("img");
@@ -96,5 +186,18 @@ class WebViewClient(
                 }
             })()
             """
+    }
+}
+
+private class DisconnectingInputStream(
+    delegate: InputStream,
+    private val connection: HttpURLConnection,
+) : FilterInputStream(delegate) {
+    override fun close() {
+        try {
+            super.close()
+        } finally {
+            connection.disconnect()
+        }
     }
 }

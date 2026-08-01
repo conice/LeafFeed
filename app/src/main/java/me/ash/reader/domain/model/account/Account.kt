@@ -36,5 +36,5 @@ data class Account(
     @ColumnInfo(defaultValue = "")
     val syncBlockList: SyncBlockList = SyncBlockListPreference.default,
     @ColumnInfo(defaultValue = DESUtils.empty)
-    val securityKey: String? = DESUtils.empty,
+    val securityKey: String? = "",
 )

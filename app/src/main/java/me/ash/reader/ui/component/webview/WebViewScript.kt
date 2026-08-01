@@ -57,8 +57,8 @@ function parseNode(node) {
             brSpan.innerHTML = highlightText(node.nodeValue);
             if (brSpan.childElementCount === 0) return;
             node.parentElement.replaceChild(brSpan, node); // JiffyReader keeps the old element around, but we don't need it
-        } catch (e) {
-            console.error('Error parsing text node:', e);
+        } catch (_) {
+            return;
         }
         return;
     }
@@ -82,14 +82,9 @@ var images = document.querySelectorAll("img");
 images.forEach(function(img) {
     img.onload = function() {
         img.classList.add("loaded");
-        console.log("Image width:", img.width, "px");
         if (img.width < 412) {
             img.classList.add("thin");
         }
-    };
-
-    img.onerror = function() {
-        console.error("Failed to load image:", img.src);
     };
 });
 """

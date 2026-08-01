@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.stateIn
 import me.ash.reader.R
 import me.ash.reader.domain.model.account.Account
 import me.ash.reader.domain.model.account.AccountType
+import me.ash.reader.domain.model.account.security.CredentialCipher
 import me.ash.reader.domain.model.group.Group
 import me.ash.reader.domain.repository.AccountDao
 import me.ash.reader.domain.repository.ArticleDao
@@ -74,13 +75,29 @@ constructor(
     suspend fun awaitCurrentAccountId(): Int = currentAccountIdFlow.first { it != null }!!
 
     suspend fun ensureCurrentAccount(): Pair<Account, Boolean> {
-        val accounts = accountDao.queryAll()
+        val accounts = migrateLegacyCredentials(accountDao.queryAll())
         if (accounts.isEmpty()) return initWithDefaultAccount() to true
 
         val requestedId = settingsProvider.awaitPreferences()[accountIdKey]
         val selected = accounts.firstOrNull { it.id == requestedId } ?: accounts.first()
         if (selected.id != requestedId) switch(selected)
         return selected to false
+    }
+
+    private suspend fun migrateLegacyCredentials(accounts: List<Account>): List<Account> {
+        val migratedAccounts =
+            accounts.map { account ->
+                val migrated =
+                    runCatching { CredentialCipher.migrateLegacy(account.securityKey) }.getOrNull()
+                if (migrated != null && migrated != account.securityKey) {
+                    account.copy(securityKey = migrated)
+                } else {
+                    account
+                }
+            }
+        val changed = migratedAccounts.filterIndexed { index, account -> account != accounts[index] }
+        if (changed.isNotEmpty()) accountDao.update(*changed.toTypedArray())
+        return migratedAccounts
     }
 
     suspend fun addAccount(account: Account): Account {

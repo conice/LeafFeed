@@ -124,6 +124,7 @@ Anyone producing an independent build is responsible for signing it and safeguar
 
 LeafFeed contains no advertising or built-in analytics service. Accounts, subscriptions, articles, and preferences are stored locally by default.
 
+- Android system backup is disabled because account credentials are protected by a device-local encryption key. Use LeafFeed's explicit export tools for subscriptions and settings when moving devices, then enter account credentials again.
 - When synchronization is enabled, subscription and reading-state data is sent to the service configured by the user.
 - When an AI feature is used, selected headlines or article content is sent directly to the configured OpenAI-compatible service.
 - Background synchronization, notifications, and podcast playback may use the network, wake locks, and foreground services.

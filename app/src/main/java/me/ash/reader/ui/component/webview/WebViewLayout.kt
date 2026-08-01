@@ -17,12 +17,19 @@ object WebViewLayout {
         onImageClick: ((imgUrl: String, altText: String) -> Unit)? = null,
     ) =
         WebView(context).apply {
+            val readerWebView = this
             this.webViewClient = webViewClient
             scrollBarSize = 0
             isHorizontalScrollBarEnabled = false
             isVerticalScrollBarEnabled = true
             setBackgroundColor(Color.TRANSPARENT)
             with(this.settings) {
+                allowContentAccess = false
+                allowFileAccess = readingFontsPreference is ReadingFontsPreference.External
+                @Suppress("DEPRECATION")
+                allowFileAccessFromFileURLs = false
+                @Suppress("DEPRECATION")
+                allowUniversalAccessFromFileURLs = false
                 standardFontFamily =
                     when (readingFontsPreference) {
                         ReadingFontsPreference.Cursive -> "cursive"
@@ -33,29 +40,35 @@ object WebViewLayout {
                             "sans-serif"
                         }
                         ReadingFontsPreference.External -> {
-                            allowFileAccess = true
                             "sans-serif"
                         }
 
                         else -> "sans-serif"
                     }
-                domStorageEnabled = true
+                domStorageEnabled = false
+                databaseEnabled = false
+                setGeolocationEnabled(false)
                 javaScriptEnabled = true
+                javaScriptCanOpenWindowsAutomatically = false
+                setSupportMultipleWindows(false)
+                safeBrowsingEnabled = true
+                setSupportZoom(false)
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                    isAlgorithmicDarkeningAllowed = true
+                }
+            }
+            onImageClick?.let { imageClick ->
                 addJavascriptInterface(
                     object : JavaScriptInterface {
                         @JavascriptInterface
                         override fun onImgTagClick(imgUrl: String?, alt: String?) {
-                            if (onImageClick != null && imgUrl != null) {
-                                onImageClick.invoke(imgUrl, alt ?: "")
+                            if (imgUrl != null) {
+                                readerWebView.post { imageClick.invoke(imgUrl, alt.orEmpty()) }
                             }
                         }
                     },
                     JavaScriptInterface.NAME,
                 )
-                setSupportZoom(false)
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                    isAlgorithmicDarkeningAllowed = true
-                }
             }
         }
 }

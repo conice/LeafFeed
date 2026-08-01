@@ -100,10 +100,10 @@ class AndroidApp : Application(), Configuration.Provider {
      */
     override fun onCreate() {
         super.onCreate()
-        CrashHandler(this)
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
+        CrashHandler(this)
         automationProcessor.start()
         workManager.cancelUniqueWork("subscription-report-reminder")
         getSystemService(NotificationManager::class.java)
@@ -122,7 +122,9 @@ class AndroidApp : Application(), Configuration.Provider {
             Configuration.Builder()
                 .setWorkerFactory(workerFactory)
                 .setWorkerCoroutineContext(Dispatchers.IO)
-                .setMinimumLoggingLevel(android.util.Log.DEBUG)
+                .setMinimumLoggingLevel(
+                    if (BuildConfig.DEBUG) android.util.Log.DEBUG else android.util.Log.WARN,
+                )
                 .build()
 
     private suspend fun accountInit() {

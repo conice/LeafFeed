@@ -76,7 +76,7 @@ android {
     defaultConfig {
         applicationId = "com.finnsta.leaffeed"
         minSdk = 26
-        targetSdk = 34
+        targetSdk = 35
         // CI uses a monotonically increasing value so APKs signed by the same certificate can be
         // installed as updates. Local builds keep the stable development fallback.
         versionCode = ciVersionCode ?: 1
