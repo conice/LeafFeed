@@ -981,6 +981,7 @@ fun FlowPage(
         loading = titleSummaryState.loading,
         summary = titleSummaryState.summary,
         failure = titleSummaryState.failure,
+        failureDetail = titleSummaryState.failureDetail,
         onDismiss = viewModel::hideTitleSummary,
         sourceDescription = stringResource(R.string.ai_summary_source_titles),
         articleIds = titleSummaryState.articleIds,

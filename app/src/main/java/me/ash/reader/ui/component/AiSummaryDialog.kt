@@ -44,6 +44,7 @@ fun AiSummaryDialog(
     loading: Boolean,
     summary: String,
     failure: AiSummaryFailure? = null,
+    failureDetail: String? = null,
     onDismiss: () -> Unit,
     articleIds: List<String> = emptyList(),
     articleTitles: List<String> = emptyList(),
@@ -125,11 +126,26 @@ fun AiSummaryDialog(
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.error,
                                 )
-                                Text(
-                                    text = stringResource(it.messageRes),
-                                    color = MaterialTheme.colorScheme.error,
+                                Column(
                                     modifier = Modifier.weight(1f),
-                                )
+                                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                                ) {
+                                    Text(
+                                        text = stringResource(it.messageRes),
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                    failureDetail?.takeIf { it.isNotBlank() }?.let { detail ->
+                                        Text(
+                                            text =
+                                                stringResource(
+                                                    R.string.ai_summary_error_details,
+                                                    detail,
+                                                ),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
                             }
                         }
                         if (summary.isNotEmpty()) {

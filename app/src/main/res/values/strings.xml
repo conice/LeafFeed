@@ -27,6 +27,7 @@
     <string name="ai_summary_source_titles">Based only on the listed article titles</string>
     <string name="ai_summary_error_not_configured">AI service URL or model is not configured</string>
     <string name="ai_summary_error_invalid_configuration">AI service configuration is invalid</string>
+    <string name="ai_summary_error_details">Details: %1$s</string>
     <string name="ai_summary_error_authentication">Authentication failed; check the API key and access permissions</string>
     <string name="ai_summary_error_endpoint_or_model">AI endpoint or model was not found</string>
     <string name="ai_summary_error_rate_limited">Request limit or service quota was reached</string>

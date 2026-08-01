@@ -82,6 +82,23 @@ enum class AiSummaryFailure(@StringRes val messageRes: Int) {
     }
 }
 
+internal fun Throwable.aiSummaryFailureDetail(): String {
+    val detail =
+        causeChain()
+            .map { cause ->
+                val type = cause.javaClass.simpleName.ifBlank { cause.javaClass.name }
+                val message = cause.message?.trim()?.takeIf { it.isNotEmpty() }
+                if (message == null) type else "$type: ${message.redactAiSecrets()}"
+            }
+            .distinct()
+            .joinToString("\nCaused by: ")
+    return if (detail.length <= MAX_AI_ERROR_DETAIL_LENGTH) {
+        detail
+    } else {
+        detail.take(MAX_AI_ERROR_DETAIL_LENGTH - 1) + "…"
+    }
+}
+
 private fun Throwable.causeChain(): List<Throwable> {
     val causes = mutableListOf<Throwable>()
     var current: Throwable? = this
@@ -91,3 +108,21 @@ private fun Throwable.causeChain(): List<Throwable> {
     }
     return causes
 }
+
+private fun String.redactAiSecrets(): String =
+    replace(AUTHORIZATION_BEARER) { match -> "${match.groupValues[1]}***" }
+        .replace(AUTHORIZATION_VALUE) { match -> "${match.groupValues[1]}***" }
+        .replace(SECRET_ASSIGNMENT) { match -> "${match.groupValues[1]}***" }
+        .replace(URL_PASSWORD) { match -> "${match.groupValues[1]}***@" }
+        .replace(OPENAI_STYLE_KEY, "sk-***")
+        .replace(GOOGLE_STYLE_KEY, "AIza***")
+
+private const val MAX_AI_ERROR_DETAIL_LENGTH = 2_000
+private val AUTHORIZATION_BEARER = Regex("(?i)(\\b(?:bearer|basic)\\s+)[^\\s,;\\\"']+")
+private val AUTHORIZATION_VALUE =
+    Regex("(?i)(\\bauthorization\\s*[=:]\\s*)(?!(?:bearer|basic)\\s)[^\\s,;&]+")
+private val SECRET_ASSIGNMENT =
+    Regex("(?i)(\\b(?:api[_-]?key|access[_-]?token)\\s*[=:]\\s*)[^\\s,;&]+")
+private val URL_PASSWORD = Regex("(?i)(https?://[^:/\\s]+:)[^@/\\s]+@")
+private val OPENAI_STYLE_KEY = Regex("\\bsk-[A-Za-z0-9._-]{6,}\\b")
+private val GOOGLE_STYLE_KEY = Regex("\\bAIza[0-9A-Za-z_-]{20,}\\b")

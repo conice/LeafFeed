@@ -339,10 +339,18 @@ fun FeedsPage(
                 actions = {
                     val configuration = LocalConfiguration.current
                     val fontScale = LocalDensity.current.fontScale
-                    val availableIds = remember(filterState.filter) {
+                    val addSubscriptionAvailable =
+                        subscribeViewModel.rssService.get().addSubscription
+                    val availableIds = remember(
+                        filterState.filter,
+                        addSubscriptionAvailable,
+                    ) {
                         buildSet {
                             if (filterState.filter.isAll()) {
                                 add(NavigationItemIds.SUBSCRIPTION_REPORT)
+                            }
+                            if (filterState.filter.isUnread() && addSubscriptionAvailable) {
+                                add(NavigationItemIds.ADD_SUBSCRIPTION)
                             }
                             add(NavigationItemIds.SETTINGS)
                             add(NavigationItemIds.SYNC)
@@ -378,6 +386,15 @@ fun FeedsPage(
                                     ),
                                     tint = MaterialTheme.colorScheme.onSurface,
                                     onClick = navigateToSubscriptionReport,
+                                )
+                                NavigationItemIds.ADD_SUBSCRIPTION -> FeedbackIconButton(
+                                    modifier = Modifier.size(
+                                        navigationCustomization.mainTopIconSize.dp
+                                    ),
+                                    imageVector = navigationActionIcon(item.id),
+                                    contentDescription = stringResource(R.string.subscribe),
+                                    tint = MaterialTheme.colorScheme.onSurface,
+                                    onClick = subscribeViewModel::showDrawer,
                                 )
                                 NavigationItemIds.SETTINGS -> FeedbackIconButton(
                                     modifier = Modifier.size(
@@ -421,6 +438,14 @@ fun FeedsPage(
                                         onClick = {
                                             actionMenuExpanded = false
                                             navigateToSubscriptionReport()
+                                        },
+                                    )
+                                    NavigationItemIds.ADD_SUBSCRIPTION -> DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.subscribe)) },
+                                        leadingIcon = { Icon(navigationActionIcon(item.id), null) },
+                                        onClick = {
+                                            actionMenuExpanded = false
+                                            subscribeViewModel.showDrawer()
                                         },
                                     )
                                     NavigationItemIds.SETTINGS -> DropdownMenuItem(

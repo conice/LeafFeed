@@ -70,6 +70,7 @@ import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
 import me.ash.reader.infrastructure.preference.SettingsProvider
 import me.ash.reader.infrastructure.rss.ReaderCacheHelper
 import me.ash.reader.ui.component.AiSummaryFailure
+import me.ash.reader.ui.component.aiSummaryFailureDetail
 import me.ash.reader.ui.page.home.SyncOperationState
 import timber.log.Timber
 import org.jsoup.Jsoup
@@ -696,8 +697,9 @@ constructor(
         val article = currentArticle ?: return
         val fallbackState = _aiSummaryState.value
         _aiSummaryState.update { current ->
-            if (forceRefresh && current.visible) current.copy(loading = true, failure = null)
-            else AiSummaryUiState(loading = true)
+            if (forceRefresh && current.visible) {
+                current.copy(loading = true, failure = null, failureDetail = null)
+            } else AiSummaryUiState(loading = true)
         }
         viewModelScope.launch(ioDispatcher) {
             val plainText = Jsoup.parse(content).text().take(ARTICLE_SUMMARY_MAX_CHARS)
@@ -723,7 +725,8 @@ constructor(
                     }
                 }
             }
-            val failure = result.exceptionOrNull()?.let(AiSummaryFailure::from)
+            val error = result.exceptionOrNull()
+            val failure = error?.let(AiSummaryFailure::from)
                 ?: AiSummaryFailure.EmptyResponse.takeIf { result.getOrNull().isNullOrBlank() }
             if (failure != null) {
                 val failedState = if (
@@ -733,6 +736,7 @@ constructor(
                     visible = true,
                     loading = false,
                     failure = failure,
+                    failureDetail = error?.aiSummaryFailureDetail(),
                 )
             } else {
                 _aiSummaryState.update { current ->
@@ -740,6 +744,7 @@ constructor(
                         loading = false,
                         summary = result.getOrThrow(),
                         failure = null,
+                        failureDetail = null,
                     )
                 }
             }
@@ -760,8 +765,9 @@ constructor(
                 ?: return
         val fallbackState = _titleSummaryState.value
         _titleSummaryState.update { current ->
-            if (forceRefresh && current.visible) current.copy(loading = true, failure = null)
-            else TitleSummaryUiState(loading = true)
+            if (forceRefresh && current.visible) {
+                current.copy(loading = true, failure = null, failureDetail = null)
+            } else TitleSummaryUiState(loading = true)
         }
         viewModelScope.launch(ioDispatcher) {
             var hasVisibleContent = false
@@ -800,7 +806,8 @@ constructor(
                     }
                 }
             }
-            val failure = result.exceptionOrNull()?.let(AiSummaryFailure::from)
+            val error = result.exceptionOrNull()
+            val failure = error?.let(AiSummaryFailure::from)
                 ?: AiSummaryFailure.EmptyResponse.takeIf { result.getOrNull().isNullOrBlank() }
             if (failure != null) {
                 val failedState = if (
@@ -810,6 +817,7 @@ constructor(
                     visible = true,
                     loading = false,
                     failure = failure,
+                    failureDetail = error?.aiSummaryFailureDetail(),
                 )
             } else {
                 _titleSummaryState.update {
@@ -817,6 +825,7 @@ constructor(
                         loading = false,
                         summary = result.getOrThrow(),
                         failure = null,
+                        failureDetail = null,
                     )
                 }
             }
@@ -923,6 +932,7 @@ data class AiSummaryUiState(
     val loading: Boolean = false,
     val summary: String = "",
     val failure: AiSummaryFailure? = null,
+    val failureDetail: String? = null,
 )
 
 data class TitleSummaryUiState(
@@ -934,6 +944,7 @@ data class TitleSummaryUiState(
     val unreadArticleIds: Set<String> = emptySet(),
     val scrollOffset: Int = 0,
     val failure: AiSummaryFailure? = null,
+    val failureDetail: String? = null,
 )
 
 data class ReaderState(

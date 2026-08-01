@@ -93,7 +93,7 @@ class NavigationCustomizationTest {
     }
 
     @Test
-    fun `loads legacy comma separated values and drops removed actions`() {
+    fun `loads legacy comma separated feed actions`() {
         val preferences = mutablePreferencesOf(
             NavigationPreferenceKeys.feedTopActions to
                 "addSubscription:more,subscriptionReport:hidden",
@@ -101,9 +101,10 @@ class NavigationCustomizationTest {
 
         val actions = preferences.toNavigationCustomization().feedTopActions
 
-        assertEquals(NavigationItemIds.SUBSCRIPTION_REPORT, actions[0].id)
-        assertEquals(ActionPlacement.Hidden, actions[0].placement)
-        assertFalse(actions.any { it.id == "addSubscription" })
+        assertEquals(NavigationItemIds.ADD_SUBSCRIPTION, actions[0].id)
+        assertEquals(ActionPlacement.More, actions[0].placement)
+        assertEquals(NavigationItemIds.SUBSCRIPTION_REPORT, actions[1].id)
+        assertEquals(ActionPlacement.Hidden, actions[1].placement)
     }
 
     @Test

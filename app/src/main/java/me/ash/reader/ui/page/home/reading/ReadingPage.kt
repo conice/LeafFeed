@@ -395,6 +395,7 @@ fun ReadingPage(
         loading = aiSummaryState.loading,
         summary = aiSummaryState.summary,
         failure = aiSummaryState.failure,
+        failureDetail = aiSummaryState.failureDetail,
         onDismiss = viewModel::hideAiSummary,
         sourceDescription = stringResource(R.string.ai_summary_source_article),
         onRegenerate = {

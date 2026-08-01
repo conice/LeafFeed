@@ -9,6 +9,7 @@ import androidx.compose.material.icons.outlined.OpenInBrowser
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
@@ -18,6 +19,7 @@ import me.ash.reader.infrastructure.preference.NavigationItemIds
 
 fun navigationActionIcon(id: String): ImageVector = when (id) {
     NavigationItemIds.SUBSCRIPTION_REPORT -> Icons.Outlined.Insights
+    NavigationItemIds.ADD_SUBSCRIPTION -> Icons.Rounded.Add
     NavigationItemIds.SETTINGS -> Icons.Outlined.Settings
     NavigationItemIds.SYNC -> Icons.Rounded.Sync
     NavigationItemIds.HISTORY -> Icons.Rounded.History

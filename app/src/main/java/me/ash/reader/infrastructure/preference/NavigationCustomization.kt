@@ -55,6 +55,7 @@ object NavigationItemIds {
     const val READ_LATER = "readLater"
 
     const val SUBSCRIPTION_REPORT = "subscriptionReport"
+    const val ADD_SUBSCRIPTION = "addSubscription"
     const val SETTINGS = "settings"
     const val SYNC = "sync"
 
@@ -98,6 +99,7 @@ object NavigationActionCatalog {
             NavigationSurface.FeedTop,
             ActionPlacement.Toolbar,
             NavigationItemIds.SUBSCRIPTION_REPORT to "Information intake",
+            NavigationItemIds.ADD_SUBSCRIPTION to "Add subscription",
         )
         register(
             NavigationSurface.FeedTop,
