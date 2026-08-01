@@ -221,7 +221,8 @@ class AiSummaryService @Inject constructor(
     }
 }
 
-private val AiInputField = Regex("\\{(?:序号|标题|正文)}")
+// Android's regex parser requires both literal braces to be escaped.
+private val AiInputField = Regex("\\{(?:序号|标题|正文)\\}")
 
 internal fun renderAiInputTemplate(
     template: String,
