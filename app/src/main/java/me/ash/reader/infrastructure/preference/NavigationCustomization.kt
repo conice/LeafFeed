@@ -56,7 +56,6 @@ object NavigationItemIds {
 
     const val SUBSCRIPTION_REPORT = "subscriptionReport"
     const val ADD_SUBSCRIPTION = "addSubscription"
-    const val SETTINGS = "settings"
     const val SYNC = "sync"
 
     const val HISTORY = "history"
@@ -104,7 +103,6 @@ object NavigationActionCatalog {
         register(
             NavigationSurface.FeedTop,
             ActionPlacement.Hidden,
-            NavigationItemIds.SETTINGS to "Settings",
             NavigationItemIds.SYNC to "Sync",
         )
         register(
@@ -220,6 +218,7 @@ data class NavigationCustomization(
         const val MAX_BOTTOM_HEIGHT = 96
         const val MIN_ELEVATION = 0
         const val MAX_ELEVATION = 8
+        const val MAX_READING_BOTTOM_ACTIONS = 5
     }
 }
 
@@ -250,6 +249,7 @@ fun Preferences.toNavigationCustomization(): NavigationCustomization {
             defaults.readingBottomActions,
             allowMore = false,
             requireVisible = true,
+            maxToolbarItems = NavigationCustomization.MAX_READING_BOTTOM_ACTIONS,
         ),
         mainTopIconSize = iconSize(NavigationPreferenceKeys.mainTopIconSize, defaults.mainTopIconSize),
         mainBottomIconSize = iconSize(
@@ -343,6 +343,7 @@ private fun parseItems(
     allowMore: Boolean = true,
     requireVisible: Boolean = false,
     forceToolbar: Boolean = false,
+    maxToolbarItems: Int? = null,
 ): List<NavigationItemPreference> {
     if (stored == null) return defaults
     val defaultsById = defaults.associateBy { it.id }
@@ -367,6 +368,17 @@ private fun parseItems(
                 placement = if (forceToolbar) ActionPlacement.Toolbar else ActionPlacement.Hidden,
             )
         )
+    }
+    maxToolbarItems?.let { maximum ->
+        var visibleCount = 0
+        parsed.indices.forEach { index ->
+            if (parsed[index].placement == ActionPlacement.Toolbar) {
+                visibleCount += 1
+                if (visibleCount > maximum) {
+                    parsed[index] = parsed[index].copy(placement = ActionPlacement.Hidden)
+                }
+            }
+        }
     }
     if (requireVisible && parsed.none { it.placement == ActionPlacement.Toolbar }) {
         parsed[0] = parsed[0].copy(placement = ActionPlacement.Toolbar)

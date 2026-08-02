@@ -352,7 +352,6 @@ fun FeedsPage(
                             if (filterState.filter.isUnread() && addSubscriptionAvailable) {
                                 add(NavigationItemIds.ADD_SUBSCRIPTION)
                             }
-                            add(NavigationItemIds.SETTINGS)
                             add(NavigationItemIds.SYNC)
                         }
                     }
@@ -396,15 +395,6 @@ fun FeedsPage(
                                     tint = MaterialTheme.colorScheme.onSurface,
                                     onClick = subscribeViewModel::showDrawer,
                                 )
-                                NavigationItemIds.SETTINGS -> FeedbackIconButton(
-                                    modifier = Modifier.size(
-                                        navigationCustomization.mainTopIconSize.dp
-                                    ),
-                                    imageVector = navigationActionIcon(item.id),
-                                    contentDescription = stringResource(R.string.settings),
-                                    tint = MaterialTheme.colorScheme.onSurface,
-                                    onClick = navigateToSettings,
-                                )
                                 NavigationItemIds.SYNC -> FeedbackIconButton(
                                     modifier = Modifier.size(
                                         navigationCustomization.mainTopIconSize.dp
@@ -446,14 +436,6 @@ fun FeedsPage(
                                         onClick = {
                                             actionMenuExpanded = false
                                             subscribeViewModel.showDrawer()
-                                        },
-                                    )
-                                    NavigationItemIds.SETTINGS -> DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.settings)) },
-                                        leadingIcon = { Icon(navigationActionIcon(item.id), null) },
-                                        onClick = {
-                                            actionMenuExpanded = false
-                                            navigateToSettings()
                                         },
                                     )
                                     NavigationItemIds.SYNC -> DropdownMenuItem(

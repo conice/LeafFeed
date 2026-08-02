@@ -5,13 +5,13 @@ import androidx.compose.material3.FabPosition
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import me.ash.reader.R
 import me.ash.reader.ui.ext.PreferencesKey
 import me.ash.reader.ui.ext.PreferencesKey.Companion.flowMarkAsReadFabPosition
 import me.ash.reader.ui.ext.dataStore
-import me.ash.reader.ui.ext.getPreference
 import me.ash.reader.ui.ext.put
 
 val LocalFlowMarkAsReadFabPosition =
@@ -49,13 +49,16 @@ sealed class FlowMarkAsReadFabPositionPreference(val value: Int) : Preference() 
     companion object {
         val default = Center
         val values = listOf(Left, Center, Right)
+        private val preferenceKey = intPreferencesKey(flowMarkAsReadFabPosition)
 
-        fun fromPreferences(preferences: Preferences): FlowMarkAsReadFabPositionPreference =
-            when (preferences.getPreference<Int>(flowMarkAsReadFabPosition)) {
+        fun fromPreferences(preferences: Preferences): FlowMarkAsReadFabPositionPreference {
+            if (preferenceKey !in preferences) return default
+            return when (preferences[preferenceKey]) {
                 0 -> Left
                 1 -> Center
                 2 -> Right
                 else -> default
             }
+        }
     }
 }

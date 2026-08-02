@@ -32,19 +32,12 @@ fun resolveNavigationActionLayout(
 }
 
 object NavigationCustomizationEditor {
-    fun add(
-        items: List<NavigationItemPreference>,
-        itemId: String,
-        placement: ActionPlacement = ActionPlacement.Toolbar,
-    ): List<NavigationItemPreference> = items.map {
-        if (it.id == itemId) it.copy(placement = placement) else it
-    }
-
     fun changePlacement(
         items: List<NavigationItemPreference>,
         itemId: String,
         placement: ActionPlacement,
         requireVisible: Boolean = false,
+        maxToolbarItems: Int? = null,
     ): List<NavigationItemPreference> {
         val current = items.firstOrNull { it.id == itemId } ?: return items
         if (
@@ -52,24 +45,27 @@ object NavigationCustomizationEditor {
             current.placement == ActionPlacement.Toolbar &&
             items.count { it.placement == ActionPlacement.Toolbar } <= 1
         ) return items
+        if (
+            placement == ActionPlacement.Toolbar &&
+            current.placement != ActionPlacement.Toolbar &&
+            maxToolbarItems != null &&
+            items.count { it.placement == ActionPlacement.Toolbar } >= maxToolbarItems
+        ) return items
         return items.map {
             if (it.id == itemId) it.copy(placement = placement) else it
         }
     }
 
-    fun moveActive(
+    fun move(
         items: List<NavigationItemPreference>,
         itemId: String,
         targetIndex: Int,
     ): List<NavigationItemPreference> {
-        val reordered = items.filter { it.placement != ActionPlacement.Hidden }.toMutableList()
+        val reordered = items.toMutableList()
         val currentIndex = reordered.indexOfFirst { it.id == itemId }
         if (currentIndex == -1) return items
         val item = reordered.removeAt(currentIndex)
         reordered.add(targetIndex.coerceIn(0, reordered.size), item)
-        val iterator = reordered.iterator()
-        return items.map {
-            if (it.placement == ActionPlacement.Hidden) it else iterator.next()
-        }
+        return reordered
     }
 }

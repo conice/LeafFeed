@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -56,6 +57,7 @@ import me.ash.reader.ui.theme.palette.onLight
 fun InteractionPage(
     onBack: () -> Unit,
     navigateToLanguages: () -> Unit,
+    navigateToNavigationActions: () -> Unit,
 ) {
     val context = LocalContext.current
     val initialPage = LocalInitialPage.current
@@ -120,6 +122,18 @@ fun InteractionPage(
                         onClick = {
                             initialFilterDialogVisible = true
                         },
+                    ) {}
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Subtitle(
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        text = stringResource(R.string.navigation_section),
+                    )
+                    SettingItem(
+                        title = stringResource(R.string.navigation_actions_title),
+                        desc = stringResource(R.string.navigation_actions_setting_desc),
+                        icon = Icons.Outlined.Tune,
+                        onClick = navigateToNavigationActions,
                     ) {}
                     Spacer(modifier = Modifier.height(24.dp))
 

@@ -261,6 +261,10 @@ dependencies {
 
     // Testing
     testImplementation(libs.junit)
+    // Android's local-test stubs throw for org.json and XmlPullParserFactory. Keep the
+    // production APK unchanged while supplying their small JVM implementations to tests.
+    testImplementation(libs.json.jvm)
+    testImplementation(libs.kxml2)
     androidTestImplementation(libs.junit.ext)
     androidTestImplementation(libs.espresso)
     testImplementation(libs.mockito.core)

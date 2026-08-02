@@ -8,8 +8,10 @@ import org.junit.Test
 
 class SuspendResultTest {
     @Test(expected = CancellationException::class)
-    fun `cancellation is never converted to failure`() = runBlocking {
-        runSuspendCatching<Int> { throw CancellationException("cancelled") }
+    fun `cancellation is never converted to failure`() {
+        runBlocking {
+            runSuspendCatching<Int> { throw CancellationException("cancelled") }
+        }
     }
 
     @Test

@@ -20,12 +20,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import me.ash.reader.R
-import me.ash.reader.infrastructure.preference.NavigationActionCatalog
 import me.ash.reader.infrastructure.preference.NavigationItemIds
 import me.ash.reader.infrastructure.preference.NavigationItemPreference
 import me.ash.reader.infrastructure.preference.resolveNavigationActionLayout
 import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.component.navigationActionIcon
+import me.ash.reader.ui.component.navigationActionLabel
 import me.ash.reader.ui.component.responsiveToolbarCapacity
 
 @Composable
@@ -141,6 +141,7 @@ private fun ActionIcon(
     )
 }
 
-private fun NavigationItemPreference.label(): String = NavigationActionCatalog.label(id)
+@Composable
+private fun NavigationItemPreference.label(): String = navigationActionLabel(id)
 
 private fun NavigationItemPreference.icon() = navigationActionIcon(id)

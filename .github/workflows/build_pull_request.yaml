@@ -23,16 +23,15 @@ jobs:
                   java-version: 17
 
             - uses: gradle/actions/setup-gradle@v5
-            - name: Test, lint, and assemble all distribution channels
+            - name: Run unit tests
+              run: sh ./gradlew testGithubDebugUnitTest --build-cache
+
+            # Product flavors share all Kotlin/Java sources; the GitHub variant is the PR artifact.
+            - name: Lint and assemble GitHub debug
               run: >-
                   sh ./gradlew
-                  testGithubDebugUnitTest
                   lintGithubDebug
-                  lintFdroidDebug
-                  lintGooglePlayDebug
                   assembleGithubDebug
-                  assembleFdroidDebug
-                  assembleGooglePlayDebug
                   --build-cache
 
             - uses: actions/upload-artifact@v5

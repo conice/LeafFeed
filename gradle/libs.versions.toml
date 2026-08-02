@@ -39,6 +39,8 @@ hilt = "1.3.0"
 androidSVG = "1.4"
 junit = "4.13.2"
 junitExt = "1.1.5"
+jsonJvm = "20250517"
+kxml2 = "2.3.0"
 mockitoCore = "5.11.0"
 mockitoJUnitJupiter = "5.11.0"
 mockitoKotlin = "5.2.1"
@@ -150,6 +152,8 @@ timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "tim
 # Testing
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 junit-ext = { group = "androidx.test.ext", name = "junit", version.ref = "junitExt" }
+json-jvm = { group = "org.json", name = "json", version.ref = "jsonJvm" }
+kxml2 = { group = "net.sf.kxml", name = "kxml2", version.ref = "kxml2" }
 espresso = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso" }
 mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockitoCore" }
 mockito-junit-jupiter = { group = "org.mockito", name = "mockito-junit-jupiter", version.ref = "mockitoJUnitJupiter" }

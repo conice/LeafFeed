@@ -90,7 +90,6 @@ sealed interface Route : NavKey {
 
     // Interaction
     @Serializable data object Interaction : Route
-    // Retained only to restore navigation state saved before this settings page was removed.
     @Serializable data object NavigationActions : Route
 
     // Languages

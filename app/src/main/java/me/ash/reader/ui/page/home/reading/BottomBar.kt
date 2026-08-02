@@ -208,7 +208,9 @@ fun BottomBar(
                                             size = iconSize,
                                             disabled = !isPreviousArticleAvailable,
                                             imageVector = Icons.Rounded.SkipPrevious,
-                                            contentDescription = "Previous article",
+                                            contentDescription = stringResource(
+                                                R.string.previous_article
+                                            ),
                                             tint = MaterialTheme.colorScheme.outline,
                                             onClick = onPreviousArticle,
                                         )

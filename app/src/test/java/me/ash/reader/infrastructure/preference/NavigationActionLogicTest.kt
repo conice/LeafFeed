@@ -47,16 +47,6 @@ class NavigationActionLogicTest {
     }
 
     @Test
-    fun `add activates an existing hidden item without duplication`() {
-        val items = listOf(item("first"), item("second", ActionPlacement.Hidden))
-
-        val result = NavigationCustomizationEditor.add(items, "second")
-
-        assertEquals(2, result.size)
-        assertEquals(ActionPlacement.Toolbar, result[1].placement)
-    }
-
-    @Test
     fun `required visible item cannot hide the final toolbar action`() {
         val items = listOf(item("first"), item("second", ActionPlacement.Hidden))
 
@@ -86,19 +76,35 @@ class NavigationActionLogicTest {
     }
 
     @Test
-    fun `move reorders active items while preserving hidden slots`() {
+    fun `placement change respects toolbar capacity`() {
+        val items = listOf(
+            item("first"),
+            item("second"),
+            item("hidden", ActionPlacement.Hidden),
+        )
+
+        val result = NavigationCustomizationEditor.changePlacement(
+            items = items,
+            itemId = "hidden",
+            placement = ActionPlacement.Toolbar,
+            maxToolbarItems = 2,
+        )
+
+        assertEquals(items, result)
+    }
+
+    @Test
+    fun `move reorders every item including hidden actions`() {
         val items = listOf(
             item("first"),
             item("hidden", ActionPlacement.Hidden),
-            item("second", ActionPlacement.More),
-            item("third"),
+            item("second"),
         )
 
-        val result = NavigationCustomizationEditor.moveActive(items, "third", 0)
+        val result = NavigationCustomizationEditor.move(items, "hidden", 2)
 
-        assertEquals(listOf("third", "hidden", "first", "second"), result.map { it.id })
-        assertEquals(ActionPlacement.Hidden, result[1].placement)
-        assertEquals(ActionPlacement.More, result[3].placement)
+        assertEquals(listOf("first", "second", "hidden"), result.map { it.id })
+        assertEquals(ActionPlacement.Hidden, result.last().placement)
     }
 
     @Test
@@ -107,13 +113,13 @@ class NavigationActionLogicTest {
 
         assertEquals(
             listOf("second", "first"),
-            NavigationCustomizationEditor.moveActive(items, "second", -10).map { it.id },
+            NavigationCustomizationEditor.move(items, "second", -10).map { it.id },
         )
         assertEquals(
             listOf("second", "first"),
-            NavigationCustomizationEditor.moveActive(items, "first", 10).map { it.id },
+            NavigationCustomizationEditor.move(items, "first", 10).map { it.id },
         )
-        assertEquals(items, NavigationCustomizationEditor.moveActive(items, "unknown", 0))
+        assertEquals(items, NavigationCustomizationEditor.move(items, "unknown", 0))
     }
 
     private fun item(

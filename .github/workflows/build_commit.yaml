@@ -14,7 +14,7 @@ concurrency:
     cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
 
 jobs:
-    verify:
+    build:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v5
@@ -42,33 +42,15 @@ jobs:
                       exit 1
                   fi
 
-            - name: Test, lint, and assemble all distribution channels
-              run: >-
-                  sh ./gradlew
-                  testGithubDebugUnitTest
-                  lintGithubDebug
-                  lintFdroidDebug
-                  lintGooglePlayDebug
-                  assembleGithubDebug
-                  assembleFdroidDebug
-                  assembleGooglePlayDebug
-                  --build-cache
+            # Keep tests separate so a failure stops before lint and release compilation begin.
+            - name: Run unit tests
+              run: sh ./gradlew testGithubDebugUnitTest --build-cache
 
-    build:
-        needs: verify
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v5
-              env:
-                  GIT_CONFIG_COUNT: 1
-                  GIT_CONFIG_KEY_0: init.defaultBranch
-                  GIT_CONFIG_VALUE_0: main
-            - uses: actions/setup-java@v5
-              with:
-                  distribution: temurin
-                  java-version: 17
+            # All Kotlin/Java sources are shared by the three channels. Linting one representative
+            # variant avoids compiling the same source set three times.
+            - name: Lint GitHub debug
+              run: sh ./gradlew lintGithubDebug --build-cache
 
-            - uses: gradle/actions/setup-gradle@v5
             # Downloadable push artifacts must use one persistent certificate. GitHub-hosted
             # runners generate a different default debug keystore on every run, which makes
             # consecutive APKs update-incompatible.

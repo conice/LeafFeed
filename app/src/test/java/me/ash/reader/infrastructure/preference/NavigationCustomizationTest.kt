@@ -108,6 +108,47 @@ class NavigationCustomizationTest {
     }
 
     @Test
+    fun `drops the legacy duplicate settings action from feed toolbar`() {
+        val preferences = mutablePreferencesOf(
+            NavigationPreferenceKeys.feedTopActions to
+                "settings:toolbar,sync:more,addSubscription:hidden",
+        )
+
+        val actions = preferences.toNavigationCustomization().feedTopActions
+
+        assertFalse(actions.any { it.id == "settings" })
+        assertEquals(NavigationItemIds.SYNC, actions.first().id)
+        assertEquals(ActionPlacement.More, actions.first().placement)
+    }
+
+    @Test
+    fun `limits reading bottom bar to five visible actions`() {
+        val preferences = mutablePreferencesOf(
+            NavigationPreferenceKeys.readingBottomActions to
+                """
+                    {"version":2,"items":[
+                      {"id":"starred","placement":"toolbar"},
+                      {"id":"unread","placement":"toolbar"},
+                      {"id":"fullContent","placement":"toolbar"},
+                      {"id":"textToSpeech","placement":"toolbar"},
+                      {"id":"readLater","placement":"toolbar"},
+                      {"id":"previousArticle","placement":"toolbar"},
+                      {"id":"nextArticle","placement":"toolbar"}
+                    ]}
+                """.trimIndent(),
+        )
+
+        val actions = preferences.toNavigationCustomization().readingBottomActions
+
+        assertEquals(
+            NavigationCustomization.MAX_READING_BOTTOM_ACTIONS,
+            actions.count { it.placement == ActionPlacement.Toolbar },
+        )
+        assertTrue(actions.take(5).all { it.placement == ActionPlacement.Toolbar })
+        assertTrue(actions.drop(5).all { it.placement == ActionPlacement.Hidden })
+    }
+
+    @Test
     fun `drops legacy mark all read action now provided by the floating button`() {
         val preferences = mutablePreferencesOf(
             NavigationPreferenceKeys.articleTopActions to

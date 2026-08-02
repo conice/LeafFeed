@@ -45,7 +45,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import me.ash.reader.R
-import me.ash.reader.infrastructure.preference.NavigationActionCatalog
 import me.ash.reader.infrastructure.preference.LocalReadingPageTonalElevation
 import me.ash.reader.infrastructure.preference.LocalOpenLink
 import me.ash.reader.infrastructure.preference.LocalOpenLinkSpecificBrowser
@@ -57,6 +56,7 @@ import me.ash.reader.infrastructure.preference.ReadingPageTonalElevationPreferen
 import me.ash.reader.infrastructure.preference.resolveNavigationActionLayout
 import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.component.navigationActionIcon
+import me.ash.reader.ui.component.navigationActionLabel
 import me.ash.reader.ui.component.navigationTonalElevation
 import me.ash.reader.ui.component.responsiveToolbarCapacity
 import me.ash.reader.ui.ext.surfaceColorAtElevation
@@ -268,7 +268,8 @@ fun TopBar(
     }
 }
 
-private fun NavigationItemPreference.label(): String = NavigationActionCatalog.label(id)
+@Composable
+private fun NavigationItemPreference.label(): String = navigationActionLabel(id)
 
 private fun NavigationItemPreference.icon() = navigationActionIcon(id)
 
