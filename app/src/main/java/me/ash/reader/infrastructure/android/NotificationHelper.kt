@@ -1,12 +1,17 @@
 package me.ash.reader.infrastructure.android
 
+import android.Manifest
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toBitmapOrNull
 import coil.imageLoader
 import coil.request.ImageRequest
@@ -78,7 +83,7 @@ constructor(
                     }
                 }
 
-            notificationManager.notify(
+            postNotification(
                 feed.id.hashCode(),
                 NotificationCompat.Builder(context, NotificationGroupName.ARTICLE_UPDATE)
                     .setContentTitle(feed.name)
@@ -127,7 +132,7 @@ constructor(
                             )
                         )
                         .setGroup(feed.id)
-                notificationManager.notify(
+                postNotification(
                     Random().nextInt() + article.id.hashCode(),
                     builder.build(),
                 )
@@ -145,7 +150,7 @@ constructor(
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             putExtra(ExtraName.ARTICLE_ID, article.id)
         }
-        notificationManager.notify(
+        postNotification(
             ("automation:${article.id}:$ruleId").hashCode(),
             NotificationCompat.Builder(context, NotificationGroupName.ARTICLE_UPDATE)
                 .setSmallIcon(R.drawable.ic_notification)
@@ -163,5 +168,23 @@ constructor(
                 )
                 .build(),
         )
+    }
+
+    private fun postNotification(notificationId: Int, notification: Notification) {
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS,
+                ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        try {
+            notificationManager.notify(notificationId, notification)
+        } catch (exception: SecurityException) {
+            Timber.w(exception, "Unable to post notification $notificationId")
+        }
     }
 }

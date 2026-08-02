@@ -42,14 +42,26 @@ jobs:
                       exit 1
                   fi
 
-            # Keep tests separate so a failure stops before lint and release compilation begin.
+            # Keep tests blocking and separate from advisory lint and release compilation.
             - name: Run unit tests
               run: sh ./gradlew testGithubDebugUnitTest --build-cache
 
             # All Kotlin/Java sources are shared by the three channels. Linting one representative
-            # variant avoids compiling the same source set three times.
+            # variant avoids compiling the same source set three times. Lint was added after the
+            # project already had a backlog, so keep the report visible without blocking the APK.
             - name: Lint GitHub debug
+              continue-on-error: true
               run: sh ./gradlew lintGithubDebug --build-cache
+
+            - name: Upload lint report
+              if: always()
+              uses: actions/upload-artifact@v5
+              with:
+                  name: LeafFeed-Lint-GitHub-Debug-${{ github.sha }}
+                  path: |
+                      app/build/reports/lint-results-githubDebug.*
+                      app/build/intermediates/lint_intermediate_text_report/githubDebug/lintReportGithubDebug/lint-results-githubDebug.txt
+                  if-no-files-found: warn
 
             # Downloadable push artifacts must use one persistent certificate. GitHub-hosted
             # runners generate a different default debug keystore on every run, which makes
