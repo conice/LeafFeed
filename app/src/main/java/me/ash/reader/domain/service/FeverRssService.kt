@@ -115,11 +115,11 @@ constructor(
         throw FeverAPIException("Unsupported")
     }
 
-    override suspend fun deleteGroup(group: Group, onlyDeleteNoStarred: Boolean?) {
+    override suspend fun deleteGroup(group: Group, preserveSavedArticles: Boolean?) {
         throw FeverAPIException("Unsupported")
     }
 
-    override suspend fun deleteFeed(feed: Feed, onlyDeleteNoStarred: Boolean?) {
+    override suspend fun deleteFeed(feed: Feed, preserveSavedArticles: Boolean?) {
         throw FeverAPIException("Unsupported")
     }
 

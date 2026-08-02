@@ -160,14 +160,12 @@ abstract class AbstractRssRepository(
     suspend fun clearReadArticlesFromReadLater(
         groupId: String?,
         feedId: String?,
-        audioOnly: Boolean,
     ): Int {
         val accountId = accountService.getCurrentAccountId()
         return articleDao.clearReadArticlesFromReadLater(
             accountId = accountId,
             groupId = groupId,
             feedId = feedId,
-            audioOnly = audioOnly,
         )
     }
 
@@ -240,14 +238,22 @@ abstract class AbstractRssRepository(
         feedId: String?,
         isStarred: Boolean,
         isUnread: Boolean,
+        isReadLater: Boolean,
         sortAscending: Boolean = false,
     ): PagingSource<Int, ArticleWithFeed> {
         val accountId = accountService.getCurrentAccountId()
         Log.i(
             "RLog",
-            "pullArticles: accountId: ${accountId}, groupId: ${groupId}, feedId: ${feedId}, isStarred: ${isStarred}, isUnread: ${isUnread}",
+            "pullArticles: accountId: ${accountId}, groupId: ${groupId}, feedId: ${feedId}, isStarred: ${isStarred}, isUnread: ${isUnread}, isReadLater: ${isReadLater}",
         )
         return when {
+            isReadLater ->
+                articleDao.queryArticleWithFeedWhenIsReadLater(
+                    accountId = accountId,
+                    groupId = groupId,
+                    feedId = feedId,
+                )
+
             groupId != null ->
                 when {
                     isStarred ->
@@ -336,10 +342,9 @@ abstract class AbstractRssRepository(
         }
     }
 
-    fun pullReadLater(contentType: ArticleContentType): Flow<Map<String, Int>> =
+    fun pullReadLater(): Flow<Map<String, Int>> =
         articleDao.queryImportantCountWhenIsReadLater(
             accountService.getCurrentAccountId(),
-            contentType == ArticleContentType.AUDIO,
         )
 
     suspend fun findFeedById(id: String): Feed? = feedDao.queryById(id)
@@ -376,11 +381,11 @@ abstract class AbstractRssRepository(
         feedDao.update(feed)
     }
 
-    open suspend fun deleteGroup(group: Group, onlyDeleteNoStarred: Boolean? = false) {
+    open suspend fun deleteGroup(group: Group, preserveSavedArticles: Boolean? = false) {
         val accountId = accountService.getCurrentAccountId()
         if (
-            onlyDeleteNoStarred == true &&
-                articleDao.countByGroupIdWhenIsStarred(accountId, group.id, true) > 0
+            preserveSavedArticles == true &&
+                articleDao.countSavedByGroupId(accountId, group.id) > 0
         ) {
             return
         }
@@ -389,13 +394,12 @@ abstract class AbstractRssRepository(
         groupDao.delete(group)
     }
 
-    open suspend fun deleteFeed(feed: Feed, onlyDeleteNoStarred: Boolean? = false) {
+    open suspend fun deleteFeed(feed: Feed, preserveSavedArticles: Boolean? = false) {
         if (
-            onlyDeleteNoStarred == true &&
-                articleDao.countByFeedIdWhenIsStarred(
+            preserveSavedArticles == true &&
+                articleDao.countSavedByFeedId(
                     accountService.getCurrentAccountId(),
                     feed.id,
-                    true,
                 ) > 0
         ) {
             return
@@ -464,11 +468,20 @@ abstract class AbstractRssRepository(
         feedId: String?,
         isStarred: Boolean,
         isUnread: Boolean,
+        isReadLater: Boolean,
         sortAscending: Boolean = false,
     ): PagingSource<Int, ArticleWithFeed> {
         val accountId = accountService.getCurrentAccountId()
         val searchQuery = content.toArticleFtsQuery()
         return when {
+            isReadLater ->
+                articleDao.searchArticleWhenIsReadLater(
+                    accountId = accountId,
+                    text = searchQuery,
+                    groupId = groupId,
+                    feedId = feedId,
+                )
+
             groupId != null ->
                 when {
                     isStarred ->

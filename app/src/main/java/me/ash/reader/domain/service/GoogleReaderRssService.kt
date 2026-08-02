@@ -207,7 +207,7 @@ constructor(
         super.renameFeed(feed)
     }
 
-    override suspend fun deleteGroup(group: Group, onlyDeleteNoStarred: Boolean?) {
+    override suspend fun deleteGroup(group: Group, preserveSavedArticles: Boolean?) {
         feedDao.queryByGroupId(accountService.getCurrentAccountId(), group.id).forEach {
             deleteFeed(it)
         }
@@ -215,7 +215,7 @@ constructor(
         super.deleteGroup(group, false)
     }
 
-    override suspend fun deleteFeed(feed: Feed, onlyDeleteNoStarred: Boolean?) {
+    override suspend fun deleteFeed(feed: Feed, preserveSavedArticles: Boolean?) {
         getGoogleReaderAPI()
             .subscriptionEdit(action = "unsubscribe", destFeedId = feed.id.dollarLast())
         super.deleteFeed(feed, false)

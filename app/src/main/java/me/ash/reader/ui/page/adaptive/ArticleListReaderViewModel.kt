@@ -30,7 +30,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.ash.reader.domain.data.ArticleContentType
 import me.ash.reader.domain.data.ArticlePagingListUseCase
 import me.ash.reader.domain.model.general.OperationFailure
 import me.ash.reader.domain.model.general.OperationFailureKind
@@ -272,7 +271,6 @@ constructor(
             rssService.get().clearReadArticlesFromReadLater(
                 groupId = filterState.group?.id,
                 feedId = filterState.feed?.id,
-                audioOnly = filterState.contentType == ArticleContentType.AUDIO,
             )
         }
     }

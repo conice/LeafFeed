@@ -151,18 +151,16 @@ class GroupWithFeedsListUseCase @Inject constructor(
     }
 
     private fun pullReadLaterFeeds(): Job {
-        val countMapFlow = rssService.get().pullReadLater(ArticleContentType.ARTICLE)
-        val audioCountMapFlow = rssService.get().pullReadLater(ArticleContentType.AUDIO)
+        val countMapFlow = rssService.get().pullReadLater()
         return applicationScope.launch {
             combine(
                 feedsFlow,
                 countMapFlow,
-                audioCountMapFlow,
-            ) { groups, countMap, audioCounts ->
+            ) { groups, countMap ->
                 groups.mapNotNull { group ->
                     val feeds = group.feeds
                         .map { feed ->
-                            feed.copy(important = countFor(feed, countMap, audioCounts))
+                            feed.copy(important = countMap[feed.id] ?: 0)
                         }
                         .let { feeds ->
                             if (hideEmptyGroups) feeds.filter { it.important > 0 } else feeds

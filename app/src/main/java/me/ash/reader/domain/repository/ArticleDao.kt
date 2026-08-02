@@ -265,25 +265,20 @@ interface ArticleDao {
         isUnread: Boolean,
     ): Int
 
-    @Transaction
-    @RewriteQueriesToDropUnusedColumns
     @Query(
         """
         SELECT count(1)
         FROM article
         WHERE feedId = :feedId
-        AND isStarred = :isStarred
+        AND (isStarred = 1 OR isReadLater = 1)
         AND accountId = :accountId
         """
     )
-    fun countByFeedIdWhenIsStarred(
+    fun countSavedByFeedId(
         accountId: Int,
         feedId: String,
-        isStarred: Boolean,
     ): Int
 
-    @Transaction
-    @RewriteQueriesToDropUnusedColumns
     @Query(
         """
         SELECT count(1)
@@ -291,14 +286,13 @@ interface ArticleDao {
         LEFT JOIN feed AS b ON b.id = a.feedId
         LEFT JOIN `group` AS c ON c.id = b.groupId
         WHERE c.id = :groupId
-        AND a.isStarred = :isStarred
+        AND (a.isStarred = 1 OR a.isReadLater = 1)
         AND a.accountId = :accountId
         """
     )
-    fun countByGroupIdWhenIsStarred(
+    fun countSavedByGroupId(
         accountId: Int,
         groupId: String,
-        isStarred: Boolean,
     ): Int
 
 
@@ -480,6 +474,29 @@ interface ArticleDao {
         accountId: Int, text: String, sortAscending: Boolean = false
     ): PagingSource<Int, ArticleWithFeed>
 
+    @Transaction
+    @Query(
+        """
+        SELECT article.* FROM article
+        INNER JOIN article_fts ON article_fts.articleId = article.id
+        WHERE article.accountId = :accountId
+        AND article.isReadLater = 1
+        AND (:groupId IS NULL OR article.feedId IN (
+            SELECT id FROM feed
+            WHERE accountId = :accountId AND groupId = :groupId
+        ))
+        AND (:feedId IS NULL OR article.feedId = :feedId)
+        AND article_fts MATCH :text
+        ORDER BY article.date DESC
+        """
+    )
+    fun searchArticleWhenIsReadLater(
+        accountId: Int,
+        text: String,
+        groupId: String?,
+        feedId: String?,
+    ): PagingSource<Int, ArticleWithFeed>
+
 
     @Query(
         """
@@ -612,15 +629,12 @@ interface ArticleDao {
             SELECT id FROM feed
             WHERE accountId = :accountId AND groupId = :groupId
         ))
-        AND ((:audioOnly = 1 AND audioUrl IS NOT NULL)
-            OR (:audioOnly = 0 AND audioUrl IS NULL))
         """
     )
     suspend fun clearReadArticlesFromReadLater(
         accountId: Int,
         groupId: String?,
         feedId: String?,
-        audioOnly: Boolean,
     ): Int
 
     @Query(
@@ -698,13 +712,11 @@ interface ArticleDao {
         FROM article
         WHERE isReadLater = 1
         AND accountId = :accountId
-        AND ((:audioOnly = 1 AND audioUrl IS NOT NULL) OR (:audioOnly = 0 AND audioUrl IS NULL))
         GROUP BY feedId
         """
     )
     fun queryImportantCountWhenIsReadLater(
         accountId: Int,
-        audioOnly: Boolean,
     ): Flow<Map<@MapColumn("feedId") String, @MapColumn("important") Int>>
 
     @Transaction
@@ -790,6 +802,26 @@ interface ArticleDao {
     )
     fun queryArticleWithFeedWhenIsAll(
         accountId: Int
+    ): PagingSource<Int, ArticleWithFeed>
+
+    @Transaction
+    @Query(
+        """
+        SELECT * FROM article
+        WHERE accountId = :accountId
+        AND isReadLater = 1
+        AND (:groupId IS NULL OR feedId IN (
+            SELECT id FROM feed
+            WHERE accountId = :accountId AND groupId = :groupId
+        ))
+        AND (:feedId IS NULL OR feedId = :feedId)
+        ORDER BY date DESC
+        """
+    )
+    fun queryArticleWithFeedWhenIsReadLater(
+        accountId: Int,
+        groupId: String?,
+        feedId: String?,
     ): PagingSource<Int, ArticleWithFeed>
 
     @Transaction

@@ -47,8 +47,12 @@ sealed class FlowMarkAsReadFabPositionPreference(val value: Int) : Preference() 
         }
 
     companion object {
-        val default = Center
-        val values = listOf(Left, Center, Right)
+        val default: FlowMarkAsReadFabPositionPreference
+            get() = Center
+
+        val values: List<FlowMarkAsReadFabPositionPreference>
+            get() = listOf(Left, Center, Right)
+
         private val preferenceKey = intPreferencesKey(flowMarkAsReadFabPosition)
 
         fun fromPreferences(preferences: Preferences): FlowMarkAsReadFabPositionPreference {

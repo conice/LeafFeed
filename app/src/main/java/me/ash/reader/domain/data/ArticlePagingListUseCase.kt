@@ -107,6 +107,7 @@ constructor(
                                                 feedId = filterState.feed?.id,
                                                 isStarred = filterState.filter.isStarred(),
                                                 isUnread = filterState.filter.isUnread(),
+                                                isReadLater = filterState.filter.isReadLater(),
                                                 sortAscending =
                                                     settingsProvider.settings.flowSortUnreadArticles
                                                         .value,
@@ -119,6 +120,7 @@ constructor(
                                                 feedId = filterState.feed?.id,
                                                 isStarred = filterState.filter.isStarred(),
                                                 isUnread = filterState.filter.isUnread(),
+                                                isReadLater = filterState.filter.isReadLater(),
                                                 sortAscending =
                                                     settingsProvider.settings.flowSortUnreadArticles
                                                         .value,
@@ -128,20 +130,27 @@ constructor(
                                 .flow
                                 .map { pagingData ->
                                     pagingData.filter { articleWithFeed ->
-                                        filterState.contentType.includes(
-                                            articleWithFeed.article.audioUrl
-                                        )
+                                        if (filterState.filter.isReadLater()) {
+                                            articleWithFeed.article.isReadLater
+                                        } else {
+                                            filterState.contentType.includes(
+                                                articleWithFeed.article.audioUrl
+                                            )
+                                        }
                                     }
                                 }
                                 .map { pagingData ->
-                                    if (filterState.filter.isReadLater()) {
-                                        pagingData.filter { it.article.isReadLater }
-                                    } else pagingData
-                                }
-                                .map { pagingData ->
                                     val matcher = AutomationMatcher(rules)
-                                    pagingData
-                                        .filter { !matcher.isFiltered(it) }
+                                    val visiblePagingData =
+                                        if (filterState.filter.isReadLater()) {
+                                            // Read Later is an explicit saved collection. Keep
+                                            // saved items reachable even when an automation rule
+                                            // hides them from the normal article timelines.
+                                            pagingData
+                                        } else {
+                                            pagingData.filter { !matcher.isFiltered(it) }
+                                        }
+                                    visiblePagingData
                                         .mapPagingFlowItem(androidStringsHelper, matcher)
                                 }
                                 .cachedIn(pagerCacheScope),
