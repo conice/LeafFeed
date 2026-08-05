@@ -4,7 +4,7 @@
   </a>
 
   <h3>LeafFeed</h3>
-  <p>A quiet, modern, and user-controlled RSS reader for Android</p>
+  <p>A private, modern RSS reader for Android</p>
 
   <p>
     <a href="https://github.com/conice/LeafFeed/stargazers"><img src="https://img.shields.io/github/stars/conice/LeafFeed?style=flat-square&logo=github&label=Stars&labelColor=black&color=ffcb47" alt="GitHub Stars"></a>
@@ -18,15 +18,15 @@
     <img src="https://img.shields.io/badge/Ads-None-2ea44f?style=flat-square&labelColor=black" alt="No Ads">
     <br />
     <br />
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/feeds.png" width="30%" alt="Feeds">
+    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/feeds.png" width="30%" alt="Feed groups">
     &nbsp;&nbsp;
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/flow.png" width="30%" alt="Article list">
+    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/flow.png" width="30%" alt="Unread article list">
     &nbsp;&nbsp;
-    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/read.png" width="30%" alt="Reader">
+    <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Content_Summary.png" width="30%" alt="AI article summary">
   </p>
 </div>
 
-Your information feed should not force you to chase an algorithm. LeafFeed keeps subscriptions, articles, podcasts, and reading data on your own device and services, presenting them in a clear timeline focused on what you actually want to read.
+LeafFeed is an Android RSS and podcast reader built around your subscriptions rather than an algorithm. Keep feeds, articles, playback progress, and settings on your device; connect only the sync and AI services you choose.
 
 ## Getting Started
 
@@ -44,11 +44,11 @@ LeafFeed is under active development. Feedback and bug reports are welcome in [G
 
 Star the repository to keep track of new versions and release notes.
 
-## Features
+## What LeafFeed Does
 
-### Your Own Information Hub
+### Follow What You Chose
 
-Subscribe to RSS and Atom feeds, then organize content with groups, unread status, stars, Read Later, and highlight rules. LeafFeed supports OPML migration, local accounts, and services compatible with the Fever or Google Reader APIs.
+Subscribe to RSS and Atom feeds, organize them into groups, and move through a clean unread timeline. Stars, Read Later, search, saved searches, tags, and OPML import make it easy to collect and return to the stories that matter. Use a local account or connect a compatible Fever or Google Reader service.
 
 <p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/feeds.png" width="32%" alt="Subscription management">
@@ -56,25 +56,43 @@ Subscribe to RSS and Atom feeds, then organize content with groups, unread statu
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/flow.png" width="32%" alt="Article timeline">
 </p>
 
-### Focused, Complete Reading
+### Read Comfortably
 
-Parse full articles and customize fonts, text size, line height, alignment, images, and reading themes. Reading history, full-text search, saved searches, tags, excerpts, notes, and text-to-speech make information easy to revisit and organize.
+Open articles in a focused reader with full-content parsing and controls for typography, line height, alignment, images, and themes. Keep reading history, notes, excerpts, and text-to-speech close at hand.
 
 <p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/read.png" width="36%" alt="Article reader">
 </p>
 
-### AI When You Need It
+### Summarize on Your Terms
 
-Use an OpenAI-compatible service of your choice to summarize groups of headlines, individual articles, and subscription reports. Models, prompts, request timeouts, content scope, and whether article links are included remain under your control.
+Use an OpenAI-compatible service you configure to turn a busy list of headlines into a categorized briefing or to summarize the article currently on screen. You choose the service URL, model, prompts, request timeout, content scope, and whether links are included.
 
-### More Than Text
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Title_summary.png" width="32%" alt="AI title summary">
+  &nbsp;&nbsp;
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Content_Summary.png" width="32%" alt="AI article summary">
+</p>
 
-LeafFeed supports background podcast playback, queues, playback speed, skip controls, progress tracking, automatic downloads, cache management, and transcripts, together with lock-screen, headset, and Android Auto media controls.
+### Listen to Podcasts
 
-### Data You Can Take With You
+Play podcast feeds alongside your reading. Add episodes to a queue, download them for offline listening, resume from saved progress, tune playback speed and skip intervals, and open available transcripts. Playback works with Android media controls, including the lock screen, headset controls, and Android Auto.
 
-Export and import preferences, tags, notes, saved searches, and article reading state. Subscriptions use OPML, while article rules have a separate backup format. Reading-data backups include integrity verification and remain compatible with older formats.
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Podcasts%20.png" width="36%" alt="Podcast episodes">
+</p>
+
+### Let Rules Do the Sorting
+
+Create automation rules for all feeds, selected groups, or individual feeds. Match against titles, descriptions, authors, URLs, and media properties with text, numeric, or regular-expression conditions; then filter, highlight, star, save, or update an article's reading state.
+
+<p align="center">
+  <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Automation.png" width="36%" alt="Automation rule editor">
+</p>
+
+### Keep Control of Your Data
+
+Tune startup behavior, toolbars, gestures, appearance, reading controls, podcast downloads, notifications, and privacy from one settings area. Export and import preferences, tags, notes, saved searches, reading state, and automations; subscriptions use OPML and rules use a dedicated backup format with integrity checks.
 
 <p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/settings.png" width="36%" alt="Settings and data management">
