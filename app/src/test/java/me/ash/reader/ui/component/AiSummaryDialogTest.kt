@@ -31,6 +31,18 @@ class AiSummaryDialogTest {
     }
 
     @Test
+    fun findsTranslatedTitleByTrailingArticleNumber() {
+        assertEquals(
+            2,
+            findAiSummaryArticleNumber(
+                line = "翻译后的文章标题 · 2",
+                articleTitles = listOf("First", "Original article title"),
+                articleCount = 2,
+            ),
+        )
+    }
+
+    @Test
     fun keepsCompatibilityWithTitleAndIndexWithoutSeparator() {
         assertEquals(
             2,
@@ -106,6 +118,21 @@ class AiSummaryDialogTest {
         val paragraph = document.firstChild.firstChild.firstChild
 
         assertEquals("Article title · 2", aiMarkdownPlainText(paragraph))
+    }
+
+    @Test
+    fun appendsStreamingCursorToLastMarkdownLine() {
+        val document = parseAiMarkdown("### Category\n\n- First title\n- Second title")
+
+        assertEquals(true, appendAiMarkdownCursor(document))
+        assertEquals("Second title ▍", aiMarkdownPlainText(document.lastChild.lastChild))
+    }
+
+    @Test
+    fun leavesBlockOnlyMarkdownCursorForFallbackRendering() {
+        val document = parseAiMarkdown("```\ncode\n```")
+
+        assertEquals(false, appendAiMarkdownCursor(document))
     }
 
     @Test

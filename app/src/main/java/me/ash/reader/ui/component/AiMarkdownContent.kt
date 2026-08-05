@@ -71,7 +71,11 @@ internal fun AiMarkdownContent(
     onSuggestedTagsClick: ((List<String>) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    val document = remember(markdown) { AiMarkdownParser.parse(markdown) }
+    val document = remember(markdown, loading) {
+        AiMarkdownParser.parse(markdown).also { document ->
+            if (loading) appendAiMarkdownCursor(document)
+        }
+    }
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -84,7 +88,7 @@ internal fun AiMarkdownContent(
             onArticleClick = onArticleClick,
             onSuggestedTagsClick = onSuggestedTagsClick,
         )
-        if (loading) {
+        if (loading && !document.hasInlineAiCursor()) {
             Text(
                 text = "▍",
                 style = MaterialTheme.typography.bodyMedium,
@@ -465,6 +469,30 @@ private fun aiMarkdownContainsSafeLink(parent: Node): Boolean {
 }
 
 internal fun parseAiMarkdown(markdown: String): Node = AiMarkdownParser.parse(markdown)
+
+internal fun appendAiMarkdownCursor(document: Node): Boolean {
+    var node = document.lastChild
+    var inlineContainer: Node? = null
+    while (node != null) {
+        if (node is Paragraph || node is Heading) inlineContainer = node
+        node = node.lastChild
+    }
+    inlineContainer?.appendChild(MarkdownText(" ▍"))
+    return inlineContainer != null
+}
+
+private fun Node.hasInlineAiCursor(): Boolean {
+    var node = lastChild
+    while (node != null) {
+        if (
+            node is MarkdownText &&
+                node.literal.endsWith("▍") &&
+                (node.parent is Paragraph || node.parent is Heading)
+        ) return true
+        node = node.lastChild
+    }
+    return false
+}
 
 internal fun isSafeAiMarkdownUrl(url: String): Boolean = runCatching {
     val uri = URI(url.trim())

@@ -38,6 +38,7 @@ import me.ash.reader.ui.theme.MotionTokens
 private val LeadingAiSummaryIndex = Regex(
     "^\\s*(?:[-*+]\\s+)?(?:#\\s*)?(?:\\[\\s*)?(?:\\(\\s*)?(\\d+)(?:\\s*[.、):\\]\\-]|\\s|$)",
 )
+private val TrailingAiSummaryIndex = Regex("[·•]\\s*(\\d+)\\s*$")
 private val AiSummaryTagsLine = Regex("^\\s*(?:tags|标签)\\s*[:：]\\s*(.+?)\\s*$", RegexOption.IGNORE_CASE)
 private val AiSummaryTagSeparator = Regex("\\s*[,，、;；|]\\s*|\\s{2,}")
 
@@ -205,6 +206,13 @@ internal fun findAiSummaryArticleNumber(
             (title.isNotEmpty() && normalizedLine.contains(title))
     }
     if (matchingTitleIndexes.size == 1) return matchingTitleIndexes.single() + 1
+
+    TrailingAiSummaryIndex.find(normalizedLine)
+        ?.groupValues
+        ?.getOrNull(1)
+        ?.toIntOrNull()
+        ?.takeIf { it in 1..articleCount }
+        ?.let { return it }
 
     LeadingAiSummaryIndex.find(line)
         ?.groupValues
