@@ -7,6 +7,7 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.rometools.rome.feed.synd.SyndFeed
 import java.util.Date
+import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
