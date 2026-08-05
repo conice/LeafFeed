@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -155,52 +154,17 @@ fun AiSummaryDialog(
                         }
                         if (summary.isNotEmpty()) {
                             if (failure != null) Spacer(Modifier.height(12.dp))
-                            val lines = summary.lines()
-                            lines.forEachIndexed { index, line ->
-                                val suggestedTags = parseAiSummaryTags(line)
-                                val number = findAiSummaryArticleNumber(
-                                    line = line,
-                                    articleTitles = articleTitles,
-                                    articleCount = articleIds.size,
-                                )
-                                val articleId = if (loading) null else {
-                                    number?.let { articleIds.getOrNull(it - 1) }
-                                }
-                                val trimmedLine = line.trim()
-                                val topicHeading = trimmedLine
-                                    .takeIf {
-                                        it.length > 4 &&
-                                            it.startsWith("**") &&
-                                            it.endsWith("**")
-                                    }
-                                    ?.removePrefix("**")
-                                    ?.removeSuffix("**")
-                                    ?.trim()
-                                    ?.takeIf { it.isNotEmpty() }
-                                val displayLine = topicHeading ?: line
-                                val showCursor = loading && index == lines.lastIndex
-                                if (line.isBlank() && !showCursor) {
-                                    Spacer(Modifier.height(8.dp))
-                                } else {
-                                    Text(
-                                        text = if (showCursor) "$displayLine ▍" else displayLine,
-                                        style = when {
-                                            topicHeading != null ->
-                                                MaterialTheme.typography.titleMedium
-                                            number != null -> MaterialTheme.typography.titleSmall
-                                            else -> MaterialTheme.typography.bodyMedium
-                                        },
-                                        modifier = when {
-                                            !loading && suggestedTags != null && onSuggestedTagsClick != null ->
-                                                Modifier.clickable { onSuggestedTagsClick(suggestedTags) }
-                                            articleId != null -> Modifier.clickable {
-                                                onArticleClick(articleId, scrollState.value)
-                                            }
-                                            else -> Modifier
-                                        },
-                                    )
-                                }
-                            }
+                            AiMarkdownContent(
+                                markdown = summary,
+                                loading = loading,
+                                articleIds = articleIds,
+                                articleTitles = articleTitles,
+                                onArticleClick = { articleId ->
+                                    onArticleClick(articleId, scrollState.value)
+                                },
+                                onSuggestedTagsClick = onSuggestedTagsClick,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
                         }
                     }
                 }

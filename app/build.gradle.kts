@@ -178,6 +178,9 @@ dependencies {
     implementation(libs.aboutlibraries.core)
     implementation(libs.aboutlibraries.compose)
 
+    // Markdown
+    implementation(libs.commonmark)
+
     // Compose
     implementation(libs.compose.html)
     implementation(platform(libs.compose.bom.alpha))

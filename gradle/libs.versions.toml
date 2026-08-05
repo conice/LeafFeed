@@ -28,6 +28,9 @@ work = "2.10.1"
 
 composeHtml = "1.0.2"
 
+# Markdown
+commonmark = "0.29.0"
+
 # Coil
 coil = "2.5.0"
 
@@ -69,6 +72,9 @@ composeBomAlpha = "2025.10.01"
 # AboutLibraries
 aboutlibraries-core = { group = "com.mikepenz", name = "aboutlibraries-core", version.ref = "aboutLibsRelease" }
 aboutlibraries-compose = { group = "com.mikepenz", name = "aboutlibraries-compose-m3", version.ref = "aboutLibsRelease" }
+
+# Markdown
+commonmark = { group = "org.commonmark", name = "commonmark", version.ref = "commonmark" }
 
 # Compose
 compose-html = { group = "com.github.ireward", name = "compose-html", version.ref = "composeHtml" }

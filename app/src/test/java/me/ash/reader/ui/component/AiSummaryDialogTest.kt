@@ -1,5 +1,6 @@
 package me.ash.reader.ui.component
 
+import org.commonmark.node.Link
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -95,6 +96,60 @@ class AiSummaryDialogTest {
                 line = "**Topic**",
                 articleTitles = listOf("Article title"),
                 articleCount = 1,
+            ),
+        )
+    }
+
+    @Test
+    fun extractsPlainTextFromMarkdownForArticleMatching() {
+        val document = parseAiMarkdown("- **Article title** · 2")
+        val paragraph = document.firstChild.firstChild.firstChild
+
+        assertEquals("Article title · 2", aiMarkdownPlainText(paragraph))
+    }
+
+    @Test
+    fun restoresOrderedListMarkerForArticleMatching() {
+        val document = parseAiMarkdown("2. **Article title**")
+        val listItem = document.firstChild.firstChild
+
+        assertEquals("2. Article title", aiMarkdownMatchText(listItem, 2))
+    }
+
+    @Test
+    fun onlyAllowsWebLinksFromAiMarkdown() {
+        assertEquals(true, isSafeAiMarkdownUrl("https://example.com/article"))
+        assertEquals(true, isSafeAiMarkdownUrl("HTTP://example.com"))
+        assertEquals(false, isSafeAiMarkdownUrl("intent://open/settings"))
+        assertEquals(false, isSafeAiMarkdownUrl("file:///data/local/file"))
+        assertEquals(false, isSafeAiMarkdownUrl("/relative/path"))
+    }
+
+    @Test
+    fun resolvesMarkdownTitleLinkToLocalArticle() {
+        val document = parseAiMarkdown("[Article title](https://example.com/article)")
+        val link = document.firstChild.firstChild as Link
+
+        assertEquals(
+            "article-2",
+            findAiMarkdownArticleId(
+                link = link,
+                articleIds = listOf("article-1", "article-2"),
+                articleTitles = listOf("First", "Article title"),
+            ),
+        )
+    }
+
+    @Test
+    fun leavesUnmatchedMarkdownLinkExternal() {
+        val document = parseAiMarkdown("[Source website](https://example.com)")
+        val link = document.firstChild.firstChild as Link
+
+        assertNull(
+            findAiMarkdownArticleId(
+                link = link,
+                articleIds = listOf("article-1"),
+                articleTitles = listOf("Article title"),
             ),
         )
     }
