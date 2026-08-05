@@ -11,6 +11,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -54,7 +55,7 @@ fun TitleAndTextPreview() {
             text = if (titleUpperCase.value) titleUpperCaseString else stringResource(id = R.string.title),
             color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.headlineLarge.copy(
-                fontFamily = LocalReadingFonts.current.asFontFamily(context),
+                fontFamily = LocalReadingFonts.current.asFontFamily(LocalContext.current),
                 fontWeight = if (titleBold.value) FontWeight.Bold else FontWeight.Medium,
             ),
             textAlign = titleAlign.toTextAlign(),
