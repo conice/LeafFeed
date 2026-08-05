@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -343,7 +342,7 @@ constructor(
         _isSyncingFlow.value = true
         _syncOperationState.value = SyncOperationState.Running()
         viewModelScope.launch {
-            val workId =
+            val syncWork =
                 runCatching {
                     withContext(ioDispatcher) {
                         val filterState = filterStateUseCase.filterStateFlow.value
@@ -370,16 +369,22 @@ constructor(
                     return@launch
                 }
             val finalInfo =
-                workManager.getWorkInfoByIdFlow(workId).filterNotNull().first { workInfo ->
-                    val total =
-                        workInfo.progress
-                            .getInt(SyncWorker.PROGRESS_TOTAL, -1)
-                            .takeIf { it >= 0 }
-                    val completed =
-                        workInfo.progress.getInt(SyncWorker.PROGRESS_COMPLETED, 0)
-                    _syncOperationState.value =
-                        SyncOperationState.Running(completed = completed, total = total)
-                    workInfo.state.isFinished
+                runCatching {
+                    syncWork.workInfoFlow(workManager).first { workInfo ->
+                        val total =
+                            workInfo.progress
+                                .getInt(SyncWorker.PROGRESS_TOTAL, -1)
+                                .takeIf { it >= 0 }
+                        val completed =
+                            workInfo.progress.getInt(SyncWorker.PROGRESS_COMPLETED, 0)
+                        _syncOperationState.value =
+                            SyncOperationState.Running(completed = completed, total = total)
+                        workInfo.state.isFinished
+                    }
+                }.getOrElse {
+                    _isSyncingFlow.value = false
+                    showSyncResult(SyncOperationState.Failed(it.toOperationFailure()))
+                    return@launch
                 }
             _isSyncingFlow.value = false
             showSyncResult(

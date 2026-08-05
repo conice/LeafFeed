@@ -676,8 +676,13 @@ constructor(
     ): MutableList<String> {
         var result = getItemIdsFunc(null)
         val ids = result?.itemRefs?.mapNotNull { it.id }?.toMutableList() ?: return mutableListOf()
-        while (result != null && result.continuation != null) {
-            result = getItemIdsFunc(result.continuation)
+        val seenContinuations = mutableSetOf<String>()
+        while (result?.continuation != null) {
+            val continuation = result.continuation!!
+            check(seenContinuations.add(continuation)) {
+                "Google Reader pagination continuation did not advance"
+            }
+            result = getItemIdsFunc(continuation)
             result?.itemRefs?.mapNotNull { it.id }?.let { ids.addAll(it) }
         }
         return ids

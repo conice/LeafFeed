@@ -7,7 +7,6 @@ import androidx.work.WorkManager
 import androidx.work.workDataOf
 import com.rometools.rome.feed.synd.SyndFeed
 import java.util.Date
-import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -201,7 +200,7 @@ abstract class AbstractRssRepository(
         accountId: Int = accountService.getCurrentAccountId(),
         feedId: String? = null,
         groupId: String? = null,
-    ): UUID =
+    ): SyncWorkHandle =
         SyncWorker.enqueueOneTimeWork(
             workManager,
             workDataOf("accountId" to accountId, "feedId" to feedId, "groupId" to groupId),

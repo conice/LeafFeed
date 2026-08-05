@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -106,7 +105,7 @@ constructor(
                             return@launch
                         }
 
-                val workId =
+                val syncWork =
                     runCatching { rssService.get().doSyncOneTime() }
                         .getOrElse { error ->
                             showTerminalImportOperation(
@@ -121,28 +120,37 @@ constructor(
                     it.copy(importOperation = ImportOperationState.Updating(result = result))
                 }
                 val finalInfo =
-                    workManager
-                        .getWorkInfoByIdFlow(workId)
-                        .filterNotNull()
-                        .first { workInfo ->
-                            val total =
-                                workInfo.progress
-                                    .getInt(SyncWorker.PROGRESS_TOTAL, -1)
-                                    .takeIf { it >= 0 }
-                            val completed =
-                                workInfo.progress.getInt(SyncWorker.PROGRESS_COMPLETED, 0)
-                            _subscribeUiState.update {
-                                it.copy(
-                                    importOperation =
-                                        ImportOperationState.Updating(
-                                            result = result,
-                                            completed = completed,
-                                            total = total,
-                                        )
-                                )
+                    runCatching {
+                        syncWork
+                            .workInfoFlow(workManager)
+                            .first { workInfo ->
+                                val total =
+                                    workInfo.progress
+                                        .getInt(SyncWorker.PROGRESS_TOTAL, -1)
+                                        .takeIf { it >= 0 }
+                                val completed =
+                                    workInfo.progress.getInt(SyncWorker.PROGRESS_COMPLETED, 0)
+                                _subscribeUiState.update {
+                                    it.copy(
+                                        importOperation =
+                                            ImportOperationState.Updating(
+                                                result = result,
+                                                completed = completed,
+                                                total = total,
+                                            )
+                                    )
+                                }
+                                workInfo.state.isFinished
                             }
-                            workInfo.state.isFinished
-                        }
+                    }.getOrElse { error ->
+                        showTerminalImportOperation(
+                            ImportOperationState.Failed(
+                                message = error.message.orEmpty(),
+                                importResult = result,
+                            )
+                        )
+                        return@launch
+                    }
                 showTerminalImportOperation(
                     if (finalInfo.state == WorkInfo.State.SUCCEEDED) {
                         ImportOperationState.Completed(result)

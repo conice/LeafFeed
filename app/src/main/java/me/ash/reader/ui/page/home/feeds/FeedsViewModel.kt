@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapLatest
@@ -76,7 +75,7 @@ class FeedsViewModel @Inject constructor(
         if (_syncOperationState.value is SyncOperationState.Running) return
         _syncOperationState.value = SyncOperationState.Running()
         viewModelScope.launch {
-            val workId =
+            val syncWork =
                 runSuspendCatching {
                     withContext(ioDispatcher) { rssService.get().doSyncOneTime() }
                 }.getOrElse {
@@ -84,16 +83,21 @@ class FeedsViewModel @Inject constructor(
                     return@launch
                 }
             val finalInfo =
-                workManager.getWorkInfoByIdFlow(workId).filterNotNull().first { workInfo ->
-                    val total =
-                        workInfo.progress
-                            .getInt(SyncWorker.PROGRESS_TOTAL, -1)
-                            .takeIf { it >= 0 }
-                    val completed =
-                        workInfo.progress.getInt(SyncWorker.PROGRESS_COMPLETED, 0)
-                    _syncOperationState.value =
-                        SyncOperationState.Running(completed = completed, total = total)
-                    workInfo.state.isFinished
+                runSuspendCatching {
+                    syncWork.workInfoFlow(workManager).first { workInfo ->
+                        val total =
+                            workInfo.progress
+                                .getInt(SyncWorker.PROGRESS_TOTAL, -1)
+                                .takeIf { it >= 0 }
+                        val completed =
+                            workInfo.progress.getInt(SyncWorker.PROGRESS_COMPLETED, 0)
+                        _syncOperationState.value =
+                            SyncOperationState.Running(completed = completed, total = total)
+                        workInfo.state.isFinished
+                    }
+                }.getOrElse {
+                    showSyncResult(SyncOperationState.Failed(it.toOperationFailure()))
+                    return@launch
                 }
             showSyncResult(
                 if (finalInfo.state == WorkInfo.State.SUCCEEDED) {

@@ -48,6 +48,13 @@ class PerformancePolicyTest {
     }
 
     @Test
+    fun syncRetriesHaveAFiniteAttemptLimit() {
+        assertTrue(hasSyncAttemptsRemaining(runAttemptCount = 0))
+        assertTrue(hasSyncAttemptsRemaining(runAttemptCount = 1))
+        assertFalse(hasSyncAttemptsRemaining(runAttemptCount = 2))
+    }
+
+    @Test
     fun fullContentPrefetchRemainsBounded() {
         assertTrue(ReaderWorker.PREFETCH_CONCURRENCY <= 2)
         assertTrue(ReaderWorker.PREFETCH_ARTICLE_LIMIT <= 20)

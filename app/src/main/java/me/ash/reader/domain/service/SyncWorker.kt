@@ -6,8 +6,16 @@ import androidx.hilt.work.HiltWorker
 import androidx.work.*
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import kotlinx.coroutines.CancellationException
 import java.util.concurrent.TimeUnit
+import java.util.UUID
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.withTimeout
 import me.ash.reader.domain.model.account.Account
 import me.ash.reader.domain.data.SyncLogger
 import me.ash.reader.infrastructure.rss.ReaderCacheHelper
@@ -99,22 +107,37 @@ constructor(
                         )
                     }
                 }
-                .also { result ->
-                    val succeeded = result.javaClass == Result.success().javaClass
+                .let { result ->
+                    val shouldStopRetrying =
+                        result.javaClass == Result.retry().javaClass &&
+                            !hasSyncAttemptsRemaining(attempt)
+                    val finalResult =
+                        if (shouldStopRetrying) {
+                            Result.failure(
+                                workDataOf(
+                                    ERROR_MESSAGE to
+                                        "Synchronization failed after $MAX_SYNC_ATTEMPTS attempts"
+                                )
+                            )
+                        } else {
+                            result
+                        }
+                    val succeeded = finalResult.javaClass == Result.success().javaClass
                     syncStatusStore.write(
                         SyncSummary(
                             accountId = accountId,
                             state = when {
                                 succeeded -> PersistedSyncState.SUCCEEDED
-                                result.javaClass == Result.retry().javaClass -> PersistedSyncState.RETRYING
+                                finalResult.javaClass == Result.retry().javaClass ->
+                                    PersistedSyncState.RETRYING
                                 else -> PersistedSyncState.FAILED
                             },
                             startedAtMillis = startedAt,
                             finishedAtMillis = System.currentTimeMillis(),
                             completed = completed,
                             total = total,
-                            errorMessage = result.outputData.getString(ERROR_MESSAGE),
-                            failureKind = result.outputData.getString(ERROR_MESSAGE)?.let {
+                            errorMessage = finalResult.outputData.getString(ERROR_MESSAGE),
+                            failureKind = finalResult.outputData.getString(ERROR_MESSAGE)?.let {
                                 IllegalStateException(it).toOperationFailure().kind
                             },
                             failedFeedIds = failedFeedIds,
@@ -160,6 +183,7 @@ constructor(
                             .enqueue()
                         WidgetUpdateWorker.enqueueOneTimeWork(workManager)
                     }
+                    finalResult
                 }
         }.getOrElse { throwable ->
             if (throwable is CancellationException) {
@@ -215,6 +239,7 @@ constructor(
         const val PROGRESS_COMPLETED = "progressCompleted"
         const val PROGRESS_TOTAL = "progressTotal"
         const val ERROR_MESSAGE = "errorMessage"
+        internal const val MAX_SYNC_ATTEMPTS = 3
 
         fun cancelOneTimeWork(workManager: WorkManager, accountId: Int? = null) {
             if (accountId == null) workManager.cancelAllWorkByTag(ONETIME_WORK_TAG)
@@ -229,21 +254,26 @@ constructor(
         fun enqueueOneTimeWork(
             workManager: WorkManager,
             inputData: Data = workDataOf(),
-        ): java.util.UUID {
+        ): SyncWorkHandle {
             val request =
                 OneTimeWorkRequestBuilder<SyncWorker>()
                     .addTag(SYNC_TAG)
                     .addTag(ONETIME_WORK_TAG)
                     .setInputData(inputData)
                     .build()
-            workManager
-                .beginUniqueWork(
-                    oneTimeWorkName(inputData.getInt("accountId", -1)),
-                    ExistingWorkPolicy.KEEP,
-                    request,
-                )
-                .enqueue()
-            return request.id
+            val enqueueOperation =
+                workManager
+                    .beginUniqueWork(
+                        oneTimeWorkName(inputData.getInt("accountId", -1)),
+                        ExistingWorkPolicy.KEEP,
+                        request,
+                    )
+                    .enqueue()
+            return SyncWorkHandle(
+                requestedId = request.id,
+                uniqueWorkName = oneTimeWorkName(inputData.getInt("accountId", -1)),
+                enqueueOperation = enqueueOperation,
+            )
         }
 
         fun enqueuePeriodicWork(account: Account, workManager: WorkManager) {
@@ -294,9 +324,40 @@ constructor(
     }
 }
 
+class SyncWorkHandle internal constructor(
+    private val requestedId: UUID,
+    private val uniqueWorkName: String,
+    private val enqueueOperation: Operation,
+) {
+    fun workInfoFlow(workManager: WorkManager): Flow<WorkInfo> = flow {
+        val actualWork =
+            withTimeout(SYNC_WORK_RESOLUTION_TIMEOUT_MS) {
+                enqueueOperation.await()
+                workManager
+                    .getWorkInfosForUniqueWorkFlow(uniqueWorkName)
+                    .mapNotNull { workInfos ->
+                        workInfos.firstOrNull { it.id == requestedId && !it.state.isFinished }
+                            ?: workInfos.firstOrNull { !it.state.isFinished }
+                            ?: workInfos.firstOrNull { it.id == requestedId }
+                            // KEEP may reject the request as the existing work finishes.
+                            ?: workInfos.firstOrNull()
+                    }
+                    .first()
+            }
+        emit(actualWork)
+        if (!actualWork.state.isFinished) {
+            emitAll(workManager.getWorkInfoByIdFlow(actualWork.id).filterNotNull())
+        }
+    }
+}
+
 internal const val SYNC_PROGRESS_MIN_INTERVAL_MS = 1_500L
+internal const val SYNC_WORK_RESOLUTION_TIMEOUT_MS = 15_000L
 internal const val MIN_SYNC_FLEX_MINUTES = 5L
 internal const val MAX_SYNC_FLEX_MINUTES = 30L
+
+internal fun hasSyncAttemptsRemaining(runAttemptCount: Int): Boolean =
+    runAttemptCount + 1 < SyncWorker.MAX_SYNC_ATTEMPTS
 
 internal fun syncFlexMinutes(intervalMinutes: Long): Long =
     (intervalMinutes / 4).coerceIn(

@@ -137,8 +137,8 @@ constructor(
      *
      * When synchronizing articles, 50 articles will be pulled in each round. The ID of the 50th
      * article in this round will be recorded and used as the starting mark for the next pull until
-     * the number of articles obtained is 0 or their quantity exceeds 250, at which point the
-     * pulling process stops.
+     * the server returns fewer than 50 articles. A repeated cursor aborts the sync instead of
+     * requesting the same page forever.
      * 1. Fetch the Fever groups (may need to remove orphaned groups)
      * 2. Fetch the Fever feeds (including favicons, may need to remove orphaned feeds)
      * 3. Fetch the Fever articles
@@ -220,6 +220,7 @@ constructor(
             val allArticles = mutableListOf<Article>()
 
             var lastSeenId = account.lastArticleId?.dollarLast() ?: ""
+            val seenPageCursors = mutableSetOf(lastSeenId)
 
             while (true) {
                 val itemsBody = feverAPI.getItemsSince(lastSeenId)
@@ -257,7 +258,11 @@ constructor(
 
                 allArticles.addAll(articlesFromBatch)
 
-                lastSeenId = fetchedItems.lastOrNull()?.id ?: break
+                val nextLastSeenId = fetchedItems.lastOrNull()?.id ?: break
+                check(seenPageCursors.add(nextLastSeenId)) {
+                    "Fever article pagination cursor did not advance"
+                }
+                lastSeenId = nextLastSeenId
 
                 if (fetchedItems.size < 50) {
                     break
