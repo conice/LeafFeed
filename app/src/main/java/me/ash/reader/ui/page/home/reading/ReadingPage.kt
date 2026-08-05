@@ -35,6 +35,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -77,7 +78,11 @@ fun ReadingPage(
     onNavigateToStylePage: () -> Unit,
 ) {
     val context = LocalContext.current
-    val featureSettings = context.dataStore.data.map { it.toFeatureSettings() }
+    val resources = LocalResources.current
+    val featureSettingsFlow = remember(context) {
+        context.dataStore.data.map { it.toFeatureSettings() }
+    }
+    val featureSettings = featureSettingsFlow
         .collectAsStateValue(FeatureSettings())
     val isPullToSwitchArticleEnabled = LocalPullToSwitchArticle.current.value
     val readingUiState = viewModel.readingUiState.collectAsStateValue()
@@ -587,12 +592,12 @@ fun ReadingPage(
             onDownloadImage = {
                 viewModel.downloadImage(
                     it,
-                    onSuccess = { context.showToast(context.getString(R.string.image_saved)) },
+                    onSuccess = { context.showToast(resources.getString(R.string.image_saved)) },
                     onFailure = { throwable ->
                         context.showToast(
-                            context.getString(
+                            resources.getString(
                                 R.string.image_download_failed,
-                                throwable.message ?: context.getString(R.string.unknown),
+                                throwable.message ?: resources.getString(R.string.unknown),
                             ),
                         )
                     },

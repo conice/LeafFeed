@@ -11,7 +11,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
@@ -26,7 +26,7 @@ import me.ash.reader.ui.component.reader.textHorizontalPadding
 
 @Composable
 fun TitleAndTextPreview() {
-    val context = LocalContext.current
+    val resources = LocalResources.current
     val titleBold = LocalReadingTitleBold.current
     val subtitleBold = LocalReadingSubheadBold.current
     val titleUpperCase = LocalReadingTitleUpperCase.current
@@ -35,15 +35,15 @@ fun TitleAndTextPreview() {
     val subtitleAlign = LocalReadingSubheadAlign.current
 
 
-    val titleUpperCaseString by remember {
+    val titleUpperCaseString by remember(resources) {
         derivedStateOf {
-            context.getString(R.string.title).uppercase()
+            resources.getString(R.string.title).uppercase()
         }
     }
 
-    val subheadUpperCaseString by remember {
+    val subheadUpperCaseString by remember(resources) {
         derivedStateOf {
-            context.getString(R.string.subhead).uppercase()
+            resources.getString(R.string.subhead).uppercase()
         }
     }
     Column(modifier = Modifier.padding(24.dp)) {

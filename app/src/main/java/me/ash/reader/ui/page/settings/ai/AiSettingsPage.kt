@@ -60,7 +60,10 @@ import me.ash.reader.ui.theme.palette.onLight
 fun AiSettingsPage(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val featureSettings by context.dataStore.data.map { it.toFeatureSettings() }
+    val featureSettingsFlow = remember(context) {
+        context.dataStore.data.map { it.toFeatureSettings() }
+    }
+    val featureSettings by featureSettingsFlow
         .collectAsStateWithLifecycle(initialValue = FeatureSettings())
     val defaultPrompts =
         mapOf(

@@ -64,6 +64,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -158,6 +159,7 @@ fun FlowPage(
     val sharedContent = LocalSharedContent.current
     val markAsReadOnScroll = LocalMarkAsReadOnScroll.current.value
     val context = LocalContext.current
+    val resources = LocalResources.current
 
     val openLink = LocalOpenLink.current
     val openLinkSpecificBrowser = LocalOpenLinkSpecificBrowser.current
@@ -848,14 +850,14 @@ fun FlowPage(
                                         articleWithFeed.article,
                                         artist = articleWithFeed.feed.name,
                                     )
-                                    context.showToast(context.getString(R.string.podcast_added))
+                                    context.showToast(resources.getString(R.string.podcast_added))
                                 },
                                 onPodcastDownload = { articleWithFeed ->
                                     val article = articleWithFeed.article
                                     if (article.downloadedPath == null) {
                                         viewModel.downloadPodcast(article) { result ->
                                             context.showToast(
-                                                context.getString(
+                                                resources.getString(
                                                     if (result.isSuccess) R.string.podcast_download_queued
                                                     else R.string.podcast_download_failed
                                                 )
@@ -864,7 +866,7 @@ fun FlowPage(
                                     } else {
                                         viewModel.removePodcastDownload(article) { result ->
                                             context.showToast(
-                                                context.getString(
+                                                resources.getString(
                                                     if (result.isSuccess) R.string.podcast_download_removed
                                                     else R.string.podcast_download_remove_failed
                                                 )

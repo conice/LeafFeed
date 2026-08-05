@@ -26,6 +26,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -57,6 +58,7 @@ fun AddFreshRSSAccountDialog(
     accountViewModel: AccountViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val focusManager = LocalFocusManager.current
     val uiState = viewModel.additionUiState.collectAsStateValue()
     val accountUiState = accountViewModel.accountUiState.collectAsStateValue()
@@ -159,7 +161,7 @@ fun AddFreshRSSAccountDialog(
                     accountViewModel.addAccount(
                         Account(
                             type = AccountType.FreshRSS,
-                            name = context.getString(R.string.fresh_rss),
+                            name = resources.getString(R.string.fresh_rss),
                             securityKey = FreshRSSSecurityKey(
                                 serverUrl = freshRSSServerUrl,
                                 username = freshRSSUsername,

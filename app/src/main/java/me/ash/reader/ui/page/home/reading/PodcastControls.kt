@@ -58,15 +58,22 @@ fun PodcastControls(
 ) {
     val state = player.state.collectAsStateValue()
     val context = LocalContext.current
-    val settings by context.dataStore.data.map { preferences ->
-        Triple(
-            preferences[FeaturePreferenceKeys.podcastRewindSeconds] ?: 10,
-            preferences[FeaturePreferenceKeys.podcastForwardSeconds] ?: 30,
-            preferences[FeaturePreferenceKeys.podcastDefaultSpeed] ?: 1f,
-        )
-    }.collectAsStateWithLifecycle(initialValue = Triple(10, 30, 1f))
-    val showEpisodeMetadata by context.dataStore.data
-        .map { it[FeaturePreferenceKeys.podcastShowEpisodeMetadata] ?: true }
+    val settingsFlow = remember(context) {
+        context.dataStore.data.map { preferences ->
+            Triple(
+                preferences[FeaturePreferenceKeys.podcastRewindSeconds] ?: 10,
+                preferences[FeaturePreferenceKeys.podcastForwardSeconds] ?: 30,
+                preferences[FeaturePreferenceKeys.podcastDefaultSpeed] ?: 1f,
+            )
+        }
+    }
+    val settings by settingsFlow.collectAsStateWithLifecycle(initialValue = Triple(10, 30, 1f))
+    val showEpisodeMetadataFlow = remember(context) {
+        context.dataStore.data.map {
+            it[FeaturePreferenceKeys.podcastShowEpisodeMetadata] ?: true
+        }
+    }
+    val showEpisodeMetadata by showEpisodeMetadataFlow
         .collectAsStateWithLifecycle(initialValue = true)
     val isCurrent = state.articleId == episode.id
     val position = if (isCurrent) state.positionMs else episode.playbackPositionMs

@@ -38,6 +38,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.ClipEntry
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,6 +66,7 @@ import me.ash.reader.ui.theme.palette.onLight
 @Composable
 fun TroubleshootingPage(onBack: () -> Unit, viewModel: TroubleshootingViewModel = hiltViewModel()) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val hapticFeedback = LocalHapticFeedback.current
     val syncLogList = remember { mutableStateListOf<Log>() }
     var syncSummary by remember { mutableStateOf<SyncSummary?>(null) }
@@ -111,7 +113,7 @@ fun TroubleshootingPage(onBack: () -> Unit, viewModel: TroubleshootingViewModel 
                         },
                     ) {
                         context.openURL(
-                            context.getString(R.string.issue_tracer_url),
+                            resources.getString(R.string.issue_tracer_url),
                             OpenLinkPreference.AutoPreferCustomTabs,
                         )
                     }

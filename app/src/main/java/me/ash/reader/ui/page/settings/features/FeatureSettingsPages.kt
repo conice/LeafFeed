@@ -439,7 +439,10 @@ private fun FeatureSettingsPage(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val settings by context.dataStore.data.map { it.toFeatureSettings() }
+    val settingsFlow = remember(context) {
+        context.dataStore.data.map { it.toFeatureSettings() }
+    }
+    val settings by settingsFlow
         .collectAsStateWithLifecycle(initialValue = FeatureSettings())
     val writer: (Preferences.Key<*>, Any) -> Unit = { key, value ->
         scope.launch {

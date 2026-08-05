@@ -86,12 +86,15 @@ fun PodcastMiniPlayer(
 ) {
     val state = player.state.collectAsStateValue()
     val context = LocalContext.current
-    val intervals by context.dataStore.data.map { preferences ->
-        Pair(
-            preferences[FeaturePreferenceKeys.podcastRewindSeconds] ?: 10,
-            preferences[FeaturePreferenceKeys.podcastForwardSeconds] ?: 30,
-        )
-    }.collectAsStateWithLifecycle(initialValue = Pair(10, 30))
+    val intervalsFlow = remember(context) {
+        context.dataStore.data.map { preferences ->
+            Pair(
+                preferences[FeaturePreferenceKeys.podcastRewindSeconds] ?: 10,
+                preferences[FeaturePreferenceKeys.podcastForwardSeconds] ?: 30,
+            )
+        }
+    }
+    val intervals by intervalsFlow.collectAsStateWithLifecycle(initialValue = Pair(10, 30))
     var expanded by remember { mutableStateOf(false) }
     var collapsed by remember { mutableStateOf(false) }
     var showQueue by remember { mutableStateOf(false) }

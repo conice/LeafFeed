@@ -26,6 +26,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -49,6 +50,7 @@ fun BackupAndMigrationPage(
     viewModel: TroubleshootingViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val uiState = viewModel.troubleshootingUiState.collectAsStateValue()
     var importedPreferences by remember { mutableStateOf(ByteArray(0)) }
     var exportOptionsVisible by remember { mutableStateOf(false) }
@@ -74,13 +76,13 @@ fun BackupAndMigrationPage(
                         val message =
                             result.fold(
                                 onSuccess = { imported ->
-                                    context.getString(
+                                    resources.getString(
                                         R.string.preferences_imported,
                                         imported.importedCount,
                                         imported.skippedCount,
                                     )
                                 },
-                                onFailure = { context.getString(R.string.import_failed) },
+                                onFailure = { resources.getString(R.string.import_failed) },
                             )
                         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                     }
@@ -106,7 +108,7 @@ fun BackupAndMigrationPage(
                         val message =
                             result.fold(
                                 onSuccess = { imported ->
-                                    context.getString(
+                                    resources.getString(
                                         R.string.reading_data_imported,
                                         imported.tags,
                                         imported.tagRefs,
@@ -117,7 +119,7 @@ fun BackupAndMigrationPage(
                                         imported.skipped,
                                     )
                                 },
-                                onFailure = { context.getString(R.string.import_failed) },
+                                onFailure = { resources.getString(R.string.import_failed) },
                             )
                         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                     }
@@ -143,13 +145,13 @@ fun BackupAndMigrationPage(
                         val message =
                             result.fold(
                                 onSuccess = { imported ->
-                                    context.getString(
+                                    resources.getString(
                                         R.string.automations_imported,
                                         imported.imported,
                                         imported.skipped,
                                     )
                                 },
-                                onFailure = { context.getString(R.string.import_failed) },
+                                onFailure = { resources.getString(R.string.import_failed) },
                             )
                         Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                     }

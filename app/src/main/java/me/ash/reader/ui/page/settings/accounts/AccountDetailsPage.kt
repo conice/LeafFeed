@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -84,6 +85,7 @@ fun AccountDetailsPage(
 ) {
     val uiState = viewModel.accountUiState.collectAsStateValue()
     val context = LocalContext.current
+    val resources = LocalResources.current
 
     val selectedAccount = uiState.selectedAccount.collectAsStateValue(initial = null)
 
@@ -373,7 +375,7 @@ fun AccountDetailsPage(
                         viewModel.clear(it) {
                             viewModel.hideClearDialog()
                             context.showToastLong(
-                                context.getString(R.string.clear_all_articles_toast)
+                                resources.getString(R.string.clear_all_articles_toast)
                             )
                         }
                     }
@@ -406,7 +408,7 @@ fun AccountDetailsPage(
                     selectedAccount?.id?.let {
                         viewModel.delete(it) {
                             onBack()
-                            context.showToastLong(context.getString(R.string.delete_account_toast))
+                            context.showToastLong(resources.getString(R.string.delete_account_toast))
                         }
                     }
                 }
@@ -440,13 +442,13 @@ fun AccountDetailsPage(
                 items(
                     listOf(
                         RadioDialogOption(
-                            text = context.getString(R.string.include_additional_info),
+                            text = resources.getString(R.string.include_additional_info),
                             selected = uiState.exportOPMLMode == ExportOPMLMode.ATTACH_INFO,
                         ) {
                             viewModel.changeExportOPMLMode(ExportOPMLMode.ATTACH_INFO)
                         },
                         RadioDialogOption(
-                            text = context.getString(R.string.exclude),
+                            text = resources.getString(R.string.exclude),
                             selected = uiState.exportOPMLMode == ExportOPMLMode.NO_ATTACH,
                         ) {
                             viewModel.changeExportOPMLMode(ExportOPMLMode.NO_ATTACH)
