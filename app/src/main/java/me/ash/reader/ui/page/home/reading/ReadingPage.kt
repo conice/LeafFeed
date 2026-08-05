@@ -15,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -92,6 +93,10 @@ fun ReadingPage(
     var tagDialogVisible by remember { mutableStateOf(false) }
     var tagText by remember { mutableStateOf("") }
     var tags by remember { mutableStateOf<List<ArticleTagLabel>>(emptyList()) }
+    var suggestedTagDialogVisible by remember { mutableStateOf(false) }
+    var suggestedTags by remember { mutableStateOf<List<String>>(emptyList()) }
+    var suggestedTagSelection by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var suggestedExistingTags by remember { mutableStateOf<List<ArticleTagLabel>>(emptyList()) }
     var showFullScreenImageViewer by remember { mutableStateOf(false) }
     var transcriptSheetUrl by remember { mutableStateOf<String?>(null) }
 
@@ -109,6 +114,14 @@ fun ReadingPage(
     }
     LaunchedEffect(tagDialogVisible, readerState.articleId) {
         if (tagDialogVisible) tags = viewModel.queryCurrentTags()
+    }
+    LaunchedEffect(suggestedTagDialogVisible, readerState.articleId) {
+        if (suggestedTagDialogVisible) {
+            suggestedExistingTags = viewModel.queryCurrentTags()
+            suggestedTagSelection = suggestedTags.filter { name ->
+                suggestedExistingTags.any { it.name == name }
+            }.toSet()
+        }
     }
     LaunchedEffect(
         readerState.articleId,
@@ -404,6 +417,10 @@ fun ReadingPage(
                 forceRefresh = true,
             )
         },
+        onSuggestedTagsClick = { names ->
+            suggestedTags = names
+            suggestedTagDialogVisible = true
+        },
     )
     if (noteDialogVisible) {
         AlertDialog(
@@ -502,6 +519,62 @@ fun ReadingPage(
             dismissButton = {
                 TextButton(onClick = { tagDialogVisible = false }) {
                     Text(stringResource(R.string.close))
+                }
+            },
+        )
+    }
+
+    if (suggestedTagDialogVisible) {
+        AlertDialog(
+            onDismissRequest = { suggestedTagDialogVisible = false },
+            title = { Text("添加 AI 标签") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    suggestedTags.forEach { name ->
+                        val checked = name in suggestedTagSelection
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Checkbox(
+                                checked = checked,
+                                onCheckedChange = {
+                                    suggestedTagSelection = if (it) {
+                                        suggestedTagSelection + name
+                                    } else {
+                                        suggestedTagSelection - name
+                                    }
+                                },
+                            )
+                            Text("#$name", modifier = Modifier.weight(1f))
+                        }
+                    }
+                    if (suggestedExistingTags.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "当前文章已有：" + suggestedExistingTags.joinToString(" ") { "#${it.name}" },
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val selected = suggestedTagSelection
+                        val existingNames = suggestedExistingTags.map { it.name }.toSet()
+                        selected.filterNot { it in existingNames }.forEach(viewModel::addTag)
+                        suggestedExistingTags
+                            .filter { it.name in suggestedTags && it.name !in selected }
+                            .forEach(viewModel::removeTag)
+                        suggestedTagDialogVisible = false
+                    },
+                ) { Text(stringResource(R.string.save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { suggestedTagDialogVisible = false }) {
+                    Text(stringResource(R.string.cancel))
                 }
             },
         )

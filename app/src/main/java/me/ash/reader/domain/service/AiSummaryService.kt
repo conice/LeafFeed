@@ -62,7 +62,7 @@ class AiSummaryService @Inject constructor(
                 )
             }.joinToString("\n")
         val userContent =
-            "The input contains exactly ${titles.size} article titles. Summarize exactly these ${titles.size} titles only, once each. Do not infer facts not present in the titles.\n\n" +
+            "The following is the complete set of supplied article titles. Identify the main issues they collectively focus on and summarize the set as a whole. Use only information present in these titles and their metadata; do not infer facts from the underlying articles.\n\n" +
                 titleInputs
         val articleIdentity = titles.joinToString("\u0000") { (id, title) -> "$id\u0001$title" }
         val result = cache.getOrPut(
@@ -153,8 +153,6 @@ class AiSummaryService @Inject constructor(
         require(settings.model.isNotBlank()) { "AI model is not configured" }
         val featureSettings = context.dataStore.data.first().toFeatureSettings()
         val endpoint = completionEndpoint(settings.url)
-        // The application language is only a fallback. The task prompt follows it and may
-        // explicitly select another output language.
         val effectiveSystemPrompt = listOf(
             appLanguageInstruction(),
             systemPrompt.takeIf { it.isNotBlank() },
@@ -221,8 +219,7 @@ class AiSummaryService @Inject constructor(
     }
 }
 
-// Android's regex parser requires both literal braces to be escaped.
-private val AiInputField = Regex("\\{(?:序号|标题|正文)\\}")
+private val AiInputField = Regex("\\{(?:index|title|content)\\}")
 
 internal fun renderAiInputTemplate(
     template: String,
@@ -232,9 +229,9 @@ internal fun renderAiInputTemplate(
 ): String =
     AiInputField.replace(template) { field ->
         when (field.value) {
-            "{序号}" -> index.toString()
-            "{标题}" -> title
-            "{正文}" -> body
+            "{index}" -> index.toString()
+            "{title}" -> title
+            "{content}" -> body
             else -> field.value
         }
     }

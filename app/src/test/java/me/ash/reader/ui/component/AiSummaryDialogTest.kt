@@ -42,6 +42,41 @@ class AiSummaryDialogTest {
     }
 
     @Test
+    fun findsMarkdownListArticleNumber() {
+        assertEquals(
+            2,
+            findAiSummaryArticleNumber(
+                line = "- [2] Article title",
+                articleTitles = listOf("First", "Article title"),
+                articleCount = 2,
+            ),
+        )
+    }
+
+    @Test
+    fun findsTitleInCustomPromptOutput() {
+        assertEquals(
+            2,
+            findAiSummaryArticleNumber(
+                line = "[Recommended] Article title",
+                articleTitles = listOf("First", "Article title"),
+                articleCount = 2,
+            ),
+        )
+    }
+
+    @Test
+    fun doesNotMatchAnAmbiguousTitle() {
+        assertNull(
+            findAiSummaryArticleNumber(
+                line = "Article title roundup",
+                articleTitles = listOf("Article", "Article title"),
+                articleCount = 2,
+            ),
+        )
+    }
+
+    @Test
     fun titleFirstFormatWinsWhenTitleStartsWithANumber() {
         assertEquals(
             2,

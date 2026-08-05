@@ -677,9 +677,10 @@ constructor(
 
     fun addTag(name: String) {
         val article = currentArticle ?: return
-        if (name.isBlank()) return
+        val normalizedName = name.trim().removePrefix("#").trim()
+        if (normalizedName.isBlank()) return
         viewModelScope.launch(ioDispatcher) {
-            val tag = articleCollectionRepository.createTag(name)
+            val tag = articleCollectionRepository.createTag(normalizedName)
             articleCollectionRepository.addTag(article.id, tag.id)
         }
     }

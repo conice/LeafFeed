@@ -48,13 +48,13 @@ class AiSettingsTest {
     fun taskSpecificInputTemplatesAreLoaded() {
         val preferences =
             mutablePreferencesOf(
-                AiPreferenceKeys.titleInputTemplate to "{序号}: {标题}",
-                AiPreferenceKeys.articleInputTemplate to "{标题}\n{正文}",
+                AiPreferenceKeys.titleInputTemplate to "{index}: {title}",
+                AiPreferenceKeys.articleInputTemplate to "{title}\n{content}",
             )
 
         val settings = preferences.toAiSettings("title", "article")
 
-        assertEquals("{序号}: {标题}", settings.titleSummary.inputTemplate)
-        assertEquals("{标题}\n{正文}", settings.articleSummary.inputTemplate)
+        assertEquals("{index}: {title}", settings.titleSummary.inputTemplate)
+        assertEquals("{title}\n{content}", settings.articleSummary.inputTemplate)
     }
 }

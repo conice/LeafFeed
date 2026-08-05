@@ -22,7 +22,7 @@ class AiPromptTemplateTest {
     fun replacesSupportedInputFields() {
         val result =
             renderAiInputTemplate(
-                template = "{序号}. {标题}\n\n{正文}",
+                template = "{index}. {title}\n\n{content}",
                 index = 3,
                 title = "Article title",
                 body = "Article body",
@@ -35,7 +35,7 @@ class AiPromptTemplateTest {
     fun leavesUnknownFieldsUntouched() {
         val result =
             renderAiInputTemplate(
-                template = "{标题}\n{unknown}",
+                template = "{title}\n{unknown}",
                 index = 1,
                 title = "Article title",
                 body = "Article body",
@@ -48,12 +48,12 @@ class AiPromptTemplateTest {
     fun doesNotReplaceFieldsInsideSourceText() {
         val result =
             renderAiInputTemplate(
-                template = "{标题}\n{正文}",
+                template = "{title}\n{content}",
                 index = 1,
-                title = "A title containing {正文}",
-                body = "Body containing {标题}",
+                title = "A title containing {content}",
+                body = "Body containing {title}",
             )
 
-        assertEquals("A title containing {正文}\nBody containing {标题}", result)
+        assertEquals("A title containing {content}\nBody containing {title}", result)
     }
 }

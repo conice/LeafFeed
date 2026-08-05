@@ -36,7 +36,11 @@ import me.ash.reader.R
 import me.ash.reader.ui.component.base.ExpressiveIconButton
 import me.ash.reader.ui.theme.MotionTokens
 
-private val LeadingAiSummaryIndex = Regex("^\\s*(\\d+)[.、)]")
+private val LeadingAiSummaryIndex = Regex(
+    "^\\s*(?:[-*+]\\s+)?(?:#\\s*)?(?:\\[\\s*)?(?:\\(\\s*)?(\\d+)(?:\\s*[.、):\\]\\-]|\\s|$)",
+)
+private val AiSummaryTagsLine = Regex("^\\s*(?:tags|标签)\\s*[:：]\\s*(.+?)\\s*$", RegexOption.IGNORE_CASE)
+private val AiSummaryTagSeparator = Regex("\\s*[,，、;；|]\\s*|\\s{2,}")
 
 @Composable
 fun AiSummaryDialog(
@@ -53,6 +57,7 @@ fun AiSummaryDialog(
     onMarkSummarizedAsRead: (() -> Unit)? = null,
     onRegenerate: (() -> Unit)? = null,
     sourceDescription: String? = null,
+    onSuggestedTagsClick: ((List<String>) -> Unit)? = null,
 ) {
     if (!visible) return
     val scrollState = rememberScrollState(initialScrollOffset)
@@ -152,6 +157,7 @@ fun AiSummaryDialog(
                             if (failure != null) Spacer(Modifier.height(12.dp))
                             val lines = summary.lines()
                             lines.forEachIndexed { index, line ->
+                                val suggestedTags = parseAiSummaryTags(line)
                                 val number = findAiSummaryArticleNumber(
                                     line = line,
                                     articleTitles = articleTitles,
@@ -184,9 +190,14 @@ fun AiSummaryDialog(
                                             number != null -> MaterialTheme.typography.titleSmall
                                             else -> MaterialTheme.typography.bodyMedium
                                         },
-                                        modifier = if (articleId != null) Modifier.clickable {
-                                            onArticleClick(articleId, scrollState.value)
-                                        } else Modifier,
+                                        modifier = when {
+                                            !loading && suggestedTags != null && onSuggestedTagsClick != null ->
+                                                Modifier.clickable { onSuggestedTagsClick(suggestedTags) }
+                                            articleId != null -> Modifier.clickable {
+                                                onArticleClick(articleId, scrollState.value)
+                                            }
+                                            else -> Modifier
+                                        },
                                     )
                                 }
                             }
@@ -208,18 +219,28 @@ fun AiSummaryDialog(
     )
 }
 
+internal fun parseAiSummaryTags(line: String): List<String>? =
+    AiSummaryTagsLine.matchEntire(line)?.groupValues?.getOrNull(1)
+        ?.split(AiSummaryTagSeparator)
+        ?.map { it.trim().removePrefix("#").trim() }
+        ?.filter { it.isNotEmpty() }
+        ?.distinct()
+        ?.takeIf { it.isNotEmpty() }
+
 internal fun findAiSummaryArticleNumber(
     line: String,
     articleTitles: List<String>,
     articleCount: Int,
 ): Int? {
     val normalizedLine = line.trim()
-    val titleIndex = articleTitles.indices.firstOrNull { index ->
+    val matchingTitleIndexes = articleTitles.indices.filter { index ->
         val title = articleTitles[index].trim()
         val number = index + 1
-        normalizedLine == "$title · $number" || normalizedLine == "$title$number"
+        normalizedLine == "$title · $number" ||
+            normalizedLine == "$title$number" ||
+            (title.isNotEmpty() && normalizedLine.contains(title))
     }
-    if (titleIndex != null) return titleIndex + 1
+    if (matchingTitleIndexes.size == 1) return matchingTitleIndexes.single() + 1
 
     LeadingAiSummaryIndex.find(line)
         ?.groupValues
