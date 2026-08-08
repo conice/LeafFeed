@@ -4,8 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.view.ActionMode
-import android.view.Menu
-import android.view.MenuItem
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import me.ash.reader.infrastructure.preference.ReadingFontsPreference
@@ -20,7 +18,17 @@ object WebViewLayout {
         onImageClick: ((imgUrl: String, altText: String) -> Unit)? = null,
         onSelectionActiveChange: ((Boolean) -> Unit)? = null,
     ) =
-        WebView(context).apply {
+        object : WebView(context) {
+            override fun onActionModeStarted(mode: ActionMode) {
+                super.onActionModeStarted(mode)
+                onSelectionActiveChange?.invoke(true)
+            }
+
+            override fun onActionModeFinished(mode: ActionMode) {
+                super.onActionModeFinished(mode)
+                onSelectionActiveChange?.invoke(false)
+            }
+        }.apply {
             val readerWebView = this
             this.webViewClient = webViewClient
             scrollBarSize = 0
@@ -72,27 +80,6 @@ object WebViewLayout {
                         }
                     },
                     JavaScriptInterface.NAME,
-                )
-            }
-            onSelectionActiveChange?.let { selectionActiveChange ->
-                setCustomSelectionActionModeCallback(
-                    object : ActionMode.Callback {
-                        override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
-                            selectionActiveChange(true)
-                            return true
-                        }
-
-                        override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?) = false
-
-                        override fun onActionItemClicked(
-                            mode: ActionMode?,
-                            item: MenuItem?,
-                        ) = false
-
-                        override fun onDestroyActionMode(mode: ActionMode?) {
-                            selectionActiveChange(false)
-                        }
-                    },
                 )
             }
         }
