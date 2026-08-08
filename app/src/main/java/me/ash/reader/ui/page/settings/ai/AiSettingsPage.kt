@@ -170,7 +170,7 @@ fun AiSettingsPage(
                                     onClick = { connectionToDelete = connection },
                                 )
                             },
-                        ) {}
+                        )
                     }
                     SettingItem(
                         title = "Add API connection",
@@ -222,7 +222,7 @@ fun AiSettingsPage(
                                     onClick = { modelToDelete = model },
                                 )
                             },
-                        ) {}
+                        )
                     }
                 }
                 item {
@@ -306,7 +306,7 @@ fun AiSettingsPage(
                                     )
                                 }
                             },
-                        ) {}
+                        )
                     }
                     SettingItem(
                         title = "Add prompt",

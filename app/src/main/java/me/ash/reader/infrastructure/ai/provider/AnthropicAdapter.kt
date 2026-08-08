@@ -62,7 +62,7 @@ class AnthropicAdapter(
             .header("Accept", if (request.options.stream) "text/event-stream" else "application/json")
             .header("anthropic-version", "2023-06-01")
             .header("Cache-Control", "no-store")
-            .apply { AiHttpSupport.applyAuth(request, "x-api-key") }
+            .apply { AiHttpSupport.apply { applyAuth(request, "x-api-key") } }
             .build()
         return AiHttpSupport.client(client, request.options.timeoutSeconds)
             .newCall(httpRequest)

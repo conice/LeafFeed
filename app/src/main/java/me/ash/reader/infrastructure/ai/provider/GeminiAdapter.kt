@@ -69,7 +69,7 @@ class GeminiAdapter(
             .post(AiHttpSupport.jsonBody(payload.toString()))
             .header("Accept", if (request.options.stream) "text/event-stream" else "application/json")
             .header("Cache-Control", "no-store")
-            .apply { AiHttpSupport.applyAuth(request, "x-goog-api-key") }
+            .apply { AiHttpSupport.apply { applyAuth(request, "x-goog-api-key") } }
             .build()
         return AiHttpSupport.client(client, request.options.timeoutSeconds)
             .newCall(httpRequest)
