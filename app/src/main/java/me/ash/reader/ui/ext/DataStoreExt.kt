@@ -13,6 +13,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.first
+import me.ash.reader.infrastructure.ai.AiConfigurationBackup
+import me.ash.reader.infrastructure.ai.AiConfigurationImportResult
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
 import me.ash.reader.infrastructure.preference.NavigationPreferenceKeys
 
@@ -442,7 +444,7 @@ val ignorePreferencesOnExportAndImport =
 
 private const val PREFERENCES_EXPORT_FORMAT = "leaffeed.preferences"
 private const val LEGACY_PREFERENCES_EXPORT_FORMAT = "readyou.preferences"
-private const val PREFERENCES_EXPORT_VERSION = 2
+private const val PREFERENCES_EXPORT_VERSION = 3
 
 private val sensitivePreferences = emptySet<String>()
 
@@ -450,11 +452,13 @@ private data class PreferencesExport(
     val format: String = PREFERENCES_EXPORT_FORMAT,
     val version: Int = PREFERENCES_EXPORT_VERSION,
     val preferences: Map<String, Any?>,
+    val aiConfiguration: AiConfigurationBackup? = null,
 )
 
 internal data class DecodedPreferences(
     val preferences: Map<String, Any?>,
     val sourceVersion: Int?,
+    val aiConfiguration: AiConfigurationBackup? = null,
 )
 
 data class PreferencesImportResult(
@@ -463,8 +467,13 @@ data class PreferencesImportResult(
     val sourceVersion: Int?,
 )
 
-internal fun encodePreferencesJSON(preferences: Map<String, Any?>): String =
-    Gson().toJson(PreferencesExport(preferences = preferences))
+internal fun encodePreferencesJSON(
+    preferences: Map<String, Any?>,
+    aiConfiguration: AiConfigurationBackup? = null,
+): String =
+    Gson().toJson(
+        PreferencesExport(preferences = preferences, aiConfiguration = aiConfiguration)
+    )
 
 internal fun isPreferenceExportable(name: String, includeSensitive: Boolean): Boolean =
     name in PreferencesKey.keys &&
@@ -486,20 +495,29 @@ internal fun decodePreferencesJSON(content: String): DecodedPreferences {
     val preferences = nested.entries.associate { (key, value) ->
         (key as? String ?: error("Invalid preference key")) to value
     }
-    return DecodedPreferences(preferences, sourceVersion)
+    val aiConfiguration = root["aiConfiguration"]?.let { value ->
+        Gson().fromJson(Gson().toJson(value), AiConfigurationBackup::class.java)
+    }
+    return DecodedPreferences(preferences, sourceVersion, aiConfiguration)
 }
 
-suspend fun Context.fromDataStoreToJSONString(includeSensitive: Boolean = false): String {
+suspend fun Context.fromDataStoreToJSONString(
+    includeSensitive: Boolean = false,
+    aiConfiguration: AiConfigurationBackup? = null,
+): String {
     val preferences = dataStore.data.first()
     val map: Map<String, Any?> =
         preferences
             .asMap()
             .mapKeys { it.key.name }
             .filterKeys { isPreferenceExportable(it, includeSensitive) }
-    return encodePreferencesJSON(map)
+    return encodePreferencesJSON(map, aiConfiguration)
 }
 
-suspend fun String.fromJSONStringToDataStore(context: Context): PreferencesImportResult {
+suspend fun String.fromJSONStringToDataStore(
+    context: Context,
+    importAiConfiguration: (suspend (AiConfigurationBackup) -> AiConfigurationImportResult)? = null,
+): PreferencesImportResult {
     val decoded = decodePreferencesJSON(this)
     val deserializedMap = decoded.preferences
     var importedCount = 0
@@ -547,6 +565,15 @@ suspend fun String.fromJSONStringToDataStore(context: Context): PreferencesImpor
                 }
                 if (imported) importedCount++ else skippedCount++
             }
+    }
+    decoded.aiConfiguration?.let { backup ->
+        val result = importAiConfiguration?.invoke(backup)
+        if (result == null) {
+            skippedCount += backup.entryCount
+        } else {
+            importedCount += result.importedCount
+            skippedCount += result.skippedCount
+        }
     }
     return PreferencesImportResult(importedCount, skippedCount, decoded.sourceVersion)
 }

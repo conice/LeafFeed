@@ -469,7 +469,7 @@
     <string name="export_preferences_sensitive_warning">API keys are excluded by default. Including them stores the keys as plain text in the exported file. Keep that file secure.</string>
     <string name="export_without_api_keys">Export without API keys</string>
     <string name="export_with_api_keys">Include API keys</string>
-    <string name="preferences_imported">Imported %1$d preferences · skipped %2$d</string>
+    <string name="preferences_imported">Imported %1$d settings items · skipped %2$d</string>
     <string name="invalid_json_file_warning">This file may not be a valid JSON file. Importing it could potentially corrupt the app and result in the loss of current preferences. Are you sure you want to proceed?</string>
     <string name="webview" translatable="false">WebView</string>
     <string name="native_component">Native component</string>

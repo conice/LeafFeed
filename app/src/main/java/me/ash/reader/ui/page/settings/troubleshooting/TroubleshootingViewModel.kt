@@ -35,6 +35,7 @@ import me.ash.reader.infrastructure.di.ApplicationScope
 import me.ash.reader.infrastructure.di.DefaultDispatcher
 import me.ash.reader.infrastructure.di.IODispatcher
 import me.ash.reader.infrastructure.di.MainDispatcher
+import me.ash.reader.infrastructure.ai.AiConfigurationRepository
 import me.ash.reader.infrastructure.preference.SyncStatusStore
 import me.ash.reader.infrastructure.preference.SyncSummary
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
@@ -60,6 +61,7 @@ constructor(
     private val articleCollectionRepository: ArticleCollectionRepository,
     private val settingsProvider: SettingsProvider,
     private val feedDao: FeedDao,
+    private val aiConfigurationRepository: AiConfigurationRepository,
 ) : ViewModel() {
 
     val currentSyncSummary = accountService.currentAccountIdFlow
@@ -113,7 +115,11 @@ constructor(
         callback: (Result<PreferencesImportResult>) -> Unit = {},
     ) {
         viewModelScope.launch(ioDispatcher) {
-            val result = runCatching { String(byteArray).fromJSONStringToDataStore(context) }
+            val result = runCatching {
+                String(byteArray).fromJSONStringToDataStore(context) { backup ->
+                    aiConfigurationRepository.importBackup(backup)
+                }
+            }
             withContext(mainDispatcher) { callback(result) }
         }
     }
@@ -124,7 +130,12 @@ constructor(
         callback: (ByteArray) -> Unit = {},
     ) {
         viewModelScope.launch(ioDispatcher) {
-            callback(context.fromDataStoreToJSONString(includeSensitive).toByteArray())
+            val aiConfiguration = aiConfigurationRepository.exportBackup(includeSensitive)
+            callback(
+                context
+                    .fromDataStoreToJSONString(includeSensitive, aiConfiguration)
+                    .toByteArray()
+            )
         }
     }
 

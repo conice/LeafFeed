@@ -1,5 +1,10 @@
 package me.ash.reader.ui.ext
 
+import me.ash.reader.infrastructure.ai.AiBindingBackup
+import me.ash.reader.infrastructure.ai.AiConfigurationBackup
+import me.ash.reader.infrastructure.ai.AiConnectionBackup
+import me.ash.reader.infrastructure.ai.AiModelBackup
+import me.ash.reader.infrastructure.ai.AiPromptBackup
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
 import me.ash.reader.infrastructure.preference.NavigationPreferenceKeys
 import org.junit.Assert.assertEquals
@@ -89,9 +94,63 @@ class DataStoreExportTest {
         val decoded = decodePreferencesJSON(encoded)
 
         assertTrue(encoded.contains("\"format\":\"leaffeed.preferences\""))
-        assertEquals(2, decoded.sourceVersion)
+        assertEquals(3, decoded.sourceVersion)
         assertEquals(true, decoded.preferences[FeaturePreferenceKeys.aiStreamingEnabled.name])
         assertEquals(300.0, decoded.preferences[FeaturePreferenceKeys.aiTimeoutSeconds.name])
+    }
+
+    @Test
+    fun `encodes and decodes complete AI configuration`() {
+        val backup =
+            AiConfigurationBackup(
+                connections =
+                    listOf(
+                        AiConnectionBackup(
+                            id = "connection",
+                            name = "Primary",
+                            provider = "RESPONSES",
+                            baseUrl = "https://example.com/v1",
+                            authType = "BEARER",
+                            secret = "secret-key",
+                        )
+                    ),
+                models =
+                    listOf(
+                        AiModelBackup(
+                            id = "model",
+                            connectionId = "connection",
+                            modelId = "example-model",
+                            displayName = "Example model",
+                            maxOutputTokens = 2048,
+                        )
+                    ),
+                prompts =
+                    listOf(
+                        AiPromptBackup(
+                            id = "prompt",
+                            name = "Summary",
+                            task = "ARTICLE_SUMMARY",
+                            systemTemplate = "Summarize faithfully.",
+                            userTemplate = "{content}",
+                            itemTemplate = "{title}",
+                            outputMode = "MARKDOWN",
+                        )
+                    ),
+                bindings =
+                    listOf(
+                        AiBindingBackup(
+                            task = "ARTICLE_SUMMARY",
+                            promptId = "prompt",
+                            primaryModelId = "model",
+                        )
+                    ),
+            )
+
+        val encoded = encodePreferencesJSON(emptyMap(), backup)
+        val decoded = decodePreferencesJSON(encoded)
+
+        assertEquals(backup, decoded.aiConfiguration)
+        assertTrue(encoded.contains("secret-key"))
     }
 
     @Test

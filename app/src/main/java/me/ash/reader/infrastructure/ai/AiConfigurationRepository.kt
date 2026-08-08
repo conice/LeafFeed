@@ -5,6 +5,7 @@ import androidx.room.withTransaction
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.coroutines.flow.Flow
@@ -116,6 +117,146 @@ class AiConfigurationRepository @Inject constructor(
 
     suspend fun listPrompts(task: AiTask? = null): List<AiPrompt> =
         dao.queryPrompts(task?.name).map { it.toDomain() }
+
+    suspend fun exportBackup(includeSecrets: Boolean): AiConfigurationBackup {
+        ensureInitialized()
+        val connections = dao.queryConnections()
+        return AiConfigurationBackup(
+            connections =
+                connections.map { connection ->
+                    AiConnectionBackup(
+                        id = connection.id,
+                        name = connection.name,
+                        provider = connection.provider,
+                        baseUrl = connection.baseUrl,
+                        authType = connection.authType,
+                        enabled = connection.enabled,
+                        secret =
+                            if (includeSecrets) secretStore.get(connection.secretRef) else null,
+                    )
+                },
+            models =
+                dao.queryModels().map { model ->
+                    AiModelBackup(
+                        id = model.id,
+                        connectionId = model.connectionId,
+                        modelId = model.modelId,
+                        displayName = model.displayName,
+                        maxOutputTokens = model.maxOutputTokens,
+                        temperature = model.temperature,
+                        enabled = model.enabled,
+                    )
+                },
+            prompts =
+                dao.queryPrompts(null).map { prompt ->
+                    AiPromptBackup(
+                        id = prompt.id,
+                        name = prompt.name,
+                        task = prompt.task,
+                        systemTemplate = prompt.systemTemplate,
+                        userTemplate = prompt.userTemplate,
+                        itemTemplate = prompt.itemTemplate,
+                        outputMode = prompt.outputMode,
+                        builtIn = prompt.builtIn,
+                    )
+                },
+            bindings =
+                dao.queryBindings().map { binding ->
+                    AiBindingBackup(
+                        task = binding.task,
+                        promptId = binding.promptId,
+                        primaryModelId = binding.primaryModelId,
+                        fallbackModelIds =
+                            json.decodeFromString<List<String>>(binding.fallbackModelIdsJson),
+                        articleCount = binding.articleCount,
+                    )
+                },
+        )
+    }
+
+    suspend fun importBackup(backup: AiConfigurationBackup): AiConfigurationImportResult {
+        backup.validate()
+        database.withTransaction {
+            val now = System.currentTimeMillis()
+            backup.connections.forEach { imported ->
+                val existing = dao.queryConnection(imported.id)
+                val authType = AiAuthType.valueOf(imported.authType)
+                val secretRef =
+                    if (authType == AiAuthType.NONE) {
+                        null
+                    } else {
+                        existing?.secretRef ?: "ai-secret-${imported.id}"
+                    }
+                if (secretRef == null) {
+                    secretStore.remove(existing?.secretRef)
+                } else if (!imported.secret.isNullOrBlank()) {
+                    secretStore.put(secretRef, imported.secret)
+                }
+                dao.upsertConnection(
+                    AiConnectionEntity(
+                        id = imported.id,
+                        name = imported.name.trim(),
+                        provider = imported.provider,
+                        baseUrl = imported.baseUrl.trim().trimEnd('/'),
+                        authType = imported.authType,
+                        secretRef = secretRef,
+                        enabled = imported.enabled,
+                        revision = (existing?.revision ?: 0L) + 1L,
+                        createdAt = existing?.createdAt ?: now,
+                        updatedAt = now,
+                    )
+                )
+            }
+            backup.models.forEach { imported ->
+                val existing = dao.queryModel(imported.id)
+                dao.upsertModel(
+                    AiModelProfileEntity(
+                        id = imported.id,
+                        connectionId = imported.connectionId,
+                        modelId = imported.modelId.trim(),
+                        displayName =
+                            imported.displayName.trim().ifBlank { imported.modelId.trim() },
+                        maxOutputTokens = imported.maxOutputTokens,
+                        temperature = imported.temperature,
+                        enabled = imported.enabled,
+                        revision = (existing?.revision ?: 0L) + 1L,
+                        createdAt = existing?.createdAt ?: now,
+                        updatedAt = now,
+                    )
+                )
+            }
+            backup.prompts.forEach { imported ->
+                val existing = dao.queryPrompt(imported.id)
+                dao.upsertPrompt(
+                    AiPromptEntity(
+                        id = imported.id,
+                        name = imported.name.trim(),
+                        task = imported.task,
+                        systemTemplate = imported.systemTemplate,
+                        userTemplate = imported.userTemplate,
+                        itemTemplate = imported.itemTemplate,
+                        outputMode = imported.outputMode,
+                        builtIn = imported.builtIn,
+                        revision = (existing?.revision ?: 0L) + 1L,
+                        updatedAt = now,
+                    )
+                )
+            }
+            backup.bindings.forEach { imported ->
+                dao.upsertBinding(
+                    AiTaskBindingEntity(
+                        task = imported.task,
+                        promptId = imported.promptId,
+                        primaryModelId = imported.primaryModelId,
+                        fallbackModelIdsJson = json.encodeToString(imported.fallbackModelIds),
+                        articleCount = imported.articleCount,
+                        updatedAt = now,
+                    )
+                )
+            }
+        }
+        return AiConfigurationImportResult(importedCount = backup.entryCount, skippedCount = 0)
+    }
 
     suspend fun getPrompt(id: String): AiPrompt? = dao.queryPrompt(id)?.toDomain()
 
@@ -457,4 +598,136 @@ class AiConfigurationRepository @Inject constructor(
         articleCount = articleCount.coerceAtLeast(1),
         updatedAt = System.currentTimeMillis(),
     )
+}
+
+@Serializable
+data class AiConfigurationBackup(
+    val version: Int = AI_CONFIGURATION_BACKUP_VERSION,
+    val connections: List<AiConnectionBackup> = emptyList(),
+    val models: List<AiModelBackup> = emptyList(),
+    val prompts: List<AiPromptBackup> = emptyList(),
+    val bindings: List<AiBindingBackup> = emptyList(),
+) {
+    val entryCount: Int
+        get() = connections.size + models.size + prompts.size + bindings.size
+}
+
+@Serializable
+data class AiConnectionBackup(
+    val id: String,
+    val name: String,
+    val provider: String,
+    val baseUrl: String,
+    val authType: String,
+    val enabled: Boolean = true,
+    val secret: String? = null,
+)
+
+@Serializable
+data class AiModelBackup(
+    val id: String,
+    val connectionId: String,
+    val modelId: String,
+    val displayName: String,
+    val maxOutputTokens: Int,
+    val temperature: Double? = null,
+    val enabled: Boolean = true,
+)
+
+@Serializable
+data class AiPromptBackup(
+    val id: String,
+    val name: String,
+    val task: String,
+    val systemTemplate: String,
+    val userTemplate: String,
+    val itemTemplate: String,
+    val outputMode: String,
+    val builtIn: Boolean = false,
+)
+
+@Serializable
+data class AiBindingBackup(
+    val task: String,
+    val promptId: String,
+    val primaryModelId: String = "",
+    val fallbackModelIds: List<String> = emptyList(),
+    val articleCount: Int = DEFAULT_ARTICLE_COUNT,
+)
+
+data class AiConfigurationImportResult(
+    val importedCount: Int,
+    val skippedCount: Int,
+)
+
+private const val AI_CONFIGURATION_BACKUP_VERSION = 1
+private const val MAX_AI_BACKUP_ENTRIES = 10_000
+
+private fun AiConfigurationBackup.validate() {
+    require(version == AI_CONFIGURATION_BACKUP_VERSION) {
+        "Unsupported AI configuration backup version"
+    }
+    require(
+        connections.size <= MAX_AI_BACKUP_ENTRIES &&
+            models.size <= MAX_AI_BACKUP_ENTRIES &&
+            prompts.size <= MAX_AI_BACKUP_ENTRIES &&
+            bindings.size <= MAX_AI_BACKUP_ENTRIES &&
+            entryCount <= MAX_AI_BACKUP_ENTRIES
+    ) { "Too many AI configuration entries" }
+    require(connections.map { it.id }.distinct().size == connections.size) {
+        "AI configuration backup contains duplicate connections"
+    }
+    require(models.map { it.id }.distinct().size == models.size) {
+        "AI configuration backup contains duplicate models"
+    }
+    require(prompts.map { it.id }.distinct().size == prompts.size) {
+        "AI configuration backup contains duplicate prompts"
+    }
+    require(bindings.map { it.task }.distinct().size == bindings.size) {
+        "AI configuration backup contains duplicate bindings"
+    }
+    val connectionIds = connections.mapTo(mutableSetOf()) { it.id }
+    val modelIds = models.mapTo(mutableSetOf()) { it.id }
+    val promptsById = prompts.associateBy { it.id }
+    require(
+        connections.all {
+            it.id.isNotBlank() &&
+                it.name.isNotBlank() &&
+                it.baseUrl.isNotBlank() &&
+                runCatching { AiProvider.valueOf(it.provider) }.isSuccess &&
+                runCatching { AiAuthType.valueOf(it.authType) }.isSuccess
+        }
+    ) { "AI configuration backup contains an invalid connection" }
+    require(
+        models.all {
+            it.id.isNotBlank() &&
+                it.connectionId in connectionIds &&
+                it.modelId.isNotBlank() &&
+                it.maxOutputTokens > 0 &&
+                (it.temperature == null || it.temperature.isFinite() && it.temperature in 0.0..2.0)
+        }
+    ) { "AI configuration backup contains an invalid model" }
+    require(
+        prompts.all {
+            it.id.isNotBlank() &&
+                it.name.isNotBlank() &&
+                it.systemTemplate.isNotBlank() &&
+                it.userTemplate.isNotBlank() &&
+                runCatching { AiTask.valueOf(it.task) }.isSuccess &&
+                runCatching { AiOutputMode.valueOf(it.outputMode) }.isSuccess
+        }
+    ) { "AI configuration backup contains an invalid prompt" }
+    require(
+        bindings.all { binding ->
+            val task = runCatching { AiTask.valueOf(binding.task) }.getOrNull()
+            val prompt = promptsById[binding.promptId]
+            task != null &&
+                prompt?.task == binding.task &&
+                (binding.primaryModelId.isBlank() || binding.primaryModelId in modelIds) &&
+                binding.fallbackModelIds.all { it in modelIds } &&
+                binding.fallbackModelIds.distinct().size == binding.fallbackModelIds.size &&
+                binding.primaryModelId !in binding.fallbackModelIds &&
+                binding.articleCount > 0
+        }
+    ) { "AI configuration backup contains an invalid task binding" }
 }

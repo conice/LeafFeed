@@ -53,6 +53,11 @@
 -keep class me.ash.reader.domain.model.account.security.** { *; }
 -keep class me.ash.reader.domain.data.Diff { *; }
 -keep class me.ash.reader.ui.ext.PreferencesExport { *; }
+-keep class me.ash.reader.infrastructure.ai.AiConfigurationBackup { *; }
+-keep class me.ash.reader.infrastructure.ai.AiConnectionBackup { *; }
+-keep class me.ash.reader.infrastructure.ai.AiModelBackup { *; }
+-keep class me.ash.reader.infrastructure.ai.AiPromptBackup { *; }
+-keep class me.ash.reader.infrastructure.ai.AiBindingBackup { *; }
 
 # https://github.com/flutter/flutter/issues/127388
 -dontwarn org.kxml2.io.KXml**
