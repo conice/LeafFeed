@@ -3,7 +3,6 @@ package me.ash.reader.ui.component.webview
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
-import android.view.ActionMode
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import me.ash.reader.infrastructure.preference.ReadingFontsPreference
@@ -18,17 +17,7 @@ object WebViewLayout {
         onImageClick: ((imgUrl: String, altText: String) -> Unit)? = null,
         onSelectionActiveChange: ((Boolean) -> Unit)? = null,
     ) =
-        object : WebView(context) {
-            override fun onActionModeStarted(mode: ActionMode) {
-                super.onActionModeStarted(mode)
-                onSelectionActiveChange?.invoke(true)
-            }
-
-            override fun onActionModeFinished(mode: ActionMode) {
-                super.onActionModeFinished(mode)
-                onSelectionActiveChange?.invoke(false)
-            }
-        }.apply {
+        WebView(context).apply {
             val readerWebView = this
             this.webViewClient = webViewClient
             scrollBarSize = 0
