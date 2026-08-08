@@ -75,7 +75,7 @@ object WebViewLayout {
                 )
             }
             onSelectionActiveChange?.let { selectionActiveChange ->
-                customSelectionActionModeCallback =
+                setCustomSelectionActionModeCallback(
                     object : ActionMode.Callback {
                         override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
                             selectionActiveChange(true)
@@ -92,7 +92,8 @@ object WebViewLayout {
                         override fun onDestroyActionMode(mode: ActionMode?) {
                             selectionActiveChange(false)
                         }
-                    }
+                    },
+                )
             }
         }
 }
