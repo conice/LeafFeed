@@ -37,35 +37,24 @@ class AiConfigurationRepository @Inject constructor(
     suspend fun ensureInitialized() {
         initializationMutex.withLock {
             database.withTransaction {
-                val existingPrompts = dao.queryPrompts(null).associateBy { it.id }
-                defaultPrompts().forEach { prompt ->
-                    if (prompt.id !in existingPrompts) {
-                        dao.upsertPrompt(prompt.toEntity(revision = prompt.revision))
+                defaultPrompts().forEach { defaultPrompt ->
+                    val task = defaultPrompt.task
+                    if (dao.queryBinding(task.name) == null) {
+                        val prompt = dao.queryPrompts(task.name).firstOrNull() ?: run {
+                            dao.upsertPrompt(defaultPrompt.toEntity(revision = defaultPrompt.revision))
+                            defaultPrompt.toEntity(revision = defaultPrompt.revision)
+                        }
+                        dao.upsertBinding(
+                            AiTaskBindingEntity(
+                                task = task.name,
+                                promptId = prompt.id,
+                                primaryModelId = "",
+                                fallbackModelIdsJson = "[]",
+                                articleCount = DEFAULT_ARTICLE_COUNT,
+                                updatedAt = System.currentTimeMillis(),
+                            )
+                        )
                     }
-                }
-                if (dao.queryBinding(AiTask.TITLE_SUMMARY.name) == null) {
-                    dao.upsertBinding(
-                        AiTaskBindingEntity(
-                            task = AiTask.TITLE_SUMMARY.name,
-                            promptId = titlePromptId,
-                            primaryModelId = "",
-                            fallbackModelIdsJson = "[]",
-                            articleCount = DEFAULT_ARTICLE_COUNT,
-                            updatedAt = System.currentTimeMillis(),
-                        )
-                    )
-                }
-                if (dao.queryBinding(AiTask.ARTICLE_SUMMARY.name) == null) {
-                    dao.upsertBinding(
-                        AiTaskBindingEntity(
-                            task = AiTask.ARTICLE_SUMMARY.name,
-                            promptId = articlePromptId,
-                            primaryModelId = "",
-                            fallbackModelIdsJson = "[]",
-                            articleCount = DEFAULT_ARTICLE_COUNT,
-                            updatedAt = System.currentTimeMillis(),
-                        )
-                    )
                 }
             }
         }
@@ -195,14 +184,15 @@ class AiConfigurationRepository @Inject constructor(
         require(prompt.userTemplate.isNotBlank()) { "AI user prompt cannot be blank" }
         database.withTransaction {
             val existing = dao.queryPrompt(prompt.id)
-            require(existing?.builtIn != true) { "Built-in AI prompts cannot be edited" }
             if (existing != null && existing.task != prompt.task.name) {
                 dao.queryBindings()
                     .filter { it.promptId == prompt.id }
                     .forEach { binding ->
+                        val replacement = dao.queryPrompts(binding.task)
+                            .firstOrNull { it.id != prompt.id }
                         dao.upsertBinding(
                             binding.copy(
-                                promptId = defaultPromptId(AiTask.valueOf(binding.task)),
+                                promptId = replacement?.id.orEmpty(),
                                 updatedAt = System.currentTimeMillis(),
                             )
                         )
@@ -210,7 +200,10 @@ class AiConfigurationRepository @Inject constructor(
             }
             val revision = (existing?.revision ?: 0L) + 1L
             dao.upsertPrompt(
-                prompt.copy(updatedAt = System.currentTimeMillis()).toEntity(revision = revision)
+                prompt.copy(
+                    builtIn = existing?.builtIn ?: false,
+                    updatedAt = System.currentTimeMillis(),
+                ).toEntity(revision = revision)
             )
         }
     }
@@ -218,19 +211,18 @@ class AiConfigurationRepository @Inject constructor(
     suspend fun deletePrompt(promptId: String) {
         database.withTransaction {
             val prompt = dao.queryPrompt(promptId) ?: return@withTransaction
-            if (prompt.builtIn) return@withTransaction
+            val replacement = dao.queryPrompts(prompt.task).firstOrNull { it.id != promptId }
             dao.queryBindings()
                 .filter { it.promptId == promptId }
                 .forEach { binding ->
-                    val task = AiTask.valueOf(binding.task)
                     dao.upsertBinding(
                         binding.copy(
-                            promptId = defaultPromptId(task),
+                            promptId = replacement?.id.orEmpty(),
                             updatedAt = System.currentTimeMillis(),
                         )
                     )
                 }
-            dao.deleteCustomPrompt(promptId)
+            dao.deletePrompt(promptId)
         }
     }
 
@@ -323,11 +315,6 @@ class AiConfigurationRepository @Inject constructor(
     private val titlePromptId = "builtin-title-summary-v1"
     private val articlePromptId = "builtin-article-summary-v1"
     private val json = Json { ignoreUnknownKeys = true }
-
-    private fun defaultPromptId(task: AiTask): String = when (task) {
-        AiTask.TITLE_SUMMARY -> titlePromptId
-        AiTask.ARTICLE_SUMMARY -> articlePromptId
-    }
 
     private fun AiConnectionEntity.toDomain() = AiConnection(
         id = id,

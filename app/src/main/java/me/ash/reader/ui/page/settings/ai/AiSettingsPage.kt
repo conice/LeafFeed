@@ -282,29 +282,23 @@ fun AiSettingsPage(
                         SettingItem(
                             title = prompt.name,
                             desc = "${prompt.task.displayName()}${if (prompt.builtIn) " · built-in" else " · custom"}",
-                            onClick = if (prompt.builtIn) {
-                                { }
-                            } else {
-                                {
-                                    editingPrompt = prompt
-                                    promptName = prompt.name
-                                    promptSystem = prompt.systemTemplate
-                                    promptUser = prompt.userTemplate
-                                    promptItem = prompt.itemTemplate
-                                    promptTask = prompt.task
-                                    promptOutputMode = prompt.outputMode
-                                    promptDialog = true
-                                }
+                            onClick = {
+                                editingPrompt = prompt
+                                promptName = prompt.name
+                                promptSystem = prompt.systemTemplate
+                                promptUser = prompt.userTemplate
+                                promptItem = prompt.itemTemplate
+                                promptTask = prompt.task
+                                promptOutputMode = prompt.outputMode
+                                promptDialog = true
                             },
-                            action = if (prompt.builtIn) null else {
-                                {
-                                    FeedbackIconButton(
-                                        imageVector = Icons.Rounded.Delete,
-                                        contentDescription = "Delete ${prompt.name}",
-                                        tint = MaterialTheme.colorScheme.error,
-                                        onClick = { promptToDelete = prompt },
-                                    )
-                                }
+                            action = {
+                                FeedbackIconButton(
+                                    imageVector = Icons.Rounded.Delete,
+                                    contentDescription = "Delete ${prompt.name}",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    onClick = { promptToDelete = prompt },
+                                )
                             },
                         )
                     }

@@ -139,8 +139,8 @@ interface AiDao {
     @Upsert
     suspend fun upsertPrompt(prompt: AiPromptEntity)
 
-    @Query("DELETE FROM ai_prompt WHERE id = :id AND builtIn = 0")
-    suspend fun deleteCustomPrompt(id: String)
+    @Query("DELETE FROM ai_prompt WHERE id = :id")
+    suspend fun deletePrompt(id: String)
 
     @Query("SELECT * FROM ai_task_binding WHERE task = :task LIMIT 1")
     suspend fun queryBinding(task: String): AiTaskBindingEntity?

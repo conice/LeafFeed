@@ -5,6 +5,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
@@ -28,14 +29,7 @@ class ResponsesAdapter(
         emit: suspend (AiStreamEvent) -> Unit,
     ): String {
         emit(AiStreamEvent.Started(provider, request.model.modelId))
-        val payload = buildJsonObject {
-            put("model", request.model.modelId)
-            put("instructions", request.systemInstruction)
-            put("input", request.userInput)
-            put("stream", request.options.stream)
-            put("max_output_tokens", request.options.maxOutputTokens)
-            request.options.temperature?.let { put("temperature", it) }
-        }
+        val payload = buildPayload(request)
         var endpoint = AiHttpSupport.endpoint(request.connection.baseUrl, "/responses")
         endpoint = AiHttpSupport.applyQueryAuth(endpoint, request, "api_key")
         val httpRequest = Request.Builder()
@@ -58,6 +52,23 @@ class ResponsesAdapter(
                     readComplete(body.string(), emit)
                 }
             }
+    }
+
+    internal fun buildPayload(request: AiRequest): JsonObject = buildJsonObject {
+        put("model", request.model.modelId)
+        put("input", buildJsonArray {
+            add(buildJsonObject {
+                put("role", "system")
+                put("content", request.systemInstruction)
+            })
+            add(buildJsonObject {
+                put("role", "user")
+                put("content", request.userInput)
+            })
+        })
+        put("stream", request.options.stream)
+        put("max_output_tokens", request.options.maxOutputTokens)
+        request.options.temperature?.let { put("temperature", it) }
     }
 
     private suspend fun readStream(
