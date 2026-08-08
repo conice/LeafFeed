@@ -47,6 +47,8 @@ fun Content(
     isLoading: Boolean,
     contentPadding: PaddingValues = PaddingValues(),
     onImageClick: ((imgUrl: String, altText: String) -> Unit)? = null,
+    onWebViewSelectionActiveChange: (Boolean) -> Unit = {},
+    isWebViewSelectionActive: Boolean = false,
 ) {
     val context = LocalContext.current
     val subheadUpperCase = LocalReadingSubheadUpperCase.current
@@ -85,7 +87,12 @@ fun Content(
                             .drawVerticalScrollIndicator(scrollState)
                 ) {
                     Column(
-                        modifier = Modifier.fillMaxSize().verticalScroll(scrollState),
+                        modifier =
+                            Modifier.fillMaxSize()
+                                .verticalScroll(
+                                    scrollState,
+                                    enabled = !isWebViewSelectionActive,
+                                ),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Column(modifier = Modifier.then(maxWidthModifier)) {
@@ -99,6 +106,7 @@ fun Content(
                                 content = content,
                                 baseUrl = link,
                                 onImageClick = onImageClick,
+                                onSelectionActiveChange = onWebViewSelectionActiveChange,
                             )
                             Spacer(modifier = Modifier.height(128.dp))
                             Spacer(

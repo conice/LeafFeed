@@ -3,6 +3,9 @@ package me.ash.reader.ui.component.webview
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
+import android.view.ActionMode
+import android.view.Menu
+import android.view.MenuItem
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import me.ash.reader.infrastructure.preference.ReadingFontsPreference
@@ -15,6 +18,7 @@ object WebViewLayout {
         readingFontsPreference: ReadingFontsPreference,
         webViewClient: WebViewClient,
         onImageClick: ((imgUrl: String, altText: String) -> Unit)? = null,
+        onSelectionActiveChange: ((Boolean) -> Unit)? = null,
     ) =
         WebView(context).apply {
             val readerWebView = this
@@ -69,6 +73,26 @@ object WebViewLayout {
                     },
                     JavaScriptInterface.NAME,
                 )
+            }
+            onSelectionActiveChange?.let { selectionActiveChange ->
+                customSelectionActionModeCallback =
+                    object : ActionMode.Callback {
+                        override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+                            selectionActiveChange(true)
+                            return true
+                        }
+
+                        override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?) = false
+
+                        override fun onActionItemClicked(
+                            mode: ActionMode?,
+                            item: MenuItem?,
+                        ) = false
+
+                        override fun onDestroyActionMode(mode: ActionMode?) {
+                            selectionActiveChange(false)
+                        }
+                    }
             }
         }
 }

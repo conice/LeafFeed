@@ -41,6 +41,7 @@ fun RYWebView(
     content: String,
     baseUrl: String? = null,
     onImageClick: ((imgUrl: String, altText: String) -> Unit)? = null,
+    onSelectionActiveChange: ((Boolean) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val openLink = LocalOpenLink.current
@@ -89,9 +90,16 @@ fun RYWebView(
     val currentOpenLink by rememberUpdatedState(openLink)
     val currentOpenLinkSpecificBrowser by rememberUpdatedState(openLinkSpecificBrowser)
     val currentOnImageClick by rememberUpdatedState(onImageClick)
+    val currentOnSelectionActiveChange by rememberUpdatedState(onSelectionActiveChange)
 
     val webView =
-        remember(context, readingFonts, refererUrl, onImageClick != null) {
+        remember(
+            context,
+            readingFonts,
+            refererUrl,
+            onImageClick != null,
+            onSelectionActiveChange != null,
+        ) {
             WebViewLayout.get(
                 context = context,
                 readingFontsPreference = readingFonts,
@@ -115,11 +123,18 @@ fun RYWebView(
                     } else {
                         null
                     },
+                onSelectionActiveChange =
+                    if (onSelectionActiveChange != null) {
+                        { active -> currentOnSelectionActiveChange?.invoke(active) }
+                    } else {
+                        null
+                    },
             )
         }
 
     DisposableEffect(webView) {
         onDispose {
+            currentOnSelectionActiveChange?.invoke(false)
             webView.stopLoading()
             webView.removeJavascriptInterface(JavaScriptInterface.NAME)
             webView.destroy()

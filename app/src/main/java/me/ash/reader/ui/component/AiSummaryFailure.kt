@@ -52,6 +52,9 @@ enum class AiSummaryFailure(@StringRes val messageRes: Int) {
             val causes = error.causeChain()
             val message = causes.mapNotNull(Throwable::message).joinToString("\n").lowercase()
 
+            if ("ai url is not configured" in message || "ai model is not configured" in message) {
+                return NotConfigured
+            }
             if ("no articles to summarize" in message) return NoArticles
             if ("empty response" in message) return EmptyResponse
 

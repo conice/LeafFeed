@@ -115,6 +115,10 @@ class AiSettingsViewModel @Inject constructor(
         viewModelScope.launch { configuration.deletePrompt(promptId) }
     }
 
+    fun restoreBuiltInPrompts() {
+        viewModelScope.launch { configuration.restoreBuiltInPrompts() }
+    }
+
     fun selectPrompt(task: AiTask, promptId: String) {
         viewModelScope.launch {
             val current = configuration.getBinding(task)

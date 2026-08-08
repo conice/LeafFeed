@@ -60,6 +60,44 @@ class AiConfigurationRepository @Inject constructor(
         }
     }
 
+    suspend fun restoreBuiltInPrompts() {
+        initializationMutex.withLock {
+            database.withTransaction {
+                defaultPrompts().forEach { defaultPrompt ->
+                    val existing = dao.queryPrompt(defaultPrompt.id)
+                    dao.upsertPrompt(
+                        defaultPrompt.copy(updatedAt = System.currentTimeMillis()).toEntity(
+                            revision = (existing?.revision ?: 0L) + 1L,
+                        )
+                    )
+
+                    val task = defaultPrompt.task
+                    val binding = dao.queryBinding(task.name)
+                    val selectedPrompt = binding?.promptId?.let { dao.queryPrompt(it) }
+                    if (binding == null) {
+                        dao.upsertBinding(
+                            AiTaskBindingEntity(
+                                task = task.name,
+                                promptId = defaultPrompt.id,
+                                primaryModelId = "",
+                                fallbackModelIdsJson = "[]",
+                                articleCount = DEFAULT_ARTICLE_COUNT,
+                                updatedAt = System.currentTimeMillis(),
+                            )
+                        )
+                    } else if (selectedPrompt == null) {
+                        dao.upsertBinding(
+                            binding.copy(
+                                promptId = defaultPrompt.id,
+                                updatedAt = System.currentTimeMillis(),
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     fun observeConnections(): Flow<List<AiConnection>> =
         dao.observeConnections().map { rows -> rows.map { it.toDomain() } }
 
@@ -293,10 +331,13 @@ class AiConfigurationRepository @Inject constructor(
             task = AiTask.TITLE_SUMMARY,
             systemTemplate = context.getString(R.string.ai_default_prompt),
             userTemplate =
-                "The following is the complete set of supplied article titles. " +
-                    "Identify the main issues they collectively focus on and summarize the set as a whole. " +
-                    "Use only information present in these titles and their metadata; do not infer facts from " +
-                    "the underlying articles.\n\n{items}",
+                "Group the following headlines by topic.\n\n" +
+                    "Output format:\n\n" +
+                    "### Group name\n" +
+                    "- [item number] headline\n\n" +
+                    "Use one section for each group. Keep the groups ordered by overall importance or " +
+                    "number of headlines.\n\n" +
+                    "<HEADLINES>\n{items}\n</HEADLINES>",
             itemTemplate = context.getString(R.string.ai_default_title_input_template),
             outputMode = AiOutputMode.MARKDOWN,
             builtIn = true,

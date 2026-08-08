@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Restore
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -84,6 +85,7 @@ fun AiSettingsPage(
     var connectionToDelete by remember { mutableStateOf<AiConnection?>(null) }
     var modelToDelete by remember { mutableStateOf<AiModelProfile?>(null) }
     var promptToDelete by remember { mutableStateOf<AiPrompt?>(null) }
+    var restorePromptsDialog by remember { mutableStateOf(false) }
     var editingPrompt by remember { mutableStateOf<AiPrompt?>(null) }
     var editingConnection by remember { mutableStateOf<AiConnection?>(null) }
 
@@ -311,6 +313,12 @@ fun AiSettingsPage(
                             resetPromptDraft()
                             promptDialog = true
                         },
+                    ) {}
+                    SettingItem(
+                        title = stringResource(R.string.ai_restore_builtin_prompts),
+                        desc = stringResource(R.string.ai_restore_builtin_prompts_desc),
+                        icon = Icons.Rounded.Restore,
+                        onClick = { restorePromptsDialog = true },
                     ) {}
                 }
                 item {
@@ -648,6 +656,29 @@ fun AiSettingsPage(
             },
             dismissButton = {
                 TextButton(onClick = { promptToDelete = null }) { Text(stringResource(R.string.cancel)) }
+            },
+        )
+    }
+
+    if (restorePromptsDialog) {
+        AlertDialog(
+            onDismissRequest = { restorePromptsDialog = false },
+            title = { Text(stringResource(R.string.ai_restore_builtin_prompts_confirm_title)) },
+            text = { Text(stringResource(R.string.ai_restore_builtin_prompts_confirm_desc)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.restoreBuiltInPrompts()
+                        restorePromptsDialog = false
+                    },
+                ) {
+                    Text(stringResource(R.string.restore_default))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { restorePromptsDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
             },
         )
     }

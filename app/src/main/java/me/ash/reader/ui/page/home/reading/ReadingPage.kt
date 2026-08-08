@@ -104,6 +104,7 @@ fun ReadingPage(
     var suggestedExistingTags by remember { mutableStateOf<List<ArticleTagLabel>>(emptyList()) }
     var showFullScreenImageViewer by remember { mutableStateOf(false) }
     var transcriptSheetUrl by remember { mutableStateOf<String?>(null) }
+    var isWebViewSelectionActive by remember { mutableStateOf(false) }
 
     var currentImageData by remember { mutableStateOf(ImageData()) }
 
@@ -314,7 +315,9 @@ fun ReadingPage(
                                                         if (abs(f) > 2f)
                                                             isReaderScrollingDown = f < 0f
                                                     },
-                                                    enabled = isPullToSwitchArticleEnabled,
+                                                    enabled =
+                                                        isPullToSwitchArticleEnabled &&
+                                                            !isWebViewSelectionActive,
                                                 ),
                                             contentPadding = paddings,
                                             content = displayedContent,
@@ -330,6 +333,10 @@ fun ReadingPage(
                                                 currentImageData = ImageData(imgUrl, altText)
                                                 showFullScreenImageViewer = true
                                             },
+                                            onWebViewSelectionActiveChange = {
+                                                isWebViewSelectionActive = it
+                                            },
+                                            isWebViewSelectionActive = isWebViewSelectionActive,
                                         )
                                         PullToLoadIndicator(
                                             state = state,
