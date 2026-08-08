@@ -1,6 +1,5 @@
 package me.ash.reader.ui.ext
 
-import me.ash.reader.infrastructure.preference.AiPreferenceKeys
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
 import me.ash.reader.infrastructure.preference.NavigationPreferenceKeys
 import org.junit.Assert.assertEquals
@@ -9,26 +8,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DataStoreExportTest {
-    @Test
-    fun `registers every AI preference for import`() {
-        val aiKeys =
-            listOf(
-                AiPreferenceKeys.url,
-                AiPreferenceKeys.apiKey,
-                AiPreferenceKeys.model,
-                AiPreferenceKeys.titlePrompt,
-                AiPreferenceKeys.titleInputTemplate,
-                AiPreferenceKeys.articleUrl,
-                AiPreferenceKeys.articleApiKey,
-                AiPreferenceKeys.articleModel,
-                AiPreferenceKeys.articlePrompt,
-                AiPreferenceKeys.articleInputTemplate,
-                AiPreferenceKeys.articleCount,
-            )
-
-        aiKeys.forEach { key -> assertTrue(key.name in PreferencesKey.keys) }
-    }
-
     @Test
     fun `registers every portable feature preference for import`() {
         val featureKeys =
@@ -102,8 +81,8 @@ class DataStoreExportTest {
         val encoded =
             encodePreferencesJSON(
                 mapOf(
-                    AiPreferenceKeys.url.name to "https://example.com/v1",
-                    AiPreferenceKeys.articleCount.name to 30,
+                    FeaturePreferenceKeys.aiStreamingEnabled.name to true,
+                    FeaturePreferenceKeys.aiTimeoutSeconds.name to 300,
                 )
             )
 
@@ -111,11 +90,8 @@ class DataStoreExportTest {
 
         assertTrue(encoded.contains("\"format\":\"leaffeed.preferences\""))
         assertEquals(2, decoded.sourceVersion)
-        assertEquals(
-            "https://example.com/v1",
-            decoded.preferences[AiPreferenceKeys.url.name],
-        )
-        assertEquals(30.0, decoded.preferences[AiPreferenceKeys.articleCount.name])
+        assertEquals(true, decoded.preferences[FeaturePreferenceKeys.aiStreamingEnabled.name])
+        assertEquals(300.0, decoded.preferences[FeaturePreferenceKeys.aiTimeoutSeconds.name])
     }
 
     @Test
@@ -131,11 +107,10 @@ class DataStoreExportTest {
 
     @Test
     fun `decodes legacy flat preferences`() {
-        val decoded = decodePreferencesJSON("""{"themeIndex":2,"ai_model":"fast-model"}""")
+        val decoded = decodePreferencesJSON("""{"themeIndex":2}""")
 
         assertNull(decoded.sourceVersion)
         assertEquals(2.0, decoded.preferences[PreferencesKey.themeIndex])
-        assertEquals("fast-model", decoded.preferences[AiPreferenceKeys.model.name])
     }
 
     @Test
@@ -155,10 +130,8 @@ class DataStoreExportTest {
     }
 
     @Test
-    fun `excludes sensitive and non-preference data by default`() {
-        assertTrue(isPreferenceExportable(AiPreferenceKeys.model.name, false))
-        assertTrue(!isPreferenceExportable(AiPreferenceKeys.apiKey.name, false))
-        assertTrue(isPreferenceExportable(AiPreferenceKeys.apiKey.name, true))
+    fun `excludes non-preference and device state data`() {
+        assertTrue(isPreferenceExportable(FeaturePreferenceKeys.aiStreamingEnabled.name, false))
         assertTrue(!isPreferenceExportable("article_rules", true))
         assertTrue(!isPreferenceExportable(PreferencesKey.newVersionNumber, true))
     }

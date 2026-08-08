@@ -13,7 +13,6 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.first
-import me.ash.reader.infrastructure.preference.AiPreferenceKeys
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
 import me.ash.reader.infrastructure.preference.NavigationPreferenceKeys
 
@@ -220,24 +219,6 @@ sealed interface PreferencesKey {
                 IntKey(sharedContent),
                 // Languages
                 IntKey(languages),
-                // AI
-                StringKey(AiPreferenceKeys.url.name, AiPreferenceKeys.url),
-                StringKey(AiPreferenceKeys.apiKey.name, AiPreferenceKeys.apiKey),
-                StringKey(AiPreferenceKeys.model.name, AiPreferenceKeys.model),
-                StringKey(AiPreferenceKeys.titlePrompt.name, AiPreferenceKeys.titlePrompt),
-                StringKey(
-                    AiPreferenceKeys.titleInputTemplate.name,
-                    AiPreferenceKeys.titleInputTemplate,
-                ),
-                StringKey(AiPreferenceKeys.articleUrl.name, AiPreferenceKeys.articleUrl),
-                StringKey(AiPreferenceKeys.articleApiKey.name, AiPreferenceKeys.articleApiKey),
-                StringKey(AiPreferenceKeys.articleModel.name, AiPreferenceKeys.articleModel),
-                StringKey(AiPreferenceKeys.articlePrompt.name, AiPreferenceKeys.articlePrompt),
-                StringKey(
-                    AiPreferenceKeys.articleInputTemplate.name,
-                    AiPreferenceKeys.articleInputTemplate,
-                ),
-                IntKey(AiPreferenceKeys.articleCount.name, AiPreferenceKeys.articleCount),
                 // Reading and articles
                 BooleanKey(
                     FeaturePreferenceKeys.markReadOnOpen.name,
@@ -463,11 +444,7 @@ private const val PREFERENCES_EXPORT_FORMAT = "leaffeed.preferences"
 private const val LEGACY_PREFERENCES_EXPORT_FORMAT = "readyou.preferences"
 private const val PREFERENCES_EXPORT_VERSION = 2
 
-private val sensitivePreferences =
-    setOf(
-        AiPreferenceKeys.apiKey.name,
-        AiPreferenceKeys.articleApiKey.name,
-    )
+private val sensitivePreferences = emptySet<String>()
 
 private data class PreferencesExport(
     val format: String = PREFERENCES_EXPORT_FORMAT,

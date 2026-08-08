@@ -2,87 +2,60 @@ package me.ash.reader.domain.service
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.util.Locale
-import java.util.concurrent.TimeUnit
-import javax.inject.Inject
-import javax.inject.Singleton
 import kotlinx.coroutines.flow.first
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.buildJsonArray
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import kotlinx.serialization.json.put
-import okio.BufferedSource
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import okhttp3.executeAsync
-import me.ash.reader.R
-import me.ash.reader.infrastructure.ai.AiSummaryCache
-import me.ash.reader.infrastructure.preference.AiSettings
-import me.ash.reader.infrastructure.preference.AiTaskSettings
-import me.ash.reader.infrastructure.preference.toAiSettings
+import me.ash.reader.domain.model.ai.AiArticleInput
+import me.ash.reader.domain.model.ai.AiPromptContext
+import me.ash.reader.domain.model.ai.AiProviderException
+import me.ash.reader.domain.model.ai.AiTask
+import me.ash.reader.domain.model.ai.AiTitleItem
+import me.ash.reader.infrastructure.ai.AiConfigurationRepository
 import me.ash.reader.infrastructure.preference.toFeatureSettings
 import me.ash.reader.ui.ext.dataStore
+import javax.inject.Inject
+import javax.inject.Singleton
 
+/** Business facade for summary tasks. Provider wire formats live outside this class. */
 @Singleton
 class AiSummaryService @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val client: OkHttpClient,
-    private val cache: AiSummaryCache,
+    private val configuration: AiConfigurationRepository,
+    private val coordinator: AiExecutionCoordinator,
 ) {
-    suspend fun settings(): AiSettings = context.dataStore.data.first().toAiSettings(
-        defaultTitlePrompt = context.getString(R.string.ai_default_prompt),
-        defaultArticlePrompt = context.getString(R.string.ai_default_article_prompt),
-        defaultTitleInputTemplate = context.getString(R.string.ai_default_title_input_template),
-        defaultArticleInputTemplate = context.getString(R.string.ai_default_article_input_template),
-    )
+    suspend fun articleCount(): Int =
+        configuration.getBinding(AiTask.TITLE_SUMMARY).articleCount
 
     suspend fun summarizeTitles(
         accountId: Int,
         titles: List<Pair<String, String>>,
         forceRefresh: Boolean = false,
+        promptId: String? = null,
+        modelId: String? = null,
         onUpdate: (String) -> Unit = {},
     ): String {
         require(titles.isNotEmpty()) { "No articles to summarize" }
-        val settings = settings().titleSummary
-        val titleInputs =
-            titles.mapIndexed { index, (_, title) ->
-                renderAiInputTemplate(
-                    template = settings.inputTemplate,
-                    index = index + 1,
-                    title = title,
-                    body = "",
+        configuration.ensureInitialized()
+        val binding = configuration.getBinding(AiTask.TITLE_SUMMARY)
+        val prompt = configuration.getPrompt(promptId ?: binding.promptId)
+            ?: throw AiProviderException(
+                me.ash.reader.domain.model.ai.AiError(
+                    kind = me.ash.reader.domain.model.ai.AiFailureKind.NOT_CONFIGURED,
+                    message = "Title summary prompt is not configured",
                 )
-            }.joinToString("\n")
-        val userContent =
-            "The following is the complete set of supplied article titles. Identify the main issues they collectively focus on and summarize the set as a whole. Use only information present in these titles and their metadata; do not infer facts from the underlying articles.\n\n" +
-                titleInputs
-        val articleIdentity = titles.joinToString("\u0000") { (id, title) -> "$id\u0001$title" }
-        val result = cache.getOrPut(
+            )
+        val identity = titles.joinToString("\u0000") { (id, title) -> "$id\u0001$title" }
+        return coordinator.execute(
             accountId = accountId,
-            fingerprint = fingerprint(
-                "titles",
-                "$articleIdentity\u0000$userContent",
-                settings,
+            task = AiTask.TITLE_SUMMARY,
+            inputFingerprint = identity,
+            prompt = prompt,
+            promptContext = AiPromptContext(
+                task = AiTask.TITLE_SUMMARY,
+                items = titles.map { (id, title) -> AiTitleItem(id, title) },
             ),
             forceRefresh = forceRefresh,
-        ) {
-            complete(
-                userContent,
-                settings.prompt,
-                settings,
-                onUpdate,
-            )
-        }
-        if (result.fromCache) onUpdate(result.content)
-        return result.content
+            modelOverrideId = modelId,
+            onUpdate = onUpdate,
+        )
     }
 
     suspend fun summarizeArticle(
@@ -92,207 +65,58 @@ class AiSummaryService @Inject constructor(
         content: String,
         link: String? = null,
         forceRefresh: Boolean = false,
+        promptId: String? = null,
+        modelId: String? = null,
         onUpdate: (String) -> Unit = {},
     ): String {
-        val settings = settings()
+        configuration.ensureInitialized()
         val featureSettings = context.dataStore.data.first().toFeatureSettings()
         val selectedContent = when (featureSettings.aiContentScope) {
             0 -> ""
             1 -> content.take(2_000)
             else -> content
         }
-        val linkLine = if (featureSettings.aiIncludeArticleLink && !link.isNullOrBlank()) {
-            "\n\nLink: $link"
-        } else ""
-        val userContent =
-            renderAiInputTemplate(
-                template = settings.articleSummary.inputTemplate,
-                index = 1,
-                title = title,
-                body = selectedContent,
-            ) + linkLine
-        val result = cache.getOrPut(
+        val selectedLink = link?.takeIf {
+            featureSettings.aiIncludeArticleLink && it.isNotBlank()
+        }
+        val binding = configuration.getBinding(AiTask.ARTICLE_SUMMARY)
+        val prompt = configuration.getPrompt(promptId ?: binding.promptId)
+            ?: throw AiProviderException(
+                me.ash.reader.domain.model.ai.AiError(
+                    kind = me.ash.reader.domain.model.ai.AiFailureKind.NOT_CONFIGURED,
+                    message = "Article summary prompt is not configured",
+                )
+            )
+        val input = AiArticleInput(
+            articleId = articleId,
+            title = title,
+            content = selectedContent +
+                if (selectedLink != null && "{link}" !in prompt.userTemplate) {
+                    "\n\nLink: $selectedLink"
+                } else {
+                    ""
+                },
+            link = selectedLink,
+        )
+        return coordinator.execute(
             accountId = accountId,
-            fingerprint = fingerprint(
-                "article",
-                "$articleId\u0000$userContent",
-                settings.articleSummary,
+            task = AiTask.ARTICLE_SUMMARY,
+            inputFingerprint = listOf(
+                input.articleId,
+                input.title,
+                input.content,
+                input.link.orEmpty(),
+            ).joinToString("\u0000"),
+            prompt = prompt,
+            promptContext = AiPromptContext(
+                task = AiTask.ARTICLE_SUMMARY,
+                title = input.title,
+                content = input.content,
+                link = input.link,
             ),
             forceRefresh = forceRefresh,
-        ) {
-            complete(
-                userContent,
-                settings.articleSummary.prompt,
-                settings.articleSummary,
-                onUpdate,
-            )
-        }
-        if (result.fromCache) onUpdate(result.content)
-        return result.content
+            modelOverrideId = modelId,
+            onUpdate = onUpdate,
+        )
     }
-
-    private fun fingerprint(task: String, input: String, settings: AiTaskSettings): String =
-        listOf(
-            CACHE_REQUEST_VERSION,
-            task,
-            appLanguageTag(),
-            completionEndpoint(settings.url),
-            settings.model,
-            settings.prompt,
-            settings.apiKey,
-            input,
-        ).joinToString("\u0000")
-
-    private suspend fun complete(
-        userContent: String,
-        systemPrompt: String,
-        settings: AiTaskSettings,
-        onUpdate: (String) -> Unit,
-    ): String {
-        require(settings.url.isNotBlank()) { "AI URL is not configured" }
-        require(settings.model.isNotBlank()) { "AI model is not configured" }
-        val featureSettings = context.dataStore.data.first().toFeatureSettings()
-        val endpoint = completionEndpoint(settings.url)
-        val effectiveSystemPrompt = listOf(
-            appLanguageInstruction(),
-            systemPrompt.takeIf { it.isNotBlank() },
-        ).filterNotNull().joinToString("\n\n")
-        val messages = buildJsonArray {
-            if (effectiveSystemPrompt.isNotBlank()) add(buildJsonObject {
-                put("role", "system"); put("content", effectiveSystemPrompt)
-            })
-            add(buildJsonObject { put("role", "user"); put("content", userContent) })
-        }
-        val body = buildJsonObject {
-            put("model", settings.model)
-            put("messages", messages)
-            put("stream", featureSettings.aiStreamingEnabled)
-        }.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
-        val request = Request.Builder().url(endpoint).post(body).apply {
-            header("Accept", "text/event-stream")
-            if (settings.apiKey.isNotBlank()) header("Authorization", "Bearer ${settings.apiKey}")
-        }.build()
-        var lastUpdateNanos = 0L
-        var lastPublishedContent = ""
-        val requestClient = client.newBuilder()
-            .readTimeout(featureSettings.aiTimeoutSeconds.coerceIn(30, 900).toLong(), TimeUnit.SECONDS)
-            .build()
-        val result = requestClient.newCall(request).executeAsync().use { response ->
-            if (!response.isSuccessful) {
-                error("AI request failed (${response.code}): ${response.body.string()}")
-            }
-            readChatCompletionStream(response.body.source()) { partialContent ->
-                val now = System.nanoTime()
-                if (
-                    lastUpdateNanos == 0L ||
-                        partialContent.isNotBlank() && lastPublishedContent.isBlank() ||
-                        now - lastUpdateNanos >= STREAM_UPDATE_INTERVAL_NANOS
-                ) {
-                    lastUpdateNanos = now
-                    lastPublishedContent = partialContent
-                    onUpdate(partialContent)
-                }
-            }
-        }
-        if (result != lastPublishedContent) {
-            onUpdate(result)
-        }
-        return result
-    }
-
-    private fun appLanguageTag(): String =
-        context.resources.configuration.locales[0].toLanguageTag()
-
-    private fun appLanguageInstruction(): String {
-        val locale = context.resources.configuration.locales[0]
-        return "Default output language: ${locale.getDisplayLanguage(Locale.ENGLISH)} (${locale.toLanguageTag()}). " +
-            "Use this language only when the task prompt does not specify another output language."
-    }
-
-    private companion object {
-        const val CACHE_REQUEST_VERSION = "2"
-        const val STREAM_UPDATE_INTERVAL_NANOS = 50_000_000L
-
-        fun completionEndpoint(url: String): String = url.trimEnd('/').let {
-            if (it.contains("/chat/completions")) it else "$it/chat/completions"
-        }
-    }
-}
-
-private val AiInputField = Regex("\\{(?:index|title|content)\\}")
-
-internal fun renderAiInputTemplate(
-    template: String,
-    index: Int,
-    title: String,
-    body: String,
-): String =
-    AiInputField.replace(template) { field ->
-        when (field.value) {
-            "{index}" -> index.toString()
-            "{title}" -> title
-            "{content}" -> body
-            else -> field.value
-        }
-    }
-
-internal fun readChatCompletionStream(
-    source: BufferedSource,
-    onUpdate: (String) -> Unit = {},
-): String {
-    val content = StringBuilder()
-    val eventData = mutableListOf<String>()
-    val fallbackBody = StringBuilder()
-    var receivedStreamEvent = false
-    var finished = false
-
-    fun consumeEvent() {
-        if (eventData.isEmpty()) return
-        receivedStreamEvent = true
-        val data = eventData.joinToString("\n")
-        eventData.clear()
-        if (data == "[DONE]") {
-            finished = true
-            return
-        }
-        if (appendChatCompletionContent(data, content)) {
-            onUpdate(content.toString())
-        }
-    }
-
-    while (!finished) {
-        val line = source.readUtf8Line() ?: break
-        when {
-            line.isEmpty() -> consumeEvent()
-            line.startsWith("data:") -> eventData += line.removePrefix("data:").removePrefix(" ")
-            line.startsWith(":") || line.startsWith("event:") || line.startsWith("id:") -> Unit
-            !receivedStreamEvent -> {
-                if (fallbackBody.isNotEmpty()) fallbackBody.append('\n')
-                fallbackBody.append(line)
-            }
-        }
-    }
-    consumeEvent()
-
-    if (!receivedStreamEvent && fallbackBody.isNotBlank()) {
-        appendChatCompletionContent(fallbackBody.toString(), content)
-    }
-    return content.toString().takeIf { it.isNotBlank() }
-        ?: error("AI returned an empty response")
-}
-
-private fun appendChatCompletionContent(json: String, output: StringBuilder): Boolean {
-    val root = Json.parseToJsonElement(json).jsonObject
-    root["error"]?.let { errorElement ->
-        val message = (errorElement as? JsonObject)?.get("message")
-            ?.let { it as? JsonPrimitive }?.contentOrNull
-        error(message ?: errorElement.toString())
-    }
-    val choice = root["choices"]?.jsonArray?.firstOrNull()?.jsonObject ?: return false
-    val message = choice["delta"] as? JsonObject ?: choice["message"] as? JsonObject
-        ?: return false
-    val chunk = (message["content"] as? JsonPrimitive)?.contentOrNull ?: return false
-    if (chunk.isEmpty()) return false
-    output.append(chunk)
-    return true
 }

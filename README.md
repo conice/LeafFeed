@@ -66,7 +66,7 @@ Open articles in a focused reader with full-content parsing and controls for typ
 
 ### Summarize on Your Terms
 
-Use an OpenAI-compatible service you configure to turn a busy list of headlines into a categorized briefing or to summarize the article currently on screen. You choose the service URL, model, prompts, request timeout, content scope, and whether links are included.
+Use a configured OpenAI Responses, Google Gemini, or Anthropic service to turn a busy list of headlines into a categorized briefing or to summarize the article currently on screen. You can save multiple API connections and models, choose task-specific prompts and fallback models, and control request timeout, content scope, and whether links are included.
 
 <p align="center">
   <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/Title_summary.png" width="32%" alt="AI title summary">
@@ -144,7 +144,7 @@ LeafFeed contains no advertising or built-in analytics service. Accounts, subscr
 
 - Android system backup is disabled because account credentials are protected by a device-local encryption key. Use LeafFeed's explicit export tools for subscriptions and settings when moving devices, then enter account credentials again.
 - When synchronization is enabled, subscription and reading-state data is sent to the service configured by the user.
-- When an AI feature is used, selected headlines or article content is sent directly to the configured OpenAI-compatible service.
+- When an AI feature is used, selected headlines or article content is sent directly to the configured AI provider and endpoint.
 - Background synchronization, notifications, and podcast playback may use the network, wake locks, and foreground services.
 - Users should review the privacy policies of their content sources, synchronization services, and AI providers.
 

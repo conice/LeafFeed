@@ -776,7 +776,7 @@ constructor(
         viewModelScope.launch(ioDispatcher) {
             var hasVisibleContent = false
             val result = runCatching {
-                val count = aiSummaryService.settings().articleCount
+                val count = aiSummaryService.articleCount()
                 val articles =
                     articleDao.queryLatestArticlesForSummary(
                         accountId = accountId,

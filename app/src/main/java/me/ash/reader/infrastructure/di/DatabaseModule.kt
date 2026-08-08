@@ -14,6 +14,8 @@ import me.ash.reader.domain.repository.FeedDao
 import me.ash.reader.domain.repository.GroupDao
 import me.ash.reader.infrastructure.db.AndroidDatabase
 import me.ash.reader.infrastructure.db.ArticleCollectionDatabase
+import me.ash.reader.infrastructure.ai.AiDao
+import me.ash.reader.infrastructure.ai.AiDatabase
 import javax.inject.Singleton
 
 /**
@@ -68,4 +70,13 @@ object DatabaseModule {
     fun provideArticleCollectionDatabase(
         @ApplicationContext context: Context
     ): ArticleCollectionDatabase = ArticleCollectionDatabase.getInstance(context)
+
+    @Provides
+    @Singleton
+    fun provideAiDatabase(@ApplicationContext context: Context): AiDatabase =
+        AiDatabase.getInstance(context)
+
+    @Provides
+    @Singleton
+    fun provideAiDao(database: AiDatabase): AiDao = database.aiDao()
 }

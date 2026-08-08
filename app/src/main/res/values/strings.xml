@@ -25,7 +25,7 @@
     <string name="ai_summary">AI summary</string>
     <string name="ai_summary_source_article">Based on the displayed article content</string>
     <string name="ai_summary_source_titles">Based only on the listed article titles</string>
-    <string name="ai_summary_error_not_configured">AI service URL or model is not configured</string>
+    <string name="ai_summary_error_not_configured">An AI connection, model, or prompt is not configured</string>
     <string name="ai_summary_error_invalid_configuration">AI service configuration is invalid</string>
     <string name="ai_summary_error_details">Details: %1$s</string>
     <string name="ai_summary_error_authentication">Authentication failed; check the API key and access permissions</string>
@@ -42,7 +42,7 @@
     <string name="mark_summarized_as_read">Mark summarized as read</string>
     <string name="ai_summary_article">Summarize article</string>
     <string name="import_failed">Import failed</string>
-    <string name="ai_settings_desc">Configure an OpenAI-compatible service</string>
+    <string name="ai_settings_desc">Configure Responses, Gemini, or Anthropic services</string>
     <string name="ai_url">URL</string>
     <string name="ai_api_key">API key</string>
     <string name="ai_model">Model</string>
@@ -167,7 +167,7 @@
     <string name="tos_tips">Please read and agree to LeafFeed\'s terms of service and privacy policy to continue.</string>
     <string name="browse_tos_tips">Browse the <i><u>terms of service and privacy policy</u></i></string>
     <string name="terms_of_service">Terms of service</string>
-    <string name="tos_content"><h5> Privacy policy </h5> <br /> <p> LeafFeed stores feeds, articles, account credentials, and preferences locally on your device. Account credentials are protected with a device-local encryption key, and Android system backup is disabled. Use LeafFeed\'s explicit export tools for subscriptions and settings when moving devices, then enter account credentials again. LeafFeed does not operate an analytics or advertising service. </p> <br /> <p> When you enable synchronization, feed data is sent to the service you configure. When you use an AI feature, the requested titles or article content is sent directly to the OpenAI-compatible service URL you configure. Review that provider\'s privacy policy before enabling it. </p> <br /> <p> LeafFeed requires network access to retrieve feeds and online content, and may use background work for synchronization and notifications. </p> <br /> <h5> Disclaimers </h5> <br /> <p> LeafFeed is a content collection and reading tool. You are responsible for the feeds, services, and content you configure and use. </p> <br /> <h5> Open source license </h5> <br /> <p> LeafFeed is free and open-source software under the GNU GPL 3.0. The source code and license are available at the project repository. </p> <br /> <p> - https://github.com/conice/LeafFeed </p> <p> - https://www.gnu.org/licenses/gpl-3.0.html </p></string>
+    <string name="tos_content"><h5> Privacy policy </h5> <br /> <p> LeafFeed stores feeds, articles, account credentials, and preferences locally on your device. Account credentials are protected with a device-local encryption key, and Android system backup is disabled. Use LeafFeed\'s explicit export tools for subscriptions and settings when moving devices, then enter account credentials again. LeafFeed does not operate an analytics or advertising service. </p> <br /> <p> When you enable synchronization, feed data is sent to the service you configure. When you use an AI feature, the requested titles or article content is sent directly to the AI provider and endpoint you configure. Review that provider\'s privacy policy before enabling it. </p> <br /> <p> LeafFeed requires network access to retrieve feeds and online content, and may use background work for synchronization and notifications. </p> <br /> <h5> Disclaimers </h5> <br /> <p> LeafFeed is a content collection and reading tool. You are responsible for the feeds, services, and content you configure and use. </p> <br /> <h5> Open source license </h5> <br /> <p> LeafFeed is free and open-source software under the GNU GPL 3.0. The source code and license are available at the project repository. </p> <br /> <p> - https://github.com/conice/LeafFeed </p> <p> - https://www.gnu.org/licenses/gpl-3.0.html </p></string>
     <string name="agree">Agree</string>
     <string name="wallpaper_colors">Wallpaper colors</string>
     <string name="no_palettes">No palettes</string>

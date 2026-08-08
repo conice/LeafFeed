@@ -8,6 +8,8 @@ import java.net.NoRouteToHostException
 import java.net.UnknownHostException
 import javax.net.ssl.SSLException
 import kotlinx.serialization.SerializationException
+import me.ash.reader.domain.model.ai.AiFailureKind
+import me.ash.reader.domain.model.ai.AiProviderException
 import me.ash.reader.R
 
 enum class AiSummaryFailure(@StringRes val messageRes: Int) {
@@ -28,12 +30,28 @@ enum class AiSummaryFailure(@StringRes val messageRes: Int) {
 
     companion object {
         fun from(error: Throwable): AiSummaryFailure {
+            error.causeChain().filterIsInstance<AiProviderException>().firstOrNull()?.error?.let {
+                return when (it.kind) {
+                    AiFailureKind.NOT_CONFIGURED -> NotConfigured
+                    AiFailureKind.INVALID_CONFIGURATION -> InvalidConfiguration
+                    AiFailureKind.AUTHENTICATION -> Authentication
+                    AiFailureKind.ENDPOINT_NOT_FOUND,
+                    AiFailureKind.MODEL_NOT_FOUND -> EndpointOrModelNotFound
+                    AiFailureKind.RATE_LIMITED,
+                    AiFailureKind.QUOTA_EXCEEDED -> RateLimited
+                    AiFailureKind.REQUEST_REJECTED -> RequestRejected
+                    AiFailureKind.SERVICE_UNAVAILABLE -> ServiceUnavailable
+                    AiFailureKind.NETWORK -> Network
+                    AiFailureKind.TIMEOUT -> Timeout
+                    AiFailureKind.EMPTY_RESPONSE -> EmptyResponse
+                    AiFailureKind.INVALID_RESPONSE -> InvalidResponse
+                    AiFailureKind.CONTENT_REFUSED -> RequestRejected
+                    AiFailureKind.UNKNOWN -> Unknown
+                }
+            }
             val causes = error.causeChain()
             val message = causes.mapNotNull(Throwable::message).joinToString("\n").lowercase()
 
-            if ("ai url is not configured" in message || "ai model is not configured" in message) {
-                return NotConfigured
-            }
             if ("no articles to summarize" in message) return NoArticles
             if ("empty response" in message) return EmptyResponse
 
@@ -83,6 +101,18 @@ enum class AiSummaryFailure(@StringRes val messageRes: Int) {
 }
 
 internal fun Throwable.aiSummaryFailureDetail(): String {
+    causeChain().filterIsInstance<AiProviderException>().firstOrNull()?.let { providerError ->
+        val error = providerError.error
+        val structured = buildList {
+            add("${error.kind}: ${error.message}")
+            error.provider?.let { add("Provider: ${it.name}") }
+            error.statusCode?.let { add("HTTP status: $it") }
+            error.providerCode?.let { add("Provider code: ${it.redactAiSecrets()}") }
+            error.requestId?.let { add("Request ID: ${it.redactAiSecrets()}") }
+            error.detail?.let { add(it.redactAiSecrets()) }
+        }.joinToString("\n")
+        return structured.take(MAX_AI_ERROR_DETAIL_LENGTH)
+    }
     val detail =
         causeChain()
             .map { cause ->
@@ -113,6 +143,7 @@ private fun String.redactAiSecrets(): String =
     replace(AUTHORIZATION_BEARER) { match -> "${match.groupValues[1]}***" }
         .replace(AUTHORIZATION_VALUE) { match -> "${match.groupValues[1]}***" }
         .replace(SECRET_ASSIGNMENT) { match -> "${match.groupValues[1]}***" }
+        .replace(QUERY_SECRET) { match -> "${match.groupValues[1]}***" }
         .replace(URL_PASSWORD) { match -> "${match.groupValues[1]}***@" }
         .replace(OPENAI_STYLE_KEY, "sk-***")
         .replace(GOOGLE_STYLE_KEY, "AIza***")
@@ -123,6 +154,7 @@ private val AUTHORIZATION_VALUE =
     Regex("(?i)(\\bauthorization\\s*[=:]\\s*)(?!(?:bearer|basic)\\s)[^\\s,;&]+")
 private val SECRET_ASSIGNMENT =
     Regex("(?i)(\\b(?:api[_-]?key|access[_-]?token)\\s*[=:]\\s*)[^\\s,;&]+")
+private val QUERY_SECRET = Regex("(?i)([?&](?:key|api[_-]?key|x-api-key)=)[^&\\s]+")
 private val URL_PASSWORD = Regex("(?i)(https?://[^:/\\s]+:)[^@/\\s]+@")
 private val OPENAI_STYLE_KEY = Regex("\\bsk-[A-Za-z0-9._-]{6,}\\b")
 private val GOOGLE_STYLE_KEY = Regex("\\bAIza[0-9A-Za-z_-]{20,}\\b")
