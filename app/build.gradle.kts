@@ -43,6 +43,10 @@ if (releaseKeyPropsFile.exists()) {
 fun signingProperty(propertyName: String, environmentName: String): String? =
     project.providers.environmentVariable(environmentName).orNull
         ?.takeIf { it.isNotBlank() }
+        ?: project.providers.gradleProperty(environmentName).orNull
+            ?.takeIf { it.isNotBlank() }
+        ?: project.providers.gradleProperty(propertyName).orNull
+            ?.takeIf { it.isNotBlank() }
         ?: keyProps.getProperty(propertyName)?.takeIf { it.isNotBlank() }
 
 val releaseStoreFilePath = signingProperty("storeFile", "LEAFFEED_SIGNING_STORE_FILE")
@@ -66,6 +70,7 @@ if (releaseBuildRequested && !hasReleaseSigning) {
         "Release signing is not configured. Provide " +
             "LEAFFEED_SIGNING_STORE_FILE, LEAFFEED_SIGNING_STORE_PASSWORD, " +
             "LEAFFEED_SIGNING_KEY_ALIAS, and LEAFFEED_SIGNING_KEY_PASSWORD " +
+            "through environment variables or Gradle properties, " +
             "or configure signature/keystore_release.properties.",
     )
 }
@@ -80,7 +85,7 @@ android {
         // CI uses a monotonically increasing value so APKs signed by the same certificate can be
         // installed as updates. Local builds keep the stable development fallback.
         versionCode = ciVersionCode ?: 1
-        versionName = "0.2.2"
+        versionName = "0.2.3"
 
         buildConfigField(
             "String",

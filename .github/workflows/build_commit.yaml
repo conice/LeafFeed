@@ -33,7 +33,7 @@ jobs:
               run: sh ./gradlew testGithubDebugUnitTest --build-cache
 
             # Lint was added after the project already had a backlog, so keep the report visible
-            # without allowing it to block creation of the signed APK.
+            # without allowing it to block creation of the APK.
             - name: Lint GitHub debug
               continue-on-error: true
               run: sh ./gradlew lintGithubDebug --build-cache
@@ -49,7 +49,7 @@ jobs:
                   if-no-files-found: warn
 
     build:
-        name: Build signed APK
+        name: Build APK
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v5
@@ -63,6 +63,25 @@ jobs:
                   java-version: 17
 
             - uses: gradle/actions/setup-gradle@v5
+            - name: Select build type
+              id: build_type
+              env:
+                  ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+                  ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+                  ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+                  ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+              shell: bash
+              run: |
+                  if [[ -n "$ANDROID_KEYSTORE_BASE64" &&
+                        -n "$ANDROID_KEYSTORE_PASSWORD" &&
+                        -n "$ANDROID_KEY_ALIAS" &&
+                        -n "$ANDROID_KEY_PASSWORD" ]]; then
+                      echo "variant=release" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "variant=debug" >> "$GITHUB_OUTPUT"
+                      echo "::notice::Release signing secrets are incomplete; building a debug APK."
+                  fi
+
             - name: Verify release tag matches the app version
               shell: bash
               run: |
@@ -77,10 +96,10 @@ jobs:
                       exit 1
                   fi
 
-            # Downloadable push artifacts must use one persistent certificate. GitHub-hosted
-            # runners generate a different default debug keystore on every run, which makes
-            # consecutive APKs update-incompatible.
+            # Release artifacts use one persistent certificate so consecutive APKs remain
+            # update-compatible.
             - name: Configure stable signing
+              if: steps.build_type.outputs.variant == 'release'
               env:
                   LEAFFEED_SIGNING_STORE_FILE: ${{ runner.temp }}/leaffeed-release.keystore
                   LEAFFEED_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -113,7 +132,8 @@ jobs:
                       exit 1
                   fi
 
-            - name: Assemble signed GitHub APK
+            - name: Assemble signed GitHub release
+              if: steps.build_type.outputs.variant == 'release'
               env:
                   LEAFFEED_SIGNING_STORE_FILE: ${{ runner.temp }}/leaffeed-release.keystore
                   LEAFFEED_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -122,10 +142,14 @@ jobs:
                   LEAFFEED_VERSION_CODE: ${{ github.run_number }}
               run: sh ./gradlew assembleGithubRelease --build-cache
 
+            - name: Assemble GitHub debug
+              if: steps.build_type.outputs.variant == 'debug'
+              run: sh ./gradlew assembleGithubDebug --build-cache
+
             - uses: actions/upload-artifact@v6
               with:
                   name: LeafFeed-GitHub-Build-${{ github.sha }}
-                  path: app/build/outputs/apk/github/release/*.apk
+                  path: app/build/outputs/apk/github/${{ steps.build_type.outputs.variant }}/*.apk
                   if-no-files-found: error
 
     publish:

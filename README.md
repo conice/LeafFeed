@@ -124,6 +124,12 @@ LEAFFEED_SIGNING_KEY_ALIAS
 LEAFFEED_SIGNING_KEY_PASSWORD
 ```
 
+For local builds, the same properties can be kept in the user's Gradle properties file instead of
+the repository. On Termux this is `/data/data/com.termux/files/home/.gradle/gradle.properties`.
+Gradle user properties are loaded automatically and are used when the corresponding environment
+variable is not set. The file may use either the `LEAFFEED_SIGNING_*` names above or the shorter
+`storeFile`, `storePassword`, `keyAlias`, and `keyPassword` names.
+
 ```bash
 ./gradlew assembleGithubRelease
 ```
