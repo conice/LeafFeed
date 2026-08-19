@@ -226,36 +226,41 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                             SettingsPage(
                                 onBack = onBack,
                                 navigateToAccounts = { backStack.add(Route.Accounts) },
-                                navigateToColorAndStyle = { backStack.add(Route.ColorAndStyle) },
-                                navigateToInteraction = { backStack.add(Route.Interaction) },
+                                navigateToColorAndStyle = { target -> backStack.add(Route.ColorAndStyle(target)) },
+                                navigateToInteraction = { target -> backStack.add(Route.Interaction(target)) },
                                 navigateToTipsAndSupport = { backStack.add(Route.TipsAndSupport) },
-                                navigateToReadingOptions = { backStack.add(Route.ReadingOptions) },
-                                navigateToPodcastSettings = { backStack.add(Route.PodcastSettings) },
-                                navigateToDataPrivacySettings = { backStack.add(Route.DataPrivacySettings) },
+                                navigateToReadingOptions = { target -> backStack.add(Route.ReadingOptions(target)) },
+                                navigateToPodcastSettings = { target -> backStack.add(Route.PodcastSettings(target)) },
+                                navigateToDataPrivacySettings = { target -> backStack.add(Route.DataPrivacySettings(target)) },
+                                navigateToAiSettings = { target -> backStack.add(Route.AiSettings(target)) },
+                                navigateToNotificationSettings = { target -> backStack.add(Route.NotificationSettings(target)) },
                             )
                         }
-                    Route.AiSettings -> NavEntry(key) { AiSettingsPage(onBack = onBack) }
-                    Route.ReadingOptions -> NavEntry(key) {
+                    is Route.AiSettings -> NavEntry(key) { AiSettingsPage(onBack = onBack, targetSetting = key.targetSetting) }
+                    is Route.ReadingOptions -> NavEntry(key) {
                         ReadingOptionsPage(
                             onBack = onBack,
-                            navigateToAiSettings = { backStack.add(Route.AiSettings) },
+                            targetSetting = key.targetSetting,
+                            navigateToAiSettings = { backStack.add(Route.AiSettings()) },
                             navigateToCollections = { backStack.add(Route.CollectionManager) },
                             navigateToAutomations = { backStack.add(Route.Automations()) },
                         )
                     }
-                    Route.PodcastSettings -> NavEntry(key) {
+                    is Route.PodcastSettings -> NavEntry(key) {
                         PodcastSettingsPage(
                             onBack = onBack,
+                            targetSetting = key.targetSetting,
                             navigateToLibrary = { backStack.add(Route.PodcastLibrary) },
                             navigateToNotifications = {
-                                backStack.add(Route.NotificationSettings)
+                                backStack.add(Route.NotificationSettings())
                             },
                         )
                     }
-                    Route.NotificationSettings -> NavEntry(key) { NotificationSettingsPage(onBack = onBack) }
-                    Route.DataPrivacySettings -> NavEntry(key) {
+                    is Route.NotificationSettings -> NavEntry(key) { NotificationSettingsPage(onBack = onBack, targetSetting = key.targetSetting) }
+                    is Route.DataPrivacySettings -> NavEntry(key) {
                         DataPrivacySettingsPage(
                             onBack = onBack,
+                            targetSetting = key.targetSetting,
                             navigateToBackupAndMigration = {
                                 backStack.add(Route.BackupAndMigration)
                             },
@@ -325,10 +330,11 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                                 },
                             )
                         }
-                    Route.ColorAndStyle ->
+                    is Route.ColorAndStyle ->
                         NavEntry(key) {
                             ColorAndStylePage(
                                 onBack = onBack,
+                                targetSetting = key.targetSetting,
                                 navigateToDarkTheme = { backStack.add(Route.DarkTheme) },
                                 navigateToFeedsPageStyle = { backStack.add(Route.FeedsPageStyle) },
                                 navigateToFlowPageStyle = { backStack.add(Route.FlowPageStyle) },
@@ -367,10 +373,11 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                     Route.ReadingPageText -> NavEntry(key) { ReadingTextPage(onBack = onBack) }
                     Route.ReadingPageImage -> NavEntry(key) { ReadingImagePage(onBack = onBack) }
                     Route.ReadingPageVideo -> NavEntry(key) { ReadingVideoPage(onBack = onBack) }
-                    Route.Interaction ->
+                    is Route.Interaction ->
                         NavEntry(key) {
                             InteractionPage(
                                 onBack = onBack,
+                                targetSetting = key.targetSetting,
                                 navigateToLanguages = { backStack.add(Route.Languages) },
                                 navigateToNavigationActions = {
                                     backStack.add(Route.NavigationActions)

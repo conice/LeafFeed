@@ -75,6 +75,8 @@ import com.conice.morss.ui.ext.ExternalFonts
 import com.conice.morss.infrastructure.android.MimeType
 import com.conice.morss.infrastructure.android.showToast
 import com.conice.morss.ui.page.settings.SettingItem
+import com.conice.morss.ui.page.settings.SettingItemType
+import com.conice.morss.ui.page.settings.SettingKeys
 import com.conice.morss.ui.svg.PALETTE
 import com.conice.morss.ui.svg.SVGString
 import com.conice.morss.ui.theme.palette.TonalPalettes
@@ -88,6 +90,7 @@ import com.conice.morss.ui.theme.palette.safeHexToColor
 @Composable
 fun ColorAndStylePage(
     onBack: () -> Unit,
+    targetSetting: String? = null,
     navigateToDarkTheme: () -> Unit,
     navigateToFeedsPageStyle: () -> Unit,
     navigateToFlowPageStyle: () -> Unit,
@@ -192,6 +195,8 @@ fun ColorAndStylePage(
                     SettingItem(
                         title = stringResource(R.string.dark_theme),
                         desc = darkTheme.toDesc(context),
+                        settingKey = SettingKeys.AppearanceDarkTheme,
+                        targetKey = targetSetting,
                         separatedActions = true,
                         onClick = navigateToDarkTheme,
                     ) {
@@ -204,6 +209,9 @@ fun ColorAndStylePage(
                     SettingItem(
                         title = stringResource(R.string.basic_fonts),
                         desc = fonts.toDesc(context),
+                        settingKey = SettingKeys.AppearanceFonts,
+                        targetKey = targetSetting,
+                        type = SettingItemType.Choice,
                         onClick = { fontsDialogVisible = true },
                     ) {}
                     Spacer(modifier = Modifier.height(24.dp))
@@ -215,14 +223,23 @@ fun ColorAndStylePage(
                     )
                     SettingItem(
                         title = stringResource(R.string.feeds_page),
+                        settingKey = SettingKeys.AppearanceFeeds,
+                        targetKey = targetSetting,
+                        type = SettingItemType.Navigation,
                         onClick = navigateToFeedsPageStyle,
                     ) {}
                     SettingItem(
                         title = stringResource(R.string.flow_page),
+                        settingKey = SettingKeys.AppearanceFlow,
+                        targetKey = targetSetting,
+                        type = SettingItemType.Navigation,
                         onClick = navigateToFlowPageStyle,
                     ) {}
                     SettingItem(
                         title = stringResource(R.string.reading_page),
+                        settingKey = SettingKeys.AppearanceReading,
+                        targetKey = targetSetting,
+                        type = SettingItemType.Navigation,
                         onClick = navigateToReadingPageStyle,
                     ) {}
                 }

@@ -32,13 +32,18 @@ fun RYSwitch(
     enable: Boolean = true,
     onClick: (() -> Unit)? = null,
 ) {
+    val sharedInteractionSource = LocalInteractionSources.current
     Switch(
         modifier = modifier,
         checked = activated,
         enabled = enable,
-        onCheckedChange = { onClick?.invoke() },
+        onCheckedChange = if (sharedInteractionSource == null) {
+            onClick?.let { callback -> { callback() } }
+        } else {
+            null
+        },
         thumbContent = { SwitchThumbIcon(checked = activated) },
-        interactionSource = LocalInteractionSources.current
+        interactionSource = sharedInteractionSource,
     )
 }
 

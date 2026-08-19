@@ -49,11 +49,14 @@ import com.conice.morss.ui.component.base.RadioDialogOption
 import com.conice.morss.ui.component.base.Subtitle
 import com.conice.morss.infrastructure.android.getBrowserAppList
 import com.conice.morss.ui.page.settings.SettingItem
+import com.conice.morss.ui.page.settings.SettingItemType
+import com.conice.morss.ui.page.settings.SettingKeys
 import com.conice.morss.ui.theme.palette.onLight
 
 @Composable
 fun InteractionPage(
     onBack: () -> Unit,
+    targetSetting: String? = null,
     navigateToLanguages: () -> Unit,
     navigateToNavigationActions: () -> Unit,
 ) {
@@ -110,6 +113,9 @@ fun InteractionPage(
                     SettingItem(
                         title = stringResource(R.string.initial_page),
                         desc = initialPage.toDesc(context),
+                        settingKey = SettingKeys.InteractionInitialPage,
+                        targetKey = targetSetting,
+                        type = SettingItemType.Choice,
                         onClick = {
                             initialPageDialogVisible = true
                         },
@@ -117,6 +123,9 @@ fun InteractionPage(
                     SettingItem(
                         title = stringResource(R.string.initial_filter),
                         desc = initialFilter.toDesc(context),
+                        settingKey = SettingKeys.InteractionInitialFilter,
+                        targetKey = targetSetting,
+                        type = SettingItemType.Choice,
                         onClick = {
                             initialFilterDialogVisible = true
                         },
@@ -131,6 +140,9 @@ fun InteractionPage(
                         title = stringResource(R.string.navigation_actions_title),
                         desc = stringResource(R.string.navigation_actions_setting_desc),
                         icon = Icons.Outlined.Tune,
+                        settingKey = SettingKeys.InteractionNavigation,
+                        targetKey = targetSetting,
+                        type = SettingItemType.Navigation,
                         onClick = navigateToNavigationActions,
                     ) {}
                     Spacer(modifier = Modifier.height(24.dp))
@@ -141,6 +153,8 @@ fun InteractionPage(
                     )
                     SettingItem(
                         title = stringResource(R.string.hide_empty_groups),
+                        settingKey = SettingKeys.InteractionHideEmpty,
+                        targetKey = targetSetting,
                         onClick = {
                             hideEmptyGroups.toggle(context, scope)
                         },
@@ -158,6 +172,9 @@ fun InteractionPage(
                     SettingItem(
                         title = stringResource(R.string.swipe_to_start),
                         desc = swipeToStartAction.desc,
+                        settingKey = SettingKeys.InteractionSwipeStart,
+                        targetKey = targetSetting,
+                        type = SettingItemType.Choice,
                         onClick = {
                             swipeStartDialogVisible = true
                         },
@@ -165,6 +182,9 @@ fun InteractionPage(
                     SettingItem(
                         title = stringResource(R.string.swipe_to_end),
                         desc = swipeToEndAction.desc,
+                        settingKey = SettingKeys.InteractionSwipeEnd,
+                        targetKey = targetSetting,
+                        type = SettingItemType.Choice,
                         onClick = {
                             swipeEndDialogVisible = true
                         },
@@ -172,6 +192,9 @@ fun InteractionPage(
 
                     SettingItem(
                         title = stringResource(R.string.sort_unread_articles),
+                        settingKey = SettingKeys.InteractionSortUnread,
+                        targetKey = targetSetting,
+                        type = SettingItemType.Choice,
                         onClick = {
                             showSortUnreadArticlesDialog = true
                         },
@@ -181,6 +204,8 @@ fun InteractionPage(
 
                     SettingItem(
                         title = stringResource(R.string.mark_as_read_on_scroll),
+                        settingKey = SettingKeys.InteractionMarkScroll,
+                        targetKey = targetSetting,
                         onClick = {
                             markAsReadOnScroll.toggle(context, scope)
                         },
@@ -193,6 +218,9 @@ fun InteractionPage(
                     SettingItem(
                         title = stringResource(R.string.pull_from_bottom),
                         desc = pullToSwitchFeed.description(),
+                        settingKey = SettingKeys.InteractionPullFeed,
+                        targetKey = targetSetting,
+                        type = SettingItemType.Choice,
                         onClick = {
                             showPullToLoadDialog = true
                         },
@@ -206,6 +234,8 @@ fun InteractionPage(
                     )
                     SettingItem(
                         title = stringResource(id = R.string.pull_to_switch_article),
+                        settingKey = SettingKeys.InteractionPullArticle,
+                        targetKey = targetSetting,
                         onClick = { pullToSwitchArticle.toggle(context, scope) }) {
                         RYSwitch(activated = pullToSwitchArticle.value) {
                             pullToSwitchArticle.toggle(context, scope)
@@ -220,6 +250,9 @@ fun InteractionPage(
                     SettingItem(
                         title = stringResource(R.string.initial_open_app),
                         desc = openLink.toDesc(context),
+                        settingKey = SettingKeys.InteractionOpenLinks,
+                        targetKey = targetSetting,
+                        type = SettingItemType.Choice,
                         onClick = {
                             openLinkDialogVisible = true
                         },
@@ -228,6 +261,9 @@ fun InteractionPage(
                         title = stringResource(R.string.open_link_specific_browser),
                         desc = openLinkSpecificBrowser.toDesc(context),
                         enabled = isOpenLinkSpecificBrowserItemEnabled,
+                        settingKey = SettingKeys.InteractionBrowser,
+                        targetKey = targetSetting,
+                        type = SettingItemType.Choice,
                         onClick = {
 
                             if (isOpenLinkSpecificBrowserItemEnabled) {
@@ -244,6 +280,9 @@ fun InteractionPage(
                     SettingItem(
                         title = stringResource(R.string.shared_content),
                         desc = sharedContent.toDesc(context),
+                        settingKey = SettingKeys.InteractionShare,
+                        targetKey = targetSetting,
+                        type = SettingItemType.Choice,
                         onClick = {
                             sharedContentDialogVisible = true
                         },
@@ -256,6 +295,9 @@ fun InteractionPage(
                     )
                     SettingItem(
                         title = stringResource(R.string.languages),
+                        settingKey = SettingKeys.InteractionLanguages,
+                        targetKey = targetSetting,
+                        type = SettingItemType.Navigation,
                         onClick = navigateToLanguages,
                     ) {}
                     Spacer(modifier = Modifier.height(24.dp))

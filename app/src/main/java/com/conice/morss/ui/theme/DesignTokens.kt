@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.dp
  * values here are deliberately few so new surfaces inherit the same visual rhythm.
  */
 object LayoutTokens {
+    val MinimumTouchTarget = 48.dp
     val PageHorizontalPadding = 24.dp
     val CompactHorizontalPadding = 16.dp
     val PageTopPadding = 24.dp

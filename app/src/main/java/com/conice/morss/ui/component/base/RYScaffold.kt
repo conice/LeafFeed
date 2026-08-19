@@ -24,6 +24,7 @@ fun RYScaffold(
     actions: (@Composable RowScope.() -> Unit)? = null,
     topBar: (@Composable () -> Unit)? = null,
     bottomBar: (@Composable () -> Unit)? = null,
+    snackbarHost: @Composable () -> Unit = {},
     floatingActionButton: (@Composable () -> Unit)? = null,
     content: @Composable () -> Unit = {},
 ) {
@@ -59,6 +60,7 @@ fun RYScaffold(
             }
         },
         bottomBar = { bottomBar?.invoke() },
+        snackbarHost = { snackbarHost() },
         floatingActionButton = { floatingActionButton?.invoke() },
         floatingActionButtonPosition = floatingActionButtonPosition,
     )

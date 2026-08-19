@@ -10,7 +10,7 @@ package com.conice.morss.ui.page.settings
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,6 +31,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.conice.morss.ui.interaction.expressivePressFeedback
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -62,10 +64,9 @@ fun SelectableSettingGroupItem(
 
     Surface(
         modifier = modifier
-            .selectable(
-                selected = selected,
+            .clickable(
                 enabled = enable,
-                role = Role.RadioButton,
+                role = Role.Button,
                 interactionSource = interactionSource,
                 onClick = onClick,
             )
@@ -99,7 +100,7 @@ fun SelectableSettingGroupItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    maxLines = if (desc == null) 2 else 1,
+                    maxLines = 2,
                     style = MaterialTheme.typography.bodyLargeEmphasized,
                     color = titleColor,
                 )
@@ -107,11 +108,17 @@ fun SelectableSettingGroupItem(
                     Text(
                         text = it,
                         color = secondaryColor.copy(alpha = 0.7f),
-                        maxLines = 1,
+                        maxLines = 3,
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 }
             }
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                modifier = Modifier.padding(start = 12.dp),
+                tint = secondaryColor,
+            )
         }
     }
 }

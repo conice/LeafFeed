@@ -53,11 +53,14 @@ import com.conice.morss.ui.component.base.RYSwitch
 import com.conice.morss.ui.component.base.Subtitle
 import com.conice.morss.infrastructure.preference.dataStore
 import com.conice.morss.ui.page.settings.SettingItem
+import com.conice.morss.ui.page.settings.SettingItemType
+import com.conice.morss.ui.page.settings.SettingKeys
 import com.conice.morss.ui.theme.palette.onLight
 
 @Composable
 fun AiSettingsPage(
     onBack: () -> Unit,
+    targetSetting: String? = null,
     viewModel: AiSettingsViewModel = hiltViewModel(),
 ) {
     val context = LocalContext.current
@@ -72,6 +75,7 @@ fun AiSettingsPage(
     var promptDialog by remember { mutableStateOf(false) }
     var articleCountDialog by remember { mutableStateOf(false) }
     var timeoutDialog by remember { mutableStateOf(false) }
+    var contentScopeDialog by remember { mutableStateOf(false) }
     var providerDialog by remember { mutableStateOf(false) }
     var authDialog by remember { mutableStateOf(false) }
     var selection by remember { mutableStateOf<SelectionTarget?>(null) }
@@ -142,7 +146,7 @@ fun AiSettingsPage(
                     DisplayText(text = stringResource(R.string.ai_settings), desc = "")
                 }
                 item {
-                    Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = "API connections")
+                    Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = stringResource(R.string.settings_ai_connections_section))
                     state.connections.forEach { connection ->
                         val models = state.models.filter { it.connectionId == connection.id }
                         SettingItem(
@@ -173,6 +177,8 @@ fun AiSettingsPage(
                         title = "Add API connection",
                         desc = "Save another Responses, Gemini or Anthropic endpoint",
                         icon = Icons.Rounded.Add,
+                        settingKey = SettingKeys.AiConnections,
+                        targetKey = targetSetting,
                         onClick = {
                             editingConnection = null
                             resetConnectionDraft()
@@ -184,6 +190,8 @@ fun AiSettingsPage(
                         desc = "Reuse a saved API key with another model",
                         icon = Icons.Rounded.Add,
                         enabled = state.connections.isNotEmpty(),
+                        settingKey = SettingKeys.AiModels,
+                        targetKey = targetSetting,
                         onClick = {
                             editingModel = null
                             selectedConnectionId = state.connections.firstOrNull()?.id.orEmpty()
@@ -196,7 +204,7 @@ fun AiSettingsPage(
                     ) {}
                 }
                 item {
-                    Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = "Saved models")
+                    Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = stringResource(R.string.settings_ai_models_section))
                     state.models.forEach { model ->
                         val connection = state.connections.firstOrNull { it.id == model.connectionId }
                         SettingItem(
@@ -223,24 +231,29 @@ fun AiSettingsPage(
                     }
                 }
                 item {
-                    Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = "Task routing")
+                    Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = stringResource(R.string.settings_ai_routing_section))
                     val titleModel = state.models.firstOrNull { it.id == state.titleBinding?.primaryModelId }
                     val articleModel = state.models.firstOrNull { it.id == state.articleBinding?.primaryModelId }
                     val titlePrompt = state.prompts.firstOrNull { it.id == state.titleBinding?.promptId }
                     val articlePrompt = state.prompts.firstOrNull { it.id == state.articleBinding?.promptId }
                     SettingItem(
                         title = "Title summary model",
-                        desc = titleModel?.displayName ?: "Not configured",
+                        desc = titleModel?.displayName ?: stringResource(R.string.settings_ai_not_configured),
+                        type = SettingItemType.Choice,
+                        settingKey = SettingKeys.AiRouting,
+                        targetKey = targetSetting,
                         onClick = { selection = SelectionTarget(AiTask.TITLE_SUMMARY, SelectionKind.MODEL) },
                     ) {}
                     SettingItem(
                         title = "Title summary prompt",
-                        desc = titlePrompt?.name ?: "Not configured",
+                        desc = titlePrompt?.name ?: stringResource(R.string.settings_ai_not_configured),
+                        type = SettingItemType.Choice,
                         onClick = { selection = SelectionTarget(AiTask.TITLE_SUMMARY, SelectionKind.PROMPT) },
                     ) {}
                     SettingItem(
                         title = "Title summary fallback models",
                         desc = fallbackDescription(state, AiTask.TITLE_SUMMARY),
+                        type = SettingItemType.Choice,
                         onClick = {
                             fallbackTask = AiTask.TITLE_SUMMARY
                             fallbackDraft = (state.titleBinding?.fallbackModelIds ?: emptyList()).toSet()
@@ -248,12 +261,14 @@ fun AiSettingsPage(
                     ) {}
                     SettingItem(
                         title = "Article summary model",
-                        desc = articleModel?.displayName ?: "Not configured",
+                        desc = articleModel?.displayName ?: stringResource(R.string.settings_ai_not_configured),
+                        type = SettingItemType.Choice,
                         onClick = { selection = SelectionTarget(AiTask.ARTICLE_SUMMARY, SelectionKind.MODEL) },
                     ) {}
                     SettingItem(
                         title = "Article summary fallback models",
                         desc = fallbackDescription(state, AiTask.ARTICLE_SUMMARY),
+                        type = SettingItemType.Choice,
                         onClick = {
                             fallbackTask = AiTask.ARTICLE_SUMMARY
                             fallbackDraft = (state.articleBinding?.fallbackModelIds ?: emptyList()).toSet()
@@ -261,12 +276,14 @@ fun AiSettingsPage(
                     ) {}
                     SettingItem(
                         title = "Article summary prompt",
-                        desc = articlePrompt?.name ?: "Not configured",
+                        desc = articlePrompt?.name ?: stringResource(R.string.settings_ai_not_configured),
+                        type = SettingItemType.Choice,
                         onClick = { selection = SelectionTarget(AiTask.ARTICLE_SUMMARY, SelectionKind.PROMPT) },
                     ) {}
                     SettingItem(
                         title = stringResource(R.string.ai_article_count),
                         desc = state.titleBinding?.articleCount?.toString() ?: "30",
+                        type = SettingItemType.Choice,
                         onClick = {
                             articleCount = (state.titleBinding?.articleCount ?: 30).toString()
                             articleCountDialog = true
@@ -274,7 +291,7 @@ fun AiSettingsPage(
                     ) {}
                 }
                 item {
-                    Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = "Prompt library")
+                    Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = stringResource(R.string.settings_ai_prompts_section))
                     state.prompts.forEach { prompt ->
                         SettingItem(
                             title = prompt.name,
@@ -303,6 +320,8 @@ fun AiSettingsPage(
                         title = "Add prompt",
                         desc = "Create a reusable prompt for either summary task",
                         icon = Icons.Rounded.Add,
+                        settingKey = SettingKeys.AiPrompts,
+                        targetKey = targetSetting,
                         onClick = {
                             editingPrompt = null
                             resetPromptDraft()
@@ -317,10 +336,12 @@ fun AiSettingsPage(
                     ) {}
                 }
                 item {
-                    Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = "Request behavior")
+                    Subtitle(modifier = Modifier.padding(horizontal = 24.dp), text = stringResource(R.string.settings_ai_request_section))
                     SettingItem(
-                        title = "Stream responses",
-                        desc = "Show partial output as it arrives",
+                        title = stringResource(R.string.settings_ai_streaming),
+                        desc = stringResource(R.string.settings_ai_streaming_desc),
+                        settingKey = SettingKeys.AiStreaming,
+                        targetKey = targetSetting,
                         onClick = {
                             scope.launch {
                                 context.dataStore.edit {
@@ -338,10 +359,54 @@ fun AiSettingsPage(
                         }
                     }
                     SettingItem(
-                        title = "Request timeout",
-                        desc = "${features.aiTimeoutSeconds / 60} minutes",
+                        title = stringResource(R.string.settings_ai_timeout),
+                        desc = stringResource(R.string.settings_minutes, features.aiTimeoutSeconds / 60),
+                        type = SettingItemType.Choice,
+                        settingKey = SettingKeys.AiTimeout,
+                        targetKey = targetSetting,
                         onClick = { timeoutDialog = true },
                     ) {}
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Subtitle(
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        text = stringResource(R.string.settings_ai_privacy_section),
+                    )
+                    SettingItem(
+                        title = stringResource(R.string.settings_ai_content_scope),
+                        desc = stringResource(
+                            when (features.aiContentScope) {
+                                0 -> R.string.settings_ai_content_title_only
+                                1 -> R.string.settings_ai_content_title_description
+                                else -> R.string.settings_ai_content_displayed
+                            },
+                        ),
+                        type = SettingItemType.Choice,
+                        settingKey = SettingKeys.AiContentScope,
+                        targetKey = targetSetting,
+                        onClick = { contentScopeDialog = true },
+                    ) {}
+                    SettingItem(
+                        title = stringResource(R.string.settings_ai_include_link),
+                        settingKey = SettingKeys.AiIncludeLink,
+                        targetKey = targetSetting,
+                        onClick = {
+                            scope.launch {
+                                context.dataStore.edit {
+                                    it[FeaturePreferenceKeys.aiIncludeArticleLink] =
+                                        !features.aiIncludeArticleLink
+                                }
+                            }
+                        },
+                    ) {
+                        RYSwitch(activated = features.aiIncludeArticleLink) {
+                            scope.launch {
+                                context.dataStore.edit {
+                                    it[FeaturePreferenceKeys.aiIncludeArticleLink] =
+                                        !features.aiIncludeArticleLink
+                                }
+                            }
+                        }
+                    }
                 }
                 item {
                     Spacer(modifier = Modifier.height(24.dp))
@@ -349,6 +414,30 @@ fun AiSettingsPage(
                 }
             }
         },
+    )
+
+    val contentScopeOptions = listOf(
+        stringResource(R.string.settings_ai_content_title_only),
+        stringResource(R.string.settings_ai_content_title_description),
+        stringResource(R.string.settings_ai_content_displayed),
+    )
+    RadioDialog(
+        visible = contentScopeDialog,
+        title = stringResource(R.string.settings_ai_content_scope),
+        options = contentScopeOptions.mapIndexed { index, label ->
+            RadioDialogOption(
+                text = label,
+                selected = features.aiContentScope == index,
+                onClick = {
+                    scope.launch {
+                        context.dataStore.edit {
+                            it[FeaturePreferenceKeys.aiContentScope] = index
+                        }
+                    }
+                },
+            )
+        },
+        onDismissRequest = { contentScopeDialog = false },
     )
 
     ConnectionDialog(

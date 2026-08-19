@@ -48,11 +48,11 @@ sealed interface Route : NavKey {
 
     // Settings
     @Serializable data object Settings : Route
-    @Serializable data object AiSettings : Route
-    @Serializable data object ReadingOptions : Route
-    @Serializable data object PodcastSettings : Route
-    @Serializable data object NotificationSettings : Route
-    @Serializable data object DataPrivacySettings : Route
+    @Serializable data class AiSettings(val targetSetting: String? = null) : Route
+    @Serializable data class ReadingOptions(val targetSetting: String? = null) : Route
+    @Serializable data class PodcastSettings(val targetSetting: String? = null) : Route
+    @Serializable data class NotificationSettings(val targetSetting: String? = null) : Route
+    @Serializable data class DataPrivacySettings(val targetSetting: String? = null) : Route
     @Serializable data object BackupAndMigration : Route
     // Retained only to restore navigation state saved before diagnostics moved.
     @Serializable data object SyncStatus : Route
@@ -68,7 +68,7 @@ sealed interface Route : NavKey {
     @Serializable data object AddAccounts : Route
 
     // Color & Style
-    @Serializable data object ColorAndStyle : Route
+    @Serializable data class ColorAndStyle(val targetSetting: String? = null) : Route
 
     @Serializable data object DarkTheme : Route
 
@@ -89,7 +89,7 @@ sealed interface Route : NavKey {
     @Serializable data object ReadingPageVideo : Route
 
     // Interaction
-    @Serializable data object Interaction : Route
+    @Serializable data class Interaction(val targetSetting: String? = null) : Route
     @Serializable data object NavigationActions : Route
 
     // Languages

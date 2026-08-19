@@ -25,6 +25,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.datastore.preferences.core.Preferences
@@ -46,97 +47,133 @@ import com.conice.morss.ui.component.base.RadioDialogOption
 import com.conice.morss.ui.component.base.Subtitle
 import com.conice.morss.infrastructure.preference.dataStore
 import com.conice.morss.ui.page.settings.SettingItem
+import com.conice.morss.ui.page.settings.SettingItemType
+import com.conice.morss.ui.page.settings.SettingKeys
 import com.conice.morss.ui.theme.palette.onLight
 
 @Composable
 fun ReadingOptionsPage(
     onBack: () -> Unit,
+    targetSetting: String? = null,
     navigateToAiSettings: () -> Unit,
     navigateToCollections: () -> Unit,
     navigateToAutomations: () -> Unit,
 ) {
-    FeatureSettingsPage(title = "Reading and articles", onBack = onBack) { settings, write ->
-        section("AI")
-        action("AI settings", "Models, prompts and request behavior", navigateToAiSettings)
+    FeatureSettingsPage(title = stringResource(R.string.settings_reading_title), onBack = onBack, targetSetting = targetSetting) { settings, write ->
+        section(stringResource(R.string.ai_settings))
+        action(
+            stringResource(R.string.ai_settings),
+            stringResource(R.string.settings_ai_entry_desc),
+            type = SettingItemType.Navigation,
+            onClick = navigateToAiSettings,
+        )
 
-        section("Reading status")
-        toggle("Mark read when opened", settings.markReadOnOpen) { write(FeaturePreferenceKeys.markReadOnOpen, it) }
-        toggle("Mark read at the end", settings.markReadAtEnd) { write(FeaturePreferenceKeys.markReadAtEnd, it) }
-        toggle("Prefer parsed full content", settings.preferFullContent) { write(FeaturePreferenceKeys.preferFullContent, it) }
+        section(stringResource(R.string.settings_reading_status_section))
+        toggle(stringResource(R.string.settings_mark_read_when_opened), settings.markReadOnOpen, settingKey = SettingKeys.ReadingMarkOpened) { write(FeaturePreferenceKeys.markReadOnOpen, it) }
+        toggle(stringResource(R.string.settings_mark_read_at_end), settings.markReadAtEnd, settingKey = SettingKeys.ReadingMarkEnd) { write(FeaturePreferenceKeys.markReadAtEnd, it) }
+        toggle(stringResource(R.string.settings_prefer_full_content), settings.preferFullContent, settingKey = SettingKeys.ReadingFullContent) { write(FeaturePreferenceKeys.preferFullContent, it) }
 
-        section("Article controls")
-
-        section("Management")
-        action("Tags and notes", "Manage reading data", navigateToCollections)
-        action("Automations", "Conditions, actions and execution history", navigateToAutomations)
+        section(stringResource(R.string.settings_management_section))
+        action(stringResource(R.string.settings_tags_notes), stringResource(R.string.settings_manage_reading_data), settingKey = SettingKeys.ReadingTagsNotes, type = SettingItemType.Navigation, onClick = navigateToCollections)
+        action(stringResource(R.string.settings_automations), stringResource(R.string.settings_automations_desc), settingKey = SettingKeys.ReadingAutomations, type = SettingItemType.Navigation, onClick = navigateToAutomations)
     }
 }
 
 @Composable
 fun PodcastSettingsPage(
     onBack: () -> Unit,
+    targetSetting: String? = null,
     navigateToLibrary: () -> Unit,
     navigateToNotifications: () -> Unit,
 ) {
     val context = LocalContext.current
     val viewModel: PodcastSettingsViewModel = hiltViewModel()
     var confirmClearDownloads by remember { mutableStateOf(false) }
-    FeatureSettingsPage(title = "Podcasts and notifications", onBack = onBack) { settings, write ->
-        section("Notifications")
+    FeatureSettingsPage(title = stringResource(R.string.settings_podcast_title), onBack = onBack, targetSetting = targetSetting) { settings, write ->
+        section(stringResource(R.string.settings_notifications_title))
         action(
-            "Notification settings",
-            "New articles, podcasts and system controls",
-            navigateToNotifications,
+            stringResource(R.string.settings_notification_settings),
+            stringResource(R.string.settings_notification_settings_desc),
+            settingKey = SettingKeys.PodcastNotifications,
+            type = SettingItemType.Navigation,
+            onClick = navigateToNotifications,
         )
 
-        section("Playback")
-        choice("Default speed", PodcastPlaybackSpeeds.indexOf(settings.podcastDefaultSpeed).coerceAtLeast(0), PodcastPlaybackSpeeds.map { "${it}x" }) {
+        section(stringResource(R.string.settings_podcast_playback_section))
+        val rewindOptions = listOf(
+            stringResource(R.string.settings_seconds, 10),
+            stringResource(R.string.settings_seconds, 15),
+            stringResource(R.string.settings_seconds, 30),
+            stringResource(R.string.settings_seconds, 60),
+        )
+        val forwardOptions = listOf(
+            stringResource(R.string.settings_seconds, 15),
+            stringResource(R.string.settings_seconds, 30),
+            stringResource(R.string.settings_seconds, 60),
+            stringResource(R.string.settings_seconds, 90),
+        )
+        choice(stringResource(R.string.settings_podcast_default_speed), PodcastPlaybackSpeeds.indexOf(settings.podcastDefaultSpeed).coerceAtLeast(0), PodcastPlaybackSpeeds.map { "${it}x" }, settingKey = SettingKeys.PodcastSpeed) {
             write(FeaturePreferenceKeys.podcastDefaultSpeed, PodcastPlaybackSpeeds[it])
         }
-        choice("Rewind interval", listOf(10, 15, 30, 60).indexOf(settings.podcastRewindSeconds).coerceAtLeast(0), listOf("10 seconds", "15 seconds", "30 seconds", "60 seconds")) {
+        choice(stringResource(R.string.settings_podcast_rewind), listOf(10, 15, 30, 60).indexOf(settings.podcastRewindSeconds).coerceAtLeast(0), rewindOptions, settingKey = SettingKeys.PodcastRewind) {
             write(FeaturePreferenceKeys.podcastRewindSeconds, listOf(10, 15, 30, 60)[it])
         }
-        choice("Forward interval", listOf(15, 30, 60, 90).indexOf(settings.podcastForwardSeconds).coerceAtLeast(0), listOf("15 seconds", "30 seconds", "60 seconds", "90 seconds")) {
+        choice(stringResource(R.string.settings_podcast_forward), listOf(15, 30, 60, 90).indexOf(settings.podcastForwardSeconds).coerceAtLeast(0), forwardOptions, settingKey = SettingKeys.PodcastForward) {
             write(FeaturePreferenceKeys.podcastForwardSeconds, listOf(15, 30, 60, 90)[it])
         }
-        toggle("Play next episode automatically", settings.podcastAutoPlayNext) { write(FeaturePreferenceKeys.podcastAutoPlayNext, it) }
-        toggle("Mark completed episodes as played", settings.podcastMarkPlayed) { write(FeaturePreferenceKeys.podcastMarkPlayed, it) }
-        toggle("Remember playback position", settings.podcastRememberProgress) { write(FeaturePreferenceKeys.podcastRememberProgress, it) }
+        toggle(stringResource(R.string.settings_podcast_auto_play), settings.podcastAutoPlayNext, settingKey = SettingKeys.PodcastAutoPlay) { write(FeaturePreferenceKeys.podcastAutoPlayNext, it) }
+        toggle(stringResource(R.string.settings_podcast_mark_played), settings.podcastMarkPlayed, settingKey = SettingKeys.PodcastMarkPlayed) { write(FeaturePreferenceKeys.podcastMarkPlayed, it) }
+        toggle(stringResource(R.string.settings_podcast_remember_progress), settings.podcastRememberProgress, settingKey = SettingKeys.PodcastRememberProgress) { write(FeaturePreferenceKeys.podcastRememberProgress, it) }
 
-        section("Downloads")
-        action("Podcast library", "Browse unplayed and downloaded episodes", navigateToLibrary)
-        toggle("Automatically download new episodes", settings.podcastAutoDownload) { write(FeaturePreferenceKeys.podcastAutoDownload, it) }
-        toggle("Download on Wi-Fi only", settings.podcastWifiOnly, settings.podcastAutoDownload) { write(FeaturePreferenceKeys.podcastWifiOnly, it) }
-        choice("Automatic download scope", settings.podcastDownloadScope, listOf("All new episodes", "Starred only", "Read later only"), settings.podcastAutoDownload) {
+        section(stringResource(R.string.settings_podcast_downloads_section))
+        action(stringResource(R.string.settings_podcast_library), stringResource(R.string.settings_podcast_library_desc), settingKey = SettingKeys.PodcastLibrary, type = SettingItemType.Navigation, onClick = navigateToLibrary)
+        toggle(stringResource(R.string.settings_podcast_auto_download), settings.podcastAutoDownload, settingKey = SettingKeys.PodcastAutoDownload) { write(FeaturePreferenceKeys.podcastAutoDownload, it) }
+        toggle(stringResource(R.string.settings_podcast_wifi_only), settings.podcastWifiOnly, settings.podcastAutoDownload, settingKey = SettingKeys.PodcastWifiOnly) { write(FeaturePreferenceKeys.podcastWifiOnly, it) }
+        choice(stringResource(R.string.settings_podcast_download_scope), settings.podcastDownloadScope, listOf(
+            stringResource(R.string.settings_podcast_scope_all),
+            stringResource(R.string.settings_podcast_scope_starred),
+            stringResource(R.string.settings_podcast_scope_read_later),
+        ), settings.podcastAutoDownload, settingKey = SettingKeys.PodcastDownloadScope) {
             write(FeaturePreferenceKeys.podcastDownloadScope, it)
         }
-        choice("Maximum cache", listOf(256, 512, 1024, 2048).indexOf(settings.podcastCacheMb).coerceAtLeast(1), listOf("256 MB", "512 MB", "1 GB", "2 GB")) {
+        choice(stringResource(R.string.settings_podcast_cache_limit), listOf(256, 512, 1024, 2048).indexOf(settings.podcastCacheMb).coerceAtLeast(1), listOf(
+            stringResource(R.string.settings_megabytes, 256),
+            stringResource(R.string.settings_megabytes, 512),
+            stringResource(R.string.settings_gigabytes, 1),
+            stringResource(R.string.settings_gigabytes, 2),
+        ), settingKey = SettingKeys.PodcastCache) {
             write(FeaturePreferenceKeys.podcastCacheMb, listOf(256, 512, 1024, 2048)[it])
         }
-        choice("Keep downloads", listOf(7, 30, 90, 0).indexOf(settings.podcastRetentionDays).coerceAtLeast(1), listOf("7 days", "30 days", "90 days", "Until manually removed")) {
+        choice(stringResource(R.string.settings_podcast_keep_downloads), listOf(7, 30, 90, 0).indexOf(settings.podcastRetentionDays).coerceAtLeast(1), listOf(
+            pluralStringResource(R.plurals.days, 7, 7),
+            pluralStringResource(R.plurals.days, 30, 30),
+            pluralStringResource(R.plurals.days, 90, 90),
+            stringResource(R.string.settings_podcast_until_removed),
+        ), settingKey = SettingKeys.PodcastRetention) {
             write(FeaturePreferenceKeys.podcastRetentionDays, listOf(7, 30, 90, 0)[it])
         }
-        info("Download location", viewModel.downloadLocation)
-        action("Clear podcast downloads", "Remove all downloaded episode files") {
+        info(stringResource(R.string.settings_podcast_download_location), viewModel.downloadLocation, settingKey = SettingKeys.PodcastDownloadLocation)
+        action(stringResource(R.string.settings_podcast_clear_downloads), stringResource(R.string.settings_podcast_clear_downloads_desc), settingKey = SettingKeys.PodcastClearDownloads, type = SettingItemType.Destructive) {
             if (settings.cleanupConfirmation) confirmClearDownloads = true
             else viewModel.clearDownloads { result ->
-                context.showToast(if (result.isSuccess) "Podcast downloads cleared" else "Unable to clear downloads")
+                context.showToast(context.getString(if (result.isSuccess) R.string.settings_podcast_downloads_cleared else R.string.settings_podcast_downloads_clear_failed))
             }
         }
 
-        section("Transcript and metadata")
-        toggle("Load transcripts automatically", settings.podcastAutoTranscript) { write(FeaturePreferenceKeys.podcastAutoTranscript, it) }
-        toggle("Show season, episode and explicit labels", settings.podcastShowEpisodeMetadata) { write(FeaturePreferenceKeys.podcastShowEpisodeMetadata, it) }
+        section(stringResource(R.string.settings_podcast_transcript_section))
+        toggle(stringResource(R.string.settings_podcast_transcript_auto), settings.podcastAutoTranscript, settingKey = SettingKeys.PodcastTranscript) { write(FeaturePreferenceKeys.podcastAutoTranscript, it) }
+        toggle(stringResource(R.string.settings_podcast_metadata), settings.podcastShowEpisodeMetadata, settingKey = SettingKeys.PodcastMetadata) { write(FeaturePreferenceKeys.podcastShowEpisodeMetadata, it) }
     }
     if (confirmClearDownloads) {
         ConfirmationDialog(
-            title = "Clear podcast downloads?",
-            text = "All downloaded episode files will be removed.",
+            title = stringResource(R.string.settings_podcast_clear_downloads_title),
+            text = stringResource(R.string.settings_podcast_clear_downloads_text),
+            confirmLabel = stringResource(R.string.settings_action_clear),
             onDismiss = { confirmClearDownloads = false },
             onConfirm = {
                 confirmClearDownloads = false
                 viewModel.clearDownloads { result ->
-                    context.showToast(if (result.isSuccess) "Podcast downloads cleared" else "Unable to clear downloads")
+                    context.showToast(context.getString(if (result.isSuccess) R.string.settings_podcast_downloads_cleared else R.string.settings_podcast_downloads_clear_failed))
                 }
             },
         )
@@ -144,21 +181,21 @@ fun PodcastSettingsPage(
 }
 
 @Composable
-fun NotificationSettingsPage(onBack: () -> Unit) {
+fun NotificationSettingsPage(onBack: () -> Unit, targetSetting: String? = null) {
     val context = LocalContext.current
-    FeatureSettingsPage(title = "Notifications", onBack = onBack) { settings, write ->
-        section("New articles")
-        toggle("Enable new article notifications", settings.notificationsEnabled) { write(FeaturePreferenceKeys.notificationsEnabled, it) }
-        choice("Articles shown per feed", listOf(1, 3, 5, 10).indexOf(settings.notificationMaxArticles).coerceAtLeast(2), listOf("1", "3", "5", "10")) {
+    FeatureSettingsPage(title = stringResource(R.string.settings_notifications_title), onBack = onBack, targetSetting = targetSetting) { settings, write ->
+        section(stringResource(R.string.settings_notifications_articles_section))
+        toggle(stringResource(R.string.settings_notifications_enable_articles), settings.notificationsEnabled, settingKey = SettingKeys.NotificationsEnabled) { write(FeaturePreferenceKeys.notificationsEnabled, it) }
+        choice(stringResource(R.string.settings_notifications_articles_per_feed), listOf(1, 3, 5, 10).indexOf(settings.notificationMaxArticles).coerceAtLeast(2), listOf("1", "3", "5", "10"), settingKey = SettingKeys.NotificationsMaxArticles) {
             write(FeaturePreferenceKeys.notificationMaxArticles, listOf(1, 3, 5, 10)[it])
         }
-        toggle("Open the article directly", settings.notificationOpenArticle) { write(FeaturePreferenceKeys.notificationOpenArticle, it) }
+        toggle(stringResource(R.string.settings_notifications_open_article), settings.notificationOpenArticle, settingKey = SettingKeys.NotificationsOpenArticle) { write(FeaturePreferenceKeys.notificationOpenArticle, it) }
 
-        section("Content selection")
-        toggle("Notify new podcast episodes", settings.notificationPodcastEpisodes) { write(FeaturePreferenceKeys.notificationPodcastEpisodes, it) }
+        section(stringResource(R.string.settings_notifications_content_section))
+        toggle(stringResource(R.string.settings_notifications_podcasts), settings.notificationPodcastEpisodes, settingKey = SettingKeys.NotificationsPodcasts) { write(FeaturePreferenceKeys.notificationPodcastEpisodes, it) }
 
-        section("System controls")
-        action("Sound, vibration and importance", "Managed by Android notification settings") {
+        section(stringResource(R.string.settings_notifications_system_section))
+        action(stringResource(R.string.settings_notifications_system), stringResource(R.string.settings_notifications_system_desc), settingKey = SettingKeys.NotificationsSystem, type = SettingItemType.External) {
             context.startActivity(
                 Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(
                     Settings.EXTRA_APP_PACKAGE,
@@ -172,6 +209,7 @@ fun NotificationSettingsPage(onBack: () -> Unit) {
 @Composable
 fun DataPrivacySettingsPage(
     onBack: () -> Unit,
+    targetSetting: String? = null,
     navigateToBackupAndMigration: () -> Unit,
     navigateToDiagnosticDetails: () -> Unit,
 ) {
@@ -183,136 +221,157 @@ fun DataPrivacySettingsPage(
     var confirmClearReader by remember { mutableStateOf(false) }
     var confirmCleanArticles by remember { mutableStateOf(false) }
     var confirmOptimizeDatabase by remember { mutableStateOf(false) }
-    FeatureSettingsPage(title = "Data and privacy", onBack = onBack) { settings, write ->
-        section("Synchronization and storage")
-        choice("Duplicate detection", settings.deduplicationMode, listOf("Article ID", "Normalized link", "Link, title and date")) {
+    FeatureSettingsPage(title = stringResource(R.string.settings_privacy_title), onBack = onBack, targetSetting = targetSetting) { settings, write ->
+        section(stringResource(R.string.settings_data_sync_section))
+        choice(stringResource(R.string.settings_data_duplicate_detection), settings.deduplicationMode, listOf(
+            stringResource(R.string.settings_data_duplicate_id),
+            stringResource(R.string.settings_data_duplicate_link),
+            stringResource(R.string.settings_data_duplicate_link_title_date),
+        ), settingKey = SettingKeys.DataDuplicateDetection) {
             write(FeaturePreferenceKeys.deduplicationMode, it)
         }
-        toggle("Fetch full content during sync", settings.syncFullContent) { write(FeaturePreferenceKeys.syncFullContent, it) }
-        toggle("Confirm before destructive cleanup", settings.cleanupConfirmation) { write(FeaturePreferenceKeys.cleanupConfirmation, it) }
-        section("AI privacy")
-        choice("Content sent for article summaries", settings.aiContentScope, listOf("Title only", "Title and description", "Displayed article content")) {
-            write(FeaturePreferenceKeys.aiContentScope, it)
-        }
-        toggle("Include the article link", settings.aiIncludeArticleLink) { write(FeaturePreferenceKeys.aiIncludeArticleLink, it) }
+        toggle(stringResource(R.string.settings_data_sync_full_content), settings.syncFullContent, settingKey = SettingKeys.DataSyncFullContent) { write(FeaturePreferenceKeys.syncFullContent, it) }
+        toggle(stringResource(R.string.settings_data_confirm_cleanup), settings.cleanupConfirmation, settingKey = SettingKeys.DataCleanupConfirmation) { write(FeaturePreferenceKeys.cleanupConfirmation, it) }
+        section(stringResource(R.string.settings_data_ai_cache_section))
         action(
-            "Clear AI summary cache",
-            "${cacheUsage.aiFiles} files, ${formatBytes(cacheUsage.aiBytes)}",
+            stringResource(R.string.settings_data_clear_ai_cache),
+            stringResource(R.string.settings_data_cache_usage, cacheUsage.aiFiles, formatBytes(cacheUsage.aiBytes)),
             enabled = !storageOperationInProgress,
+            settingKey = SettingKeys.DataClearAi,
+            type = SettingItemType.Destructive,
+            loading = storageOperationInProgress,
         ) {
             if (settings.cleanupConfirmation) confirmClearAi = true
             else viewModel.clearAiSummaryCache { success ->
-                context.showToast(if (success) "AI summary cache cleared" else "Unable to clear AI summary cache")
+                context.showToast(context.getString(if (success) R.string.settings_data_ai_cache_cleared else R.string.settings_data_ai_cache_clear_failed))
             }
         }
 
-        section("Cache controls")
+        section(stringResource(R.string.settings_data_cache_section))
+        val databaseDescription = if (cacheUsage.reclaimableDatabaseBytes > 0L) {
+            "${formatBytes(cacheUsage.databaseBytes)} · ${stringResource(R.string.settings_data_reclaimable, formatBytes(cacheUsage.reclaimableDatabaseBytes))}"
+        } else {
+            formatBytes(cacheUsage.databaseBytes)
+        }
         info(
-            "Database storage",
-            buildString {
-                append(formatBytes(cacheUsage.databaseBytes))
-                if (cacheUsage.reclaimableDatabaseBytes > 0L) {
-                    append("; ")
-                    append(formatBytes(cacheUsage.reclaimableDatabaseBytes))
-                    append(" reclaimable")
-                }
-            },
+            stringResource(R.string.settings_data_database_storage),
+            databaseDescription,
+            settingKey = SettingKeys.DataDatabaseStorage,
         )
         action(
-            "Clear temporary cache",
-            "${cacheUsage.temporaryFiles} files, ${formatBytes(cacheUsage.temporaryBytes)}",
+            stringResource(R.string.settings_data_clear_temporary),
+            stringResource(R.string.settings_data_cache_usage, cacheUsage.temporaryFiles, formatBytes(cacheUsage.temporaryBytes)),
             enabled = !storageOperationInProgress,
+            settingKey = SettingKeys.DataClearTemporary,
+            type = SettingItemType.Destructive,
+            loading = storageOperationInProgress,
         ) {
             viewModel.clearTemporaryCache { success ->
                 context.showToast(
-                    if (success) "Temporary cache cleared" else "Unable to clear temporary cache"
+                    context.getString(if (success) R.string.settings_data_temporary_cleared else R.string.settings_data_temporary_clear_failed)
                 )
             }
         }
         action(
-            "Clear parsed article cache",
-            "${cacheUsage.readerFiles} files, ${formatBytes(cacheUsage.readerBytes)}",
+            stringResource(R.string.settings_data_clear_article_cache),
+            stringResource(R.string.settings_data_cache_usage, cacheUsage.readerFiles, formatBytes(cacheUsage.readerBytes)),
             enabled = !storageOperationInProgress,
+            settingKey = SettingKeys.DataClearArticle,
+            type = SettingItemType.Destructive,
+            loading = storageOperationInProgress,
         ) {
             if (settings.cleanupConfirmation) confirmClearReader = true
             else viewModel.clearReaderCache { success ->
-                context.showToast(if (success) "Article cache cleared" else "Unable to clear article cache")
+                context.showToast(context.getString(if (success) R.string.settings_data_article_cache_cleared else R.string.settings_data_article_cache_clear_failed))
             }
         }
         action(
-            "Clean up old read articles",
-            "Uses account retention; keeps unread, starred and Read later articles",
+            stringResource(R.string.settings_data_cleanup_articles),
+            stringResource(R.string.settings_data_cleanup_articles_desc),
             enabled = !storageOperationInProgress,
+            settingKey = SettingKeys.DataCleanArticles,
+            type = SettingItemType.Destructive,
+            loading = storageOperationInProgress,
         ) {
             if (settings.cleanupConfirmation) confirmCleanArticles = true
             else viewModel.cleanOldReadArticles { result ->
                 context.showToast(
                     result.fold(
-                        onSuccess = { "$it old articles removed" },
-                        onFailure = { "Unable to clean up old articles" },
+                        onSuccess = { context.resources.getQuantityString(R.plurals.settings_data_articles_removed, it, it) },
+                        onFailure = { context.getString(R.string.settings_data_cleanup_articles_failed) },
                     )
                 )
             }
         }
         action(
-            "Optimize database",
-            "Reclaim unused space after cleanup",
+            stringResource(R.string.settings_data_optimize),
+            stringResource(R.string.settings_data_optimize_desc),
             enabled = !storageOperationInProgress,
+            settingKey = SettingKeys.DataOptimize,
+            type = SettingItemType.Action,
+            loading = storageOperationInProgress,
         ) { confirmOptimizeDatabase = true }
 
-        section("Backups")
+        section(stringResource(R.string.settings_data_backup_section))
         action(
-            "Backup and migration",
-            "Preferences, tags, notes and saved searches",
-            navigateToBackupAndMigration,
+            stringResource(R.string.settings_data_backup),
+            stringResource(R.string.settings_data_backup_desc),
+            settingKey = SettingKeys.DataBackup,
+            type = SettingItemType.Navigation,
+            onClick = navigateToBackupAndMigration,
         )
 
-        section("Diagnostics")
+        section(stringResource(R.string.settings_data_diagnostics_section))
         action(
-            "Diagnostic details",
-            "Worker information, errors and repair tools",
-            navigateToDiagnosticDetails,
+            stringResource(R.string.settings_data_diagnostics),
+            stringResource(R.string.settings_data_diagnostics_desc),
+            settingKey = SettingKeys.DataDiagnostics,
+            type = SettingItemType.Navigation,
+            onClick = navigateToDiagnosticDetails,
         )
-        toggle("Include feed addresses in diagnostics", settings.diagnosticIncludeFeedUrls) { write(FeaturePreferenceKeys.diagnosticIncludeFeedUrls, it) }
+        toggle(stringResource(R.string.settings_data_include_feed_urls), settings.diagnosticIncludeFeedUrls, settingKey = SettingKeys.DataDiagnosticUrls) { write(FeaturePreferenceKeys.diagnosticIncludeFeedUrls, it) }
     }
     if (confirmClearAi) {
         ConfirmationDialog(
-            title = "Clear AI summary cache?",
-            text = "Locally cached AI responses will be removed.",
+            title = stringResource(R.string.settings_data_clear_ai_cache_title),
+            text = stringResource(R.string.settings_data_clear_ai_cache_text),
+            confirmLabel = stringResource(R.string.settings_action_clear),
             onDismiss = { confirmClearAi = false },
             onConfirm = {
                 confirmClearAi = false
                 viewModel.clearAiSummaryCache { success ->
-                    context.showToast(if (success) "AI summary cache cleared" else "Unable to clear AI summary cache")
+                    context.showToast(context.getString(if (success) R.string.settings_data_ai_cache_cleared else R.string.settings_data_ai_cache_clear_failed))
                 }
             },
         )
     }
     if (confirmClearReader) {
         ConfirmationDialog(
-            title = "Clear parsed article cache?",
-            text = "Downloaded full article content will be removed and can be fetched again.",
+            title = stringResource(R.string.settings_data_clear_article_title),
+            text = stringResource(R.string.settings_data_clear_article_text),
+            confirmLabel = stringResource(R.string.settings_action_clear),
             onDismiss = { confirmClearReader = false },
             onConfirm = {
                 confirmClearReader = false
                 viewModel.clearReaderCache { success ->
-                    context.showToast(if (success) "Article cache cleared" else "Unable to clear article cache")
+                    context.showToast(context.getString(if (success) R.string.settings_data_article_cache_cleared else R.string.settings_data_article_cache_clear_failed))
                 }
             },
         )
     }
     if (confirmCleanArticles) {
         ConfirmationDialog(
-            title = "Clean up old read articles?",
-            text = "Articles older than the account retention period will be removed. Unread, starred and Read later articles are preserved.",
+            title = stringResource(R.string.settings_data_cleanup_articles_title),
+            text = stringResource(R.string.settings_data_cleanup_articles_text),
+            confirmLabel = stringResource(R.string.settings_action_clean_up),
             onDismiss = { confirmCleanArticles = false },
             onConfirm = {
                 confirmCleanArticles = false
                 viewModel.cleanOldReadArticles { result ->
                     context.showToast(
                         result.fold(
-                            onSuccess = { "$it old articles removed" },
-                            onFailure = { "Unable to clean up old articles" },
+                            onSuccess = { context.resources.getQuantityString(R.plurals.settings_data_articles_removed, it, it) },
+                            onFailure = { context.getString(R.string.settings_data_cleanup_articles_failed) },
                         )
                     )
                 }
@@ -321,14 +380,15 @@ fun DataPrivacySettingsPage(
     }
     if (confirmOptimizeDatabase) {
         ConfirmationDialog(
-            title = "Optimize database?",
-            text = "Synchronization and search may pause while unused database space is reclaimed.",
+            title = stringResource(R.string.settings_data_optimize_title),
+            text = stringResource(R.string.settings_data_optimize_text),
+            confirmLabel = stringResource(R.string.settings_action_optimize),
             onDismiss = { confirmOptimizeDatabase = false },
             onConfirm = {
                 confirmOptimizeDatabase = false
                 viewModel.optimizeDatabases { result ->
                     context.showToast(
-                        if (result.isSuccess) "Database optimized" else "Unable to optimize database"
+                        context.getString(if (result.isSuccess) R.string.settings_data_optimized else R.string.settings_data_optimize_failed)
                     )
                 }
             },
@@ -346,6 +406,7 @@ private fun formatBytes(bytes: Long): String = when {
 private fun ConfirmationDialog(
     title: String,
     text: String,
+    confirmLabel: String,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit,
 ) {
@@ -353,14 +414,15 @@ private fun ConfirmationDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = { Text(text) },
-        confirmButton = { TextButton(onClick = onConfirm) { Text("Confirm") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = onConfirm) { Text(confirmLabel) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
 private class FeaturePageScope(
     private val settings: FeatureSettings,
     private val writeValue: (Preferences.Key<*>, Any) -> Unit,
+    private val targetSetting: String?,
 ) {
     @Composable fun section(title: String) {
         Spacer(Modifier.height(20.dp))
@@ -371,9 +433,17 @@ private class FeaturePageScope(
         title: String,
         value: Boolean,
         enabled: Boolean = true,
+        settingKey: String? = null,
         onChange: (Boolean) -> Unit,
     ) {
-        SettingItem(enabled = enabled, title = title, onClick = { onChange(!value) }) {
+        SettingItem(
+            enabled = enabled,
+            title = title,
+            settingKey = settingKey,
+            targetKey = targetSetting,
+            highlighted = settingKey == targetSetting,
+            onClick = { onChange(!value) },
+        ) {
             RYSwitch(activated = value, enable = enabled) { onChange(!value) }
         }
     }
@@ -383,6 +453,7 @@ private class FeaturePageScope(
         selected: Int,
         options: List<String>,
         enabled: Boolean = true,
+        settingKey: String? = null,
         onChange: (Int) -> Unit,
     ) {
         val safeIndex = selected.coerceIn(0, options.lastIndex)
@@ -391,6 +462,10 @@ private class FeaturePageScope(
             enabled = enabled,
             title = title,
             desc = options[safeIndex],
+            type = SettingItemType.Choice,
+            settingKey = settingKey,
+            targetKey = targetSetting,
+            highlighted = settingKey == targetSetting,
             onClick = { dialogVisible = true },
         ) {}
         RadioDialog(
@@ -410,22 +485,55 @@ private class FeaturePageScope(
     @Composable fun action(
         title: String,
         description: String,
+        settingKey: String? = null,
+        type: SettingItemType = SettingItemType.Action,
+        loading: Boolean = false,
         onClick: () -> Unit,
     ) {
-        action(title, description, enabled = true, onClick = onClick)
+        action(
+            title = title,
+            description = description,
+            enabled = true,
+            settingKey = settingKey,
+            type = type,
+            loading = loading,
+            onClick = onClick,
+        )
     }
 
     @Composable fun action(
         title: String,
         description: String,
         enabled: Boolean,
+        settingKey: String? = null,
+        type: SettingItemType = SettingItemType.Action,
+        loading: Boolean = false,
         onClick: () -> Unit,
     ) {
-        SettingItem(enabled = enabled, title = title, desc = description, onClick = onClick) {}
+        SettingItem(
+            enabled = enabled,
+            title = title,
+            desc = description,
+            type = type,
+            loading = loading,
+            settingKey = settingKey,
+            targetKey = targetSetting,
+            highlighted = settingKey == targetSetting,
+            onClick = onClick,
+        ) {}
     }
 
-    @Composable fun info(title: String, description: String) {
-        SettingItem(enabled = false, title = title, desc = description, onClick = {}) {}
+    @Composable fun info(title: String, description: String, settingKey: String? = null) {
+        SettingItem(
+            enabled = true,
+            title = title,
+            desc = description,
+            type = SettingItemType.Information,
+            settingKey = settingKey,
+            targetKey = targetSetting,
+            highlighted = settingKey == targetSetting,
+            onClick = {},
+        ) {}
     }
 
     fun write(key: Preferences.Key<*>, value: Any) = writeValue(key, value)
@@ -435,6 +543,7 @@ private class FeaturePageScope(
 private fun FeatureSettingsPage(
     title: String,
     onBack: () -> Unit,
+    targetSetting: String? = null,
     content: @Composable FeaturePageScope.(FeatureSettings, (Preferences.Key<*>, Any) -> Unit) -> Unit,
 ) {
     val context = LocalContext.current
@@ -471,7 +580,7 @@ private fun FeatureSettingsPage(
             LazyColumn {
                 item { DisplayText(text = title, desc = "") }
                 item {
-                    with(FeaturePageScope(settings, writer)) {
+                    with(FeaturePageScope(settings, writer, targetSetting)) {
                         content(settings, writer)
                     }
                     Spacer(Modifier.height(24.dp))
