@@ -44,7 +44,7 @@ import me.ash.reader.infrastructure.preference.LocalOpenLink
 import me.ash.reader.infrastructure.preference.LocalOpenLinkSpecificBrowser
 import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.component.base.RYScaffold
-import me.ash.reader.ui.ext.openURL
+import me.ash.reader.infrastructure.android.openURL
 import me.ash.reader.ui.page.home.flow.ArticleList
 import me.ash.reader.ui.page.home.flow.SearchBar
 

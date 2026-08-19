@@ -8,9 +8,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import me.ash.reader.domain.data.DiffMapHolder
-import me.ash.reader.domain.service.AccountService
-import me.ash.reader.domain.service.RssService
+import me.ash.reader.infrastructure.sync.DiffMapHolder
+import me.ash.reader.application.service.AccountService
+import me.ash.reader.application.service.RssService
 import me.ash.reader.infrastructure.ai.AiSummaryCache
 import me.ash.reader.infrastructure.preference.SettingsProvider
 import me.ash.reader.infrastructure.rss.ReaderCacheHelper

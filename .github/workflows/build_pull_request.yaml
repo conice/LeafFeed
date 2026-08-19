@@ -24,13 +24,8 @@ jobs:
                   java-version: 17
 
             - uses: gradle/actions/setup-gradle@v5
-            - name: Run unit tests
-              run: sh ./gradlew testGithubDebugUnitTest --build-cache
-
-            # Keep the existing lint backlog visible without allowing it to block the PR artifact.
-            - name: Lint GitHub debug
-              continue-on-error: true
-              run: sh ./gradlew lintGithubDebug --build-cache
+            - name: Run unit tests and lint
+              run: sh ./gradlew testGithubDebugUnitTest lintGithubDebug --build-cache
 
             - name: Upload lint report
               if: always()

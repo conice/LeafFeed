@@ -1,6 +1,6 @@
 package me.ash.reader.domain.model.account
 
-import me.ash.reader.infrastructure.preference.KeepArchivedPreference
+import me.ash.reader.domain.model.account.KeepArchivedPreference
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Test

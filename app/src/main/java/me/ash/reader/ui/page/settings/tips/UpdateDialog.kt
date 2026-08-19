@@ -36,8 +36,8 @@ import me.ash.reader.infrastructure.preference.*
 import me.ash.reader.infrastructure.net.Download
 import me.ash.reader.ui.component.base.RYDialog
 import me.ash.reader.ui.ext.collectAsStateValue
-import me.ash.reader.ui.ext.installLatestApk
-import me.ash.reader.ui.ext.openURL
+import me.ash.reader.infrastructure.android.installLatestApk
+import me.ash.reader.infrastructure.android.openURL
 
 @Composable
 fun UpdateDialog(

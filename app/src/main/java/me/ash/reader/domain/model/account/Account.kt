@@ -4,7 +4,6 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import me.ash.reader.domain.model.account.security.DESUtils
-import me.ash.reader.infrastructure.preference.*
 import java.util.*
 
 /**

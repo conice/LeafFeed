@@ -49,7 +49,7 @@ import me.ash.reader.ui.component.base.RYSwitch
 import me.ash.reader.ui.component.base.RadioDialog
 import me.ash.reader.ui.component.base.RadioDialogOption
 import me.ash.reader.ui.component.base.Subtitle
-import me.ash.reader.ui.ext.getBrowserAppList
+import me.ash.reader.infrastructure.android.getBrowserAppList
 import me.ash.reader.ui.page.settings.SettingItem
 import me.ash.reader.ui.theme.palette.onLight
 

@@ -48,9 +48,9 @@ import androidx.work.WorkInfo
 import java.util.Date
 import kotlinx.coroutines.launch
 import me.ash.reader.R
-import me.ash.reader.domain.data.Log
-import me.ash.reader.domain.service.SyncWorker.Companion.ONETIME_WORK_TAG
-import me.ash.reader.domain.service.SyncWorker.Companion.PERIODIC_WORK_TAG
+import me.ash.reader.application.data.Log
+import me.ash.reader.application.service.SyncWorker.Companion.ONETIME_WORK_TAG
+import me.ash.reader.application.service.SyncWorker.Companion.PERIODIC_WORK_TAG
 import me.ash.reader.infrastructure.preference.OpenLinkPreference
 import me.ash.reader.ui.component.base.Banner
 import me.ash.reader.ui.component.base.DisplayText
@@ -58,7 +58,7 @@ import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.component.base.RYScaffold
 import me.ash.reader.ui.component.base.Subtitle
 import me.ash.reader.ui.ext.collectAsStateValue
-import me.ash.reader.ui.ext.openURL
+import me.ash.reader.infrastructure.android.openURL
 import me.ash.reader.infrastructure.preference.SyncSummary
 import me.ash.reader.ui.theme.palette.onLight
 

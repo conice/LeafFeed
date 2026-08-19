@@ -53,7 +53,7 @@ import androidx.compose.ui.unit.dp
 import java.io.InputStream
 import me.ash.reader.R
 import me.ash.reader.infrastructure.preference.LocalReadingImageMaximize
-import me.ash.reader.ui.ext.requiresBidi
+import me.ash.reader.infrastructure.android.requiresBidi
 import me.ash.reader.ui.theme.applyTextDirection
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element

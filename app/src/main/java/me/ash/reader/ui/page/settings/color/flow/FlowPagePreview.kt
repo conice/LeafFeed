@@ -36,7 +36,7 @@ import me.ash.reader.infrastructure.preference.FlowMarkAsReadFabPositionPreferen
 import me.ash.reader.infrastructure.preference.FlowTopBarTonalElevationPreference
 import me.ash.reader.ui.component.FilterBar
 import me.ash.reader.ui.component.base.FeedbackIconButton
-import me.ash.reader.ui.ext.formatAsString
+import me.ash.reader.infrastructure.android.formatAsString
 import me.ash.reader.ui.ext.surfaceColorAtElevation
 import me.ash.reader.ui.page.home.flow.ArticleItem
 import me.ash.reader.ui.page.home.flow.MarkAsReadFab

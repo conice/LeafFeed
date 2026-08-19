@@ -29,37 +29,36 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.ash.reader.domain.data.ArticlePagingListUseCase
+import me.ash.reader.application.data.ArticlePagingListUseCase
 import me.ash.reader.domain.model.general.OperationFailure
 import me.ash.reader.domain.model.general.OperationFailureKind
 import me.ash.reader.domain.model.general.toOperationFailure
-import me.ash.reader.domain.data.ArticleCollectionRepository
-import me.ash.reader.domain.data.DiffMapHolder
-import me.ash.reader.domain.data.FilterState
-import me.ash.reader.domain.data.FilterStateUseCase
-import me.ash.reader.domain.data.GroupWithFeedsListUseCase
-import me.ash.reader.domain.data.PagerData
+import me.ash.reader.application.data.ArticleCollectionRepository
+import me.ash.reader.infrastructure.sync.DiffMapHolder
+import me.ash.reader.application.data.FilterState
+import me.ash.reader.application.data.FilterStateUseCase
+import me.ash.reader.application.data.GroupWithFeedsListUseCase
+import me.ash.reader.application.data.PagerData
 import me.ash.reader.domain.model.article.Article
 import me.ash.reader.domain.model.article.ArticleNote
 import me.ash.reader.domain.model.article.ArticleTagLabel
-import me.ash.reader.domain.model.article.ArticleFlowItem
+import me.ash.reader.application.data.ArticleFlowItem
 import me.ash.reader.domain.model.article.ArticleWithFeed
 import me.ash.reader.domain.model.article.SavedSearch
 import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.model.general.MarkAsReadConditions
 import me.ash.reader.domain.model.general.Filter
 import me.ash.reader.domain.repository.ArticleDao
-import me.ash.reader.domain.service.AccountService
-import me.ash.reader.domain.service.GoogleReaderRssService
-import me.ash.reader.domain.service.LocalRssService
-import me.ash.reader.domain.service.RssService
-import me.ash.reader.domain.service.SyncWorker
-import me.ash.reader.domain.service.AiSummaryService
+import me.ash.reader.domain.repository.ArticleSummaryDao
+import me.ash.reader.application.service.AccountService
+import me.ash.reader.application.service.GoogleReaderRssService
+import me.ash.reader.application.service.LocalRssService
+import me.ash.reader.application.service.RssService
+import me.ash.reader.application.service.SyncWorker
+import me.ash.reader.application.service.AiSummaryService
 import me.ash.reader.infrastructure.android.AndroidImageDownloader
 import me.ash.reader.infrastructure.android.TextToSpeechManager
 import me.ash.reader.infrastructure.audio.PodcastPlayer
-import me.ash.reader.infrastructure.audio.PodcastDownloadRepository
-import me.ash.reader.infrastructure.audio.PodcastTranscriptRepository
 import me.ash.reader.infrastructure.audio.PodcastTranscriptCue
 import me.ash.reader.infrastructure.di.ApplicationScope
 import me.ash.reader.infrastructure.di.IODispatcher
@@ -91,12 +90,11 @@ constructor(
     private val settingsProvider: SettingsProvider,
     private val readerCacheHelper: ReaderCacheHelper,
     val textToSpeechManager: TextToSpeechManager,
-    val podcastPlayer: PodcastPlayer,
-    private val podcastDownloadRepository: PodcastDownloadRepository,
-    private val podcastTranscriptRepository: PodcastTranscriptRepository,
+    private val readingMediaController: ReadingMediaController,
     private val imageDownloader: AndroidImageDownloader,
     private val articleListUseCase: ArticlePagingListUseCase,
     private val articleDao: ArticleDao,
+    private val articleSummaryDao: ArticleSummaryDao,
     private val accountService: AccountService,
     private val aiSummaryService: AiSummaryService,
     private val workManager: WorkManager,
@@ -104,28 +102,32 @@ constructor(
 ) : ViewModel() {
 
     fun downloadPodcast(article: Article, onComplete: (Result<Unit>) -> Unit = {}) {
-        val wifiOnly = settingsProvider.get<Boolean>(FeaturePreferenceKeys.podcastWifiOnly) ?: true
-        onComplete(podcastDownloadRepository.enqueue(article, wifiOnly))
+        onComplete(readingMediaController.download(article))
     }
 
     fun removePodcastDownload(article: Article, onComplete: (Result<Unit>) -> Unit = {}) {
-        viewModelScope.launch { onComplete(podcastDownloadRepository.remove(article)) }
+        viewModelScope.launch { onComplete(readingMediaController.removeDownload(article)) }
     }
 
     fun setPodcastPlayed(article: Article, played: Boolean) {
-        viewModelScope.launch(Dispatchers.IO) { articleDao.updatePlayedStatus(article.id, played) }
+        viewModelScope.launch(ioDispatcher) {
+            readingMediaController.setPlayed(article.id, played)
+        }
     }
 
-    val downloadingPodcastIds = podcastDownloadRepository.downloadingArticleIds.stateIn(
+    val downloadingPodcastIds = readingMediaController.downloadingArticleIds.stateIn(
         viewModelScope,
         SharingStarted.WhileSubscribed(5_000),
         emptySet(),
     )
 
-    fun cancelPodcastDownload(articleId: String) = podcastDownloadRepository.cancel(articleId)
+    fun cancelPodcastDownload(articleId: String) = readingMediaController.cancelDownload(articleId)
 
     suspend fun loadPodcastTranscript(url: String): Result<List<PodcastTranscriptCue>> =
-        podcastTranscriptRepository.load(url)
+        readingMediaController.loadTranscript(url)
+
+    val podcastPlayer: PodcastPlayer
+        get() = readingMediaController.podcastPlayer
 
     val flowUiState: StateFlow<FlowUiState?> =
         combine(
@@ -778,7 +780,7 @@ constructor(
             val result = runCatching {
                 val count = aiSummaryService.articleCount()
                 val articles =
-                    articleDao.queryLatestArticlesForSummary(
+                    articleSummaryDao.queryLatestArticlesForSummary(
                         accountId = accountId,
                         groupId = filterState.group?.id,
                         feedId = filterState.feed?.id,

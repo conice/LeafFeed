@@ -49,10 +49,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import java.util.Date
 import me.ash.reader.R
-import me.ash.reader.infrastructure.preference.KeepArchivedPreference
-import me.ash.reader.infrastructure.preference.SyncBlockListPreference
-import me.ash.reader.infrastructure.preference.SyncIntervalPreference
-import me.ash.reader.infrastructure.preference.not
+import me.ash.reader.domain.model.account.KeepArchivedPreference
+import me.ash.reader.domain.model.account.SyncBlockListPreference
+import me.ash.reader.domain.model.account.SyncIntervalPreference
+import me.ash.reader.domain.model.account.SyncOnStartPreference
+import me.ash.reader.domain.model.account.SyncOnlyOnWiFiPreference
+import me.ash.reader.domain.model.account.SyncOnlyWhenChargingPreference
+import me.ash.reader.domain.model.account.not
 import me.ash.reader.ui.component.base.DisplayText
 import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.component.base.RYDialog
@@ -66,12 +69,12 @@ import me.ash.reader.ui.component.base.Tips
 import me.ash.reader.domain.model.account.CapabilitySupport
 import me.ash.reader.domain.model.account.SyncCapability
 import me.ash.reader.domain.model.account.SyncServiceCapabilities
-import me.ash.reader.ui.ext.DateFormat
-import me.ash.reader.ui.ext.MimeType
+import me.ash.reader.infrastructure.android.DateFormat
+import me.ash.reader.infrastructure.android.MimeType
 import me.ash.reader.ui.ext.collectAsStateValue
-import me.ash.reader.ui.ext.showToast
-import me.ash.reader.ui.ext.showToastLong
-import me.ash.reader.ui.ext.toString
+import me.ash.reader.infrastructure.android.showToast
+import me.ash.reader.infrastructure.android.showToastLong
+import me.ash.reader.infrastructure.android.toString
 import me.ash.reader.ui.page.settings.SettingItem
 import me.ash.reader.ui.page.settings.accounts.connection.AccountConnection
 import me.ash.reader.ui.theme.palette.onLight
@@ -350,7 +353,7 @@ fun AccountDetailsPage(
         onDismissRequest = { blockListDialogVisible = false },
         onConfirm = {
             selectedAccount?.id?.let {
-                SyncBlockListPreference.put(it, viewModel, selectedAccount.syncBlockList)
+                putSyncBlockList(it, viewModel, selectedAccount.syncBlockList)
                 blockListDialogVisible = false
                 context.showToast(selectedAccount.syncBlockList.toString())
             }

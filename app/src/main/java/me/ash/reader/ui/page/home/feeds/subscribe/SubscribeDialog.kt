@@ -36,7 +36,7 @@ import me.ash.reader.ui.component.FeedIcon
 import me.ash.reader.ui.component.RenameDialog
 import me.ash.reader.ui.component.base.ClipboardTextField
 import me.ash.reader.ui.component.base.TextFieldDialog
-import me.ash.reader.ui.ext.MimeType
+import me.ash.reader.infrastructure.android.MimeType
 import me.ash.reader.ui.ext.collectAsStateValue
 import me.ash.reader.ui.ext.roundClick
 import me.ash.reader.ui.page.home.feeds.FeedOptionView

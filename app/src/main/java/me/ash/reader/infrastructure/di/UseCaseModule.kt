@@ -7,13 +7,13 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import me.ash.reader.domain.data.ArticlePagingListUseCase
-import me.ash.reader.domain.data.AutomationRepository
-import me.ash.reader.domain.data.DiffMapHolder
-import me.ash.reader.domain.data.FilterStateUseCase
-import me.ash.reader.domain.data.GroupWithFeedsListUseCase
-import me.ash.reader.domain.service.AccountService
-import me.ash.reader.domain.service.RssService
+import me.ash.reader.application.data.ArticlePagingListUseCase
+import me.ash.reader.application.data.AutomationRepository
+import me.ash.reader.infrastructure.sync.DiffMapHolder
+import me.ash.reader.application.data.FilterStateUseCase
+import me.ash.reader.application.data.GroupWithFeedsListUseCase
+import me.ash.reader.application.service.AccountService
+import me.ash.reader.application.service.RssService
 import me.ash.reader.infrastructure.android.AndroidStringsHelper
 import me.ash.reader.infrastructure.preference.SettingsProvider
 

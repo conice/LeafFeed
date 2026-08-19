@@ -69,7 +69,7 @@ import androidx.work.WorkInfo
 import kotlin.collections.set
 import kotlinx.coroutines.launch
 import me.ash.reader.R
-import me.ash.reader.domain.service.OpmlImportPhase
+import me.ash.reader.application.service.OpmlImportPhase
 import me.ash.reader.infrastructure.preference.LocalFeedsFilterBarPadding
 import me.ash.reader.infrastructure.preference.LocalFeedsFilterBarStyle
 import me.ash.reader.infrastructure.preference.LocalFeedsFilterBarTonalElevation
@@ -94,10 +94,10 @@ import me.ash.reader.ui.component.base.ExpressiveIconButton
 import me.ash.reader.ui.component.base.RYScaffold
 import me.ash.reader.ui.component.scrollbar.drawVerticalScrollIndicator
 import me.ash.reader.ui.ext.collectAsStateValue
-import me.ash.reader.ui.ext.findActivity
-import me.ash.reader.ui.ext.getCurrentVersion
+import me.ash.reader.infrastructure.android.findActivity
+import me.ash.reader.infrastructure.android.getCurrentVersion
 import me.ash.reader.ui.ext.surfaceColorAtElevation
-import me.ash.reader.ui.ext.showToast
+import me.ash.reader.infrastructure.android.showToast
 import me.ash.reader.ui.page.home.SyncOperationState
 import me.ash.reader.ui.page.home.progressFraction
 import me.ash.reader.ui.page.home.feeds.accounts.AccountsTab

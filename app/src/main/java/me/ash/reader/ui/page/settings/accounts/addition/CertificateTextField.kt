@@ -17,8 +17,8 @@ import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import me.ash.reader.R
 import me.ash.reader.ui.component.base.ExpressiveIconButton
-import me.ash.reader.ui.ext.findActivity
-import me.ash.reader.ui.ext.showToastSuspend
+import me.ash.reader.infrastructure.android.findActivity
+import me.ash.reader.infrastructure.android.showToastSuspend
 
 @Composable
 fun CertificateSelector(

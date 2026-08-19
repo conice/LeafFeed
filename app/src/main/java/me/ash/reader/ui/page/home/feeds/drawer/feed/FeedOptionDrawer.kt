@@ -24,7 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import me.ash.reader.R
-import me.ash.reader.domain.data.ArticleContentType
+import me.ash.reader.application.data.ArticleContentType
 import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.infrastructure.preference.LocalOpenLink
 import me.ash.reader.infrastructure.preference.LocalOpenLinkSpecificBrowser
@@ -35,9 +35,9 @@ import me.ash.reader.ui.component.base.BottomDrawer
 import me.ash.reader.ui.component.base.ExpressiveIconButton
 import me.ash.reader.ui.component.base.TextFieldDialog
 import me.ash.reader.ui.ext.collectAsStateValue
-import me.ash.reader.ui.ext.openURL
+import me.ash.reader.infrastructure.android.openURL
 import me.ash.reader.ui.ext.roundClick
-import me.ash.reader.ui.ext.showToast
+import me.ash.reader.infrastructure.android.showToast
 import me.ash.reader.ui.interaction.alphaIndicationClickable
 import me.ash.reader.ui.page.home.feeds.FeedOptionView
 import me.ash.reader.ui.page.home.feeds.ContentTypeSelector

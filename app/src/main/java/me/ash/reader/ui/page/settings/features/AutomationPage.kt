@@ -63,7 +63,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.ash.reader.domain.data.AutomationRepository
+import me.ash.reader.application.data.AutomationRepository
 import me.ash.reader.domain.model.article.AutomationActionType
 import me.ash.reader.domain.model.article.AutomationConditionDraft
 import me.ash.reader.domain.model.article.AutomationDraft
@@ -75,7 +75,7 @@ import me.ash.reader.domain.model.article.AutomationRule
 import me.ash.reader.domain.model.article.AutomationScope
 import me.ash.reader.domain.repository.FeedDao
 import me.ash.reader.domain.repository.GroupDao
-import me.ash.reader.domain.service.AccountService
+import me.ash.reader.application.service.AccountService
 import me.ash.reader.ui.page.settings.SettingItem
 
 data class AutomationScopeOption(val id: String, val name: String)

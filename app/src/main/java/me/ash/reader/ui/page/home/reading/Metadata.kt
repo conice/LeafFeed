@@ -20,8 +20,8 @@ import me.ash.reader.infrastructure.preference.LocalReadingFonts
 import me.ash.reader.infrastructure.preference.LocalReadingTitleAlign
 import me.ash.reader.infrastructure.preference.LocalReadingTitleBold
 import me.ash.reader.infrastructure.preference.LocalReadingTitleUpperCase
-import me.ash.reader.ui.ext.formatAsString
-import me.ash.reader.ui.ext.requiresBidi
+import me.ash.reader.infrastructure.android.formatAsString
+import me.ash.reader.infrastructure.android.requiresBidi
 import me.ash.reader.ui.theme.applyTextDirection
 import java.util.Date
 

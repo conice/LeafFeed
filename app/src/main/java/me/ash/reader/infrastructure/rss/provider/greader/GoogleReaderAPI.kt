@@ -7,7 +7,7 @@ import kotlin.text.hexToLong
 import kotlin.text.startsWith
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
-import me.ash.reader.domain.data.SyncLogger
+import me.ash.reader.application.data.SyncLogger
 import me.ash.reader.infrastructure.di.USER_AGENT_STRING
 import me.ash.reader.infrastructure.exception.GoogleReaderAPIException
 import me.ash.reader.infrastructure.exception.RetryException
@@ -19,8 +19,8 @@ import me.ash.reader.infrastructure.net.onFailure
 import me.ash.reader.infrastructure.net.onSuccess
 import me.ash.reader.infrastructure.net.withRetries
 import me.ash.reader.infrastructure.rss.provider.ProviderAPI
-import me.ash.reader.ui.ext.dollarLast
-import me.ash.reader.ui.ext.spacerDollar
+import me.ash.reader.domain.model.general.dollarLast
+import me.ash.reader.domain.model.general.spacerDollar
 import okhttp3.FormBody
 import okhttp3.Request
 import okhttp3.executeAsync

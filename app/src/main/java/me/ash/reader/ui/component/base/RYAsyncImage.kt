@@ -14,7 +14,7 @@ import coil.request.ImageRequest
 import coil.size.Precision
 import coil.size.Scale
 import coil.size.Size
-import me.ash.reader.ui.ext.extractDomain
+import me.ash.reader.infrastructure.android.extractDomain
 
 @Composable
 fun RYAsyncImage(

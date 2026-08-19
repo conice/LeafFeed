@@ -9,8 +9,8 @@ import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.model.group.Group
 import me.ash.reader.domain.model.group.GroupWithFeed
 import me.ash.reader.infrastructure.di.IODispatcher
-import me.ash.reader.ui.ext.extractDomain
-import me.ash.reader.ui.ext.spacerDollar
+import me.ash.reader.infrastructure.android.extractDomain
+import me.ash.reader.domain.model.general.spacerDollar
 import java.io.BufferedInputStream
 import java.io.InputStream
 import java.util.*

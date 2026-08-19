@@ -2,7 +2,7 @@ package me.ash.reader.infrastructure.preference
 
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.mutablePreferencesOf
-import me.ash.reader.ui.ext.PreferencesKey
+import me.ash.reader.infrastructure.preference.PreferencesKey
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

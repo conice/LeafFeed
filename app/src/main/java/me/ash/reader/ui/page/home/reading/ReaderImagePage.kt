@@ -46,8 +46,8 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import me.ash.reader.R
 import me.ash.reader.ui.component.base.ExpressiveIconButton
-import me.ash.reader.ui.ext.extractDomain
-import me.ash.reader.ui.ext.showToast
+import me.ash.reader.infrastructure.android.extractDomain
+import me.ash.reader.infrastructure.android.showToast
 import me.saket.telephoto.zoomable.ZoomSpec
 import me.saket.telephoto.zoomable.ZoomableContentLocation
 import me.saket.telephoto.zoomable.rememberZoomableState

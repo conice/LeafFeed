@@ -12,8 +12,8 @@ import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.repository.ArticleCollectionDao
 import me.ash.reader.domain.repository.FeedDao
 import me.ash.reader.domain.repository.GroupDao
-import me.ash.reader.domain.service.AccountService
-import me.ash.reader.domain.service.RssService
+import me.ash.reader.application.service.AccountService
+import me.ash.reader.application.service.RssService
 import me.ash.reader.infrastructure.ai.AiSummaryCache
 import me.ash.reader.infrastructure.preference.SettingsProvider
 import javax.inject.Singleton

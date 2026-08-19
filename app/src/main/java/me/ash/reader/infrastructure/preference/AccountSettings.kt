@@ -3,7 +3,13 @@ package me.ash.reader.infrastructure.preference
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
-import me.ash.reader.domain.service.AccountService
+import me.ash.reader.application.service.AccountService
+import me.ash.reader.domain.model.account.KeepArchivedPreference
+import me.ash.reader.domain.model.account.SyncBlockListPreference
+import me.ash.reader.domain.model.account.SyncIntervalPreference
+import me.ash.reader.domain.model.account.SyncOnStartPreference
+import me.ash.reader.domain.model.account.SyncOnlyOnWiFiPreference
+import me.ash.reader.domain.model.account.SyncOnlyWhenChargingPreference
 import me.ash.reader.ui.ext.collectAsStateValue
 
 // Accounts

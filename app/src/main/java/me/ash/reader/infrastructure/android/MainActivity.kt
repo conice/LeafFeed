@@ -29,9 +29,9 @@ import java.lang.reflect.Field
 import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import me.ash.reader.domain.data.FilterStateUseCase
-import me.ash.reader.domain.service.AccountService
-import me.ash.reader.domain.service.WidgetUpdateWorker
+import me.ash.reader.application.data.FilterStateUseCase
+import me.ash.reader.application.service.AccountService
+import me.ash.reader.infrastructure.widget.WidgetUpdateWorker
 import me.ash.reader.infrastructure.compose.ProvideCompositionLocals
 import me.ash.reader.infrastructure.datastore.getOrDefault
 import me.ash.reader.infrastructure.preference.AccountSettingsProvider
@@ -39,7 +39,7 @@ import me.ash.reader.infrastructure.preference.InitialPagePreference
 import me.ash.reader.infrastructure.preference.LanguagesPreference
 import me.ash.reader.infrastructure.preference.LocalDarkTheme
 import me.ash.reader.infrastructure.preference.SettingsProvider
-import me.ash.reader.ui.ext.PreferencesKey
+import me.ash.reader.infrastructure.preference.PreferencesKey
 import me.ash.reader.ui.page.common.ExtraName
 import me.ash.reader.ui.page.home.feeds.subscribe.SubscribeViewModel
 import me.ash.reader.ui.page.nav3.AppEntry

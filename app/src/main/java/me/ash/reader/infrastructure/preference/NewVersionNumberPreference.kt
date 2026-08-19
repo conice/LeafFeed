@@ -9,11 +9,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import me.ash.reader.domain.model.general.Version
 import me.ash.reader.domain.model.general.toVersion
-import me.ash.reader.ui.ext.PreferencesKey
-import me.ash.reader.ui.ext.getPreference
-import me.ash.reader.ui.ext.PreferencesKey.Companion.newVersionNumber
-import me.ash.reader.ui.ext.dataStore
-import me.ash.reader.ui.ext.put
+import me.ash.reader.infrastructure.preference.PreferencesKey
+import me.ash.reader.infrastructure.preference.getPreference
+import me.ash.reader.infrastructure.preference.PreferencesKey.Companion.newVersionNumber
+import me.ash.reader.infrastructure.preference.dataStore
+import me.ash.reader.infrastructure.preference.put
 
 val LocalNewVersionNumber = compositionLocalOf { NewVersionNumberPreference.default }
 

@@ -6,7 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import me.ash.reader.domain.service.AppService
+import me.ash.reader.application.service.AppService
 import me.ash.reader.infrastructure.net.Download
 import me.ash.reader.ui.ext.isGitHub
 import javax.inject.Inject

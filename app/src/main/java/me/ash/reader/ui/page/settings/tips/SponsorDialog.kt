@@ -28,7 +28,7 @@ import coil.size.Size
 import me.ash.reader.R
 import me.ash.reader.infrastructure.preference.OpenLinkPreference
 import me.ash.reader.ui.component.base.RYAsyncImage
-import me.ash.reader.ui.ext.openURL
+import me.ash.reader.infrastructure.android.openURL
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

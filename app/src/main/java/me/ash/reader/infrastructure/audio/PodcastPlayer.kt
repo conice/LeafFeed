@@ -23,7 +23,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import me.ash.reader.domain.model.article.Article
-import me.ash.reader.domain.repository.ArticleDao
+import me.ash.reader.domain.repository.PodcastDao
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
 import me.ash.reader.infrastructure.preference.SettingsProvider
 import org.json.JSONArray
@@ -54,7 +54,7 @@ val PodcastPlaybackSpeeds = listOf(0.75f, 1f, 1.25f, 1.5f, 1.75f, 2f, 2.5f, 3f)
 @Singleton
 class PodcastPlayer @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val articleDao: ArticleDao,
+    private val podcastDao: PodcastDao,
     private val settingsProvider: SettingsProvider,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -343,8 +343,8 @@ class PodcastPlayer @Inject constructor(
         val markPlayed = settingsProvider.get(FeaturePreferenceKeys.podcastMarkPlayed) ?: true
         val completed = markPlayed && duration > 0 && (position >= duration * 95 / 100 || position >= duration - 60_000)
         scope.launch(Dispatchers.IO) {
-            if (remember) articleDao.updatePlayback(id, position, completed)
-            else if (completed) articleDao.updatePlayedStatus(id, true)
+            if (remember) podcastDao.updatePlayback(id, position, completed)
+            else if (completed) podcastDao.updatePlayedStatus(id, true)
         }
         lastPersistAt = System.currentTimeMillis()
     }

@@ -29,7 +29,7 @@ import me.ash.reader.R
 import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.repository.FeedDao
 import me.ash.reader.domain.repository.GroupDao
-import me.ash.reader.domain.service.AccountService
+import me.ash.reader.application.service.AccountService
 import me.ash.reader.infrastructure.di.ApplicationScope
 
 internal val Context.widgetDataStore by preferencesDataStore("widgets")

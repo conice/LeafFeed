@@ -13,7 +13,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import me.ash.reader.R
 import me.ash.reader.ui.component.base.RYDialog
 import me.ash.reader.ui.ext.collectAsStateValue
-import me.ash.reader.ui.ext.showToast
+import me.ash.reader.infrastructure.android.showToast
 
 @Composable
 fun DeleteGroupDialog(

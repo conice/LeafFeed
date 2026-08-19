@@ -13,8 +13,13 @@ import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.model.group.Group
 import me.ash.reader.domain.repository.AccountDao
 import me.ash.reader.domain.repository.ArticleDao
+import me.ash.reader.domain.repository.ArticleBackupDao
+import me.ash.reader.domain.repository.ArticleSummaryDao
+import me.ash.reader.domain.repository.AutomationArticleDao
 import me.ash.reader.domain.repository.FeedDao
 import me.ash.reader.domain.repository.GroupDao
+import me.ash.reader.domain.repository.PodcastDao
+import me.ash.reader.domain.repository.ReadingHistoryDao
 import me.ash.reader.infrastructure.preference.*
 import me.ash.reader.ui.ext.toInt
 import java.util.*
@@ -50,6 +55,11 @@ abstract class AndroidDatabase : RoomDatabase() {
     abstract fun accountDao(): AccountDao
     abstract fun feedDao(): FeedDao
     abstract fun articleDao(): ArticleDao
+    abstract fun articleBackupDao(): ArticleBackupDao
+    abstract fun articleSummaryDao(): ArticleSummaryDao
+    abstract fun automationArticleDao(): AutomationArticleDao
+    abstract fun readingHistoryDao(): ReadingHistoryDao
+    abstract fun podcastDao(): PodcastDao
     abstract fun groupDao(): GroupDao
 
     companion object {

@@ -37,10 +37,10 @@ import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.component.base.RYDialog
 import me.ash.reader.ui.component.base.RYScaffold
 import me.ash.reader.ui.component.base.Subtitle
-import me.ash.reader.ui.ext.DateFormat
-import me.ash.reader.ui.ext.MimeType
+import me.ash.reader.infrastructure.android.DateFormat
+import me.ash.reader.infrastructure.android.MimeType
 import me.ash.reader.ui.ext.collectAsStateValue
-import me.ash.reader.ui.ext.toString
+import me.ash.reader.infrastructure.android.toString
 import me.ash.reader.ui.page.settings.SettingItem
 import me.ash.reader.ui.theme.palette.onLight
 

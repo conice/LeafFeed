@@ -20,15 +20,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import me.ash.reader.domain.data.Log
-import me.ash.reader.domain.data.ArticleCollectionRepository
-import me.ash.reader.domain.data.ArticleCollectionImportResult
-import me.ash.reader.domain.data.AutomationImportResult
-import me.ash.reader.domain.data.SyncLogger
-import me.ash.reader.domain.service.AccountService
-import me.ash.reader.domain.service.OpmlService
-import me.ash.reader.domain.service.RssService
-import me.ash.reader.domain.service.SyncWorker
+import me.ash.reader.application.data.Log
+import me.ash.reader.application.data.ArticleCollectionRepository
+import me.ash.reader.application.data.ArticleCollectionImportResult
+import me.ash.reader.application.data.AutomationImportResult
+import me.ash.reader.application.data.SyncLogger
+import me.ash.reader.application.service.AccountService
+import me.ash.reader.application.service.OpmlService
+import me.ash.reader.application.service.RssService
+import me.ash.reader.application.service.SyncWorker
 import me.ash.reader.domain.repository.FeedDao
 import androidx.work.workDataOf
 import me.ash.reader.infrastructure.di.ApplicationScope
@@ -40,9 +40,9 @@ import me.ash.reader.infrastructure.preference.SyncStatusStore
 import me.ash.reader.infrastructure.preference.SyncSummary
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
 import me.ash.reader.infrastructure.preference.SettingsProvider
-import me.ash.reader.ui.ext.PreferencesImportResult
-import me.ash.reader.ui.ext.fromDataStoreToJSONString
-import me.ash.reader.ui.ext.fromJSONStringToDataStore
+import me.ash.reader.infrastructure.preference.PreferencesImportResult
+import me.ash.reader.infrastructure.preference.fromDataStoreToJSONString
+import me.ash.reader.infrastructure.preference.fromJSONStringToDataStore
 
 @HiltViewModel
 class TroubleshootingViewModel

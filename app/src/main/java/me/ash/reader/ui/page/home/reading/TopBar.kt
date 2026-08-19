@@ -60,7 +60,7 @@ import me.ash.reader.ui.component.navigationActionLabel
 import me.ash.reader.ui.component.navigationTonalElevation
 import me.ash.reader.ui.component.responsiveToolbarCapacity
 import me.ash.reader.ui.ext.surfaceColorAtElevation
-import me.ash.reader.ui.ext.openURL
+import me.ash.reader.infrastructure.android.openURL
 import me.ash.reader.ui.motion.VerticalEdge
 import me.ash.reader.ui.motion.slideInFromVerticalEdge
 import me.ash.reader.ui.motion.slideOutToVerticalEdge

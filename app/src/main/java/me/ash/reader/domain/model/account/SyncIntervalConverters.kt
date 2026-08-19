@@ -2,7 +2,7 @@ package me.ash.reader.domain.model.account
 
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
-import me.ash.reader.infrastructure.preference.SyncIntervalPreference
+import me.ash.reader.domain.model.account.SyncIntervalPreference
 
 /**
  * Provide [TypeConverter] of [SyncIntervalPreference] for [RoomDatabase].

@@ -39,12 +39,12 @@ import me.ash.reader.infrastructure.preference.toFeatureSettings
 import me.ash.reader.ui.component.base.DisplayText
 import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.component.base.RYScaffold
-import me.ash.reader.ui.ext.showToast
+import me.ash.reader.infrastructure.android.showToast
 import me.ash.reader.ui.component.base.RYSwitch
 import me.ash.reader.ui.component.base.RadioDialog
 import me.ash.reader.ui.component.base.RadioDialogOption
 import me.ash.reader.ui.component.base.Subtitle
-import me.ash.reader.ui.ext.dataStore
+import me.ash.reader.infrastructure.preference.dataStore
 import me.ash.reader.ui.page.settings.SettingItem
 import me.ash.reader.ui.theme.palette.onLight
 

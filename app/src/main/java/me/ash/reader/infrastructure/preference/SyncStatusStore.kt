@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import me.ash.reader.ui.ext.dataStore
+import me.ash.reader.infrastructure.preference.dataStore
 import me.ash.reader.domain.model.general.OperationFailureKind
 
 @Serializable

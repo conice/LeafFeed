@@ -9,11 +9,11 @@ import androidx.datastore.preferences.core.Preferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import me.ash.reader.R
-import me.ash.reader.ui.ext.PreferencesKey
-import me.ash.reader.ui.ext.getPreference
-import me.ash.reader.ui.ext.PreferencesKey.Companion.flowSortUnreadArticles
-import me.ash.reader.ui.ext.dataStore
-import me.ash.reader.ui.ext.put
+import me.ash.reader.infrastructure.preference.PreferencesKey
+import me.ash.reader.infrastructure.preference.getPreference
+import me.ash.reader.infrastructure.preference.PreferencesKey.Companion.flowSortUnreadArticles
+import me.ash.reader.infrastructure.preference.dataStore
+import me.ash.reader.infrastructure.preference.put
 
 val LocalSortUnreadArticles =
     compositionLocalOf<SortUnreadArticlesPreference> { SortUnreadArticlesPreference.default }

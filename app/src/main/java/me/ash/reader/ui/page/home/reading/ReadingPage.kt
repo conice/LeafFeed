@@ -58,8 +58,8 @@ import me.ash.reader.infrastructure.preference.toFeatureSettings
 import me.ash.reader.ui.component.AiSummaryDialog
 import me.ash.reader.ui.component.CompactStatusIndicator
 import me.ash.reader.ui.ext.collectAsStateValue
-import me.ash.reader.ui.ext.dataStore
-import me.ash.reader.ui.ext.showToast
+import me.ash.reader.infrastructure.preference.dataStore
+import me.ash.reader.infrastructure.android.showToast
 import me.ash.reader.ui.motion.Direction
 import me.ash.reader.ui.motion.sharedYAxisTransitionSlow
 import me.ash.reader.ui.page.adaptive.ArticleListReaderViewModel

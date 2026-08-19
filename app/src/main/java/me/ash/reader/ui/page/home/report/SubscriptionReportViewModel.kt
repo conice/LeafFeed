@@ -16,12 +16,12 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import me.ash.reader.domain.data.FilterStateUseCase
+import me.ash.reader.application.data.FilterStateUseCase
 import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.model.group.Group
 import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.repository.GroupDao
-import me.ash.reader.domain.service.AccountService
+import me.ash.reader.application.service.AccountService
 
 private const val REPORT_DAYS = 7L
 private const val SIGNIFICANT_CHANGE_PERCENT = 25

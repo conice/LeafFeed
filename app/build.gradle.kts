@@ -15,17 +15,14 @@ plugins {
     alias(libs.plugins.kotlin.parcelize)
 }
 
-fun fetchGitCommitHash(): String {
-    val process =
-        ProcessBuilder("git", "rev-parse", "--verify", "--short", "HEAD")
-            .directory(rootProject.projectDir)
-            .redirectErrorStream(true)
-            .start()
-    val output = process.inputStream.bufferedReader().use { it.readText().trim() }
-    return if (process.waitFor() == 0) output else "unknown"
-}
-
-val gitCommitHash = fetchGitCommitHash()
+val gitCommitHash =
+    providers
+        .exec {
+            workingDir(rootProject.projectDir)
+            commandLine("git", "rev-parse", "--verify", "--short", "HEAD")
+            isIgnoreExitValue = true
+        }.standardOutput.asText.map { output -> output.trim().ifBlank { "unknown" } }
+        .get()
 val ciVersionCode =
     providers.environmentVariable("LEAFFEED_VERSION_CODE").orNull?.toIntOrNull()
 val keyProps = Properties()
@@ -273,8 +270,11 @@ dependencies {
     // production APK unchanged while supplying their small JVM implementations to tests.
     testImplementation(libs.json.jvm)
     testImplementation(libs.kxml2)
+    testImplementation(libs.mockwebserver)
     androidTestImplementation(libs.junit.ext)
     androidTestImplementation(libs.espresso)
+    androidTestImplementation(libs.room.testing)
+    androidTestImplementation(libs.work.testing)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.junit.jupiter)
     testImplementation(libs.mockito.kotlin)

@@ -72,8 +72,8 @@ import me.ash.reader.ui.component.base.RadioDialogOption
 import me.ash.reader.ui.component.base.Subtitle
 import me.ash.reader.ui.component.base.TextFieldDialog
 import me.ash.reader.ui.ext.ExternalFonts
-import me.ash.reader.ui.ext.MimeType
-import me.ash.reader.ui.ext.showToast
+import me.ash.reader.infrastructure.android.MimeType
+import me.ash.reader.infrastructure.android.showToast
 import me.ash.reader.ui.page.settings.SettingItem
 import me.ash.reader.ui.svg.PALETTE
 import me.ash.reader.ui.svg.SVGString

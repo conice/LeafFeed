@@ -17,7 +17,7 @@ import me.ash.reader.R
 import me.ash.reader.domain.model.account.Account
 import me.ash.reader.domain.model.account.security.FeverSecurityKey
 import me.ash.reader.ui.component.base.TextFieldDialog
-import me.ash.reader.ui.ext.mask
+import me.ash.reader.infrastructure.android.mask
 import me.ash.reader.ui.page.settings.SettingItem
 import me.ash.reader.ui.page.settings.accounts.AccountViewModel
 

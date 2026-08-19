@@ -16,9 +16,9 @@ import me.ash.reader.R
 import me.ash.reader.infrastructure.preference.LocalSettings
 import me.ash.reader.infrastructure.preference.OpenLinkPreference
 import me.ash.reader.infrastructure.preference.OpenLinkSpecificBrowserPreference
-import me.ash.reader.ui.ext.getCustomTabsPackages
-import me.ash.reader.ui.ext.getDefaultBrowserInfo
-import me.ash.reader.ui.ext.showToast
+import me.ash.reader.infrastructure.android.getCustomTabsPackages
+import me.ash.reader.infrastructure.android.getDefaultBrowserInfo
+import me.ash.reader.infrastructure.android.showToast
 
 @Composable
 internal fun ProvideUriHandler(content: @Composable () -> Unit) {

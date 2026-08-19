@@ -2,7 +2,7 @@ package me.ash.reader.infrastructure.android
 
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
-import me.ash.reader.ui.ext.formatAsString
+import me.ash.reader.infrastructure.android.formatAsString
 import java.util.*
 import javax.inject.Inject
 

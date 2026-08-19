@@ -1,7 +1,7 @@
 package me.ash.reader.infrastructure.rss
 
 import me.ash.reader.infrastructure.rss.provider.greader.GoogleReaderAPI.Companion.shortId
-import me.ash.reader.ui.ext.dollarLast
+import me.ash.reader.domain.model.general.dollarLast
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

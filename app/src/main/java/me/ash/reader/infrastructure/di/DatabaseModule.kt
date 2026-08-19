@@ -9,9 +9,14 @@ import dagger.hilt.components.SingletonComponent
 import me.ash.reader.domain.repository.AccountDao
 import me.ash.reader.domain.repository.ArticleCollectionDao
 import me.ash.reader.domain.repository.ArticleDao
+import me.ash.reader.domain.repository.ArticleBackupDao
+import me.ash.reader.domain.repository.ArticleSummaryDao
+import me.ash.reader.domain.repository.AutomationArticleDao
 import me.ash.reader.domain.repository.AutomationDao
 import me.ash.reader.domain.repository.FeedDao
 import me.ash.reader.domain.repository.GroupDao
+import me.ash.reader.domain.repository.PodcastDao
+import me.ash.reader.domain.repository.ReadingHistoryDao
 import me.ash.reader.infrastructure.db.AndroidDatabase
 import me.ash.reader.infrastructure.db.ArticleCollectionDatabase
 import me.ash.reader.infrastructure.ai.AiDao
@@ -34,6 +39,27 @@ object DatabaseModule {
     @Singleton
     fun provideArticleDao(androidDatabase: AndroidDatabase): ArticleDao =
         androidDatabase.articleDao()
+
+    @Provides @Singleton
+    fun provideArticleBackupDao(database: AndroidDatabase): ArticleBackupDao =
+        database.articleBackupDao()
+
+    @Provides @Singleton
+    fun provideArticleSummaryDao(database: AndroidDatabase): ArticleSummaryDao =
+        database.articleSummaryDao()
+
+    @Provides @Singleton
+    fun provideAutomationArticleDao(database: AndroidDatabase): AutomationArticleDao =
+        database.automationArticleDao()
+
+    @Provides
+    @Singleton
+    fun provideReadingHistoryDao(androidDatabase: AndroidDatabase): ReadingHistoryDao =
+        androidDatabase.readingHistoryDao()
+
+    @Provides
+    @Singleton
+    fun providePodcastDao(androidDatabase: AndroidDatabase): PodcastDao = androidDatabase.podcastDao()
 
     @Provides
     @Singleton

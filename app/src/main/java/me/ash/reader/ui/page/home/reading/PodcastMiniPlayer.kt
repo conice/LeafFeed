@@ -71,7 +71,7 @@ import me.ash.reader.infrastructure.audio.PodcastPlayer
 import me.ash.reader.infrastructure.audio.PodcastPlaybackSpeeds
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
 import me.ash.reader.ui.ext.collectAsStateValue
-import me.ash.reader.ui.ext.dataStore
+import me.ash.reader.infrastructure.preference.dataStore
 import me.ash.reader.ui.component.base.RYAsyncImage
 import me.ash.reader.ui.theme.LayoutTokens
 import me.ash.reader.ui.theme.ShapeTokens

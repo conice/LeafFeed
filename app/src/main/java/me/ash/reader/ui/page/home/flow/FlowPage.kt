@@ -81,9 +81,9 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import me.ash.reader.R
-import me.ash.reader.domain.data.ArticleContentType
-import me.ash.reader.domain.data.PagerData
-import me.ash.reader.domain.model.article.ArticleFlowItem
+import me.ash.reader.application.data.ArticleContentType
+import me.ash.reader.application.data.PagerData
+import me.ash.reader.application.data.ArticleFlowItem
 import me.ash.reader.domain.model.article.ArticleWithFeed
 import me.ash.reader.domain.model.general.Filter
 import me.ash.reader.domain.model.general.MarkAsReadConditions
@@ -114,8 +114,8 @@ import me.ash.reader.ui.component.scrollbar.VerticalScrollIndicatorFactory
 import me.ash.reader.ui.component.scrollbar.drawVerticalScrollIndicator
 import me.ash.reader.ui.component.scrollbar.scrollIndicator
 import me.ash.reader.ui.ext.collectAsStateValue
-import me.ash.reader.ui.ext.openURL
-import me.ash.reader.ui.ext.showToast
+import me.ash.reader.infrastructure.android.openURL
+import me.ash.reader.infrastructure.android.showToast
 import me.ash.reader.ui.ext.surfaceColorAtElevation
 import me.ash.reader.ui.motion.Direction
 import me.ash.reader.ui.motion.sharedYAxisTransitionExpressive

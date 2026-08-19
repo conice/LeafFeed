@@ -23,16 +23,16 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import me.ash.reader.R
 import me.ash.reader.domain.model.group.Group
-import me.ash.reader.domain.service.AccountService
-import me.ash.reader.domain.service.OpmlService
-import me.ash.reader.domain.service.OpmlImportProgress
-import me.ash.reader.domain.service.OpmlImportResult
-import me.ash.reader.domain.service.RssService
-import me.ash.reader.domain.service.SyncWorker
+import me.ash.reader.application.service.AccountService
+import me.ash.reader.application.service.OpmlService
+import me.ash.reader.application.service.OpmlImportProgress
+import me.ash.reader.application.service.OpmlImportResult
+import me.ash.reader.application.service.RssService
+import me.ash.reader.application.service.SyncWorker
 import me.ash.reader.infrastructure.android.AndroidStringsHelper
 import me.ash.reader.infrastructure.di.ApplicationScope
 import me.ash.reader.infrastructure.rss.RssHelper
-import me.ash.reader.ui.ext.formatUrl
+import me.ash.reader.infrastructure.android.formatUrl
 
 @HiltViewModel
 class SubscribeViewModel

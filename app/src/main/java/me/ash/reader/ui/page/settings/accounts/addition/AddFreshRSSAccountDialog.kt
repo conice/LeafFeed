@@ -44,8 +44,8 @@ import me.ash.reader.domain.model.account.security.FreshRSSSecurityKey
 import me.ash.reader.ui.component.base.RYDialog
 import me.ash.reader.ui.component.base.RYOutlineTextField
 import me.ash.reader.ui.ext.collectAsStateValue
-import me.ash.reader.ui.ext.showToast
-import me.ash.reader.ui.ext.showToastSuspend
+import me.ash.reader.infrastructure.android.showToast
+import me.ash.reader.infrastructure.android.showToastSuspend
 import me.ash.reader.ui.page.common.RouteName
 import me.ash.reader.ui.page.settings.accounts.AccountViewModel
 

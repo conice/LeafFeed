@@ -12,7 +12,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import me.ash.reader.infrastructure.preference.LocalBasicFonts
 import me.ash.reader.infrastructure.preference.LocalThemeIndex
-import me.ash.reader.ui.ext.findActivity
+import me.ash.reader.infrastructure.android.findActivity
 import me.ash.reader.ui.theme.palette.LocalTonalPalettes
 import me.ash.reader.ui.theme.palette.TonalPalettes
 import me.ash.reader.ui.theme.palette.core.ProvideZcamViewingConditions

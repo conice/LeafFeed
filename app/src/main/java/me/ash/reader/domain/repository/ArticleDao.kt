@@ -13,11 +13,8 @@ import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 import me.ash.reader.domain.model.article.Article
-import me.ash.reader.domain.model.article.ArticleBackupIdentityRow
 import me.ash.reader.domain.model.article.ArticleContentFetchCandidate
 import me.ash.reader.domain.model.article.ArticleMeta
-import me.ash.reader.domain.model.article.ArticleReadingStateRow
-import me.ash.reader.domain.model.article.ArticleReadingStateUpdate
 import me.ash.reader.domain.model.article.ArticleWithFeed
 import me.ash.reader.domain.model.article.ArchivedArticleCleanupCandidate
 import me.ash.reader.domain.model.feed.Feed
@@ -27,109 +24,8 @@ import java.util.Date
 @Dao
 interface ArticleDao {
 
-    @Query(
-        """
-        SELECT article.id AS articleId, feed.url AS feedUrl, article.link AS articleLink
-        FROM article
-        INNER JOIN feed ON feed.id = article.feedId
-        WHERE article.accountId = :accountId
-            AND feed.accountId = :accountId
-            AND article.id IN (:articleIds)
-        """
-    )
-    suspend fun queryBackupIdentities(
-        accountId: Int,
-        articleIds: List<String>,
-    ): List<ArticleBackupIdentityRow>
-
-    @Query(
-        """
-        SELECT article.id AS articleId, feed.url AS feedUrl, article.link AS articleLink
-        FROM article
-        INNER JOIN feed ON feed.id = article.feedId
-        WHERE article.accountId = :accountId
-            AND feed.accountId = :accountId
-            AND article.link IN (:articleLinks)
-        """
-    )
-    suspend fun queryBackupIdentitiesByLinks(
-        accountId: Int,
-        articleLinks: List<String>,
-    ): List<ArticleBackupIdentityRow>
-
-    @Query(
-        """
-        SELECT article.id AS articleId, feed.url AS feedUrl, article.link AS articleLink,
-            article.isUnread, article.isStarred, article.isReadLater, article.lastOpenedAt,
-            article.playbackPositionMs, article.isPlayed
-        FROM article
-        INNER JOIN feed ON feed.id = article.feedId
-        WHERE article.accountId = :accountId
-            AND feed.accountId = :accountId
-            AND (
-                article.isUnread = 0
-                OR article.isStarred = 1
-                OR article.isReadLater = 1
-                OR article.lastOpenedAt IS NOT NULL
-                OR article.playbackPositionMs > 0
-                OR article.isPlayed = 1
-            )
-        """
-    )
-    suspend fun queryReadingStatesForBackup(accountId: Int): List<ArticleReadingStateRow>
-
-    @Update(entity = Article::class)
-    suspend fun restoreReadingStates(states: List<ArticleReadingStateUpdate>)
-
     @Query("UPDATE article SET lastOpenedAt = :openedAt WHERE id = :articleId")
     suspend fun updateLastOpenedAt(articleId: String, openedAt: Date)
-
-    @Transaction
-    @Query(
-        """
-        SELECT article.* FROM article
-        INNER JOIN feed ON feed.id = article.feedId
-        WHERE article.accountId = :accountId
-            AND feed.accountId = :accountId
-            AND article.lastOpenedAt IS NOT NULL
-            AND (:groupId IS NULL OR feed.groupId = :groupId)
-            AND (:feedId IS NULL OR article.feedId = :feedId)
-            AND ((:audioOnly = 1 AND article.audioUrl IS NOT NULL)
-                OR (:audioOnly = 0 AND article.audioUrl IS NULL))
-        ORDER BY article.lastOpenedAt DESC
-        """
-    )
-    fun queryReadingHistory(
-        accountId: Int,
-        groupId: String?,
-        feedId: String?,
-        audioOnly: Boolean,
-    ): PagingSource<Int, ArticleWithFeed>
-
-    @Transaction
-    @Query(
-        """
-        SELECT article.* FROM article
-        INNER JOIN article_fts ON article_fts.articleId = article.id
-        INNER JOIN feed ON feed.id = article.feedId
-        WHERE article.accountId = :accountId
-            AND feed.accountId = :accountId
-            AND article.lastOpenedAt IS NOT NULL
-            AND (:groupId IS NULL OR feed.groupId = :groupId)
-            AND (:feedId IS NULL OR article.feedId = :feedId)
-            AND ((:audioOnly = 1 AND article.audioUrl IS NOT NULL)
-                OR (:audioOnly = 0 AND article.audioUrl IS NULL))
-            AND article_fts MATCH :text
-        ORDER BY article.lastOpenedAt DESC
-        """
-    )
-    fun searchReadingHistory(
-        accountId: Int,
-        text: String,
-        groupId: String?,
-        feedId: String?,
-        audioOnly: Boolean,
-    ): PagingSource<Int, ArticleWithFeed>
 
     @Query(
         """
@@ -152,32 +48,6 @@ interface ArticleDao {
         audioOnly: Boolean,
     ): Boolean
 
-    @Query("UPDATE article SET playbackPositionMs = :positionMs, isPlayed = CASE WHEN :isPlayed THEN 1 ELSE isPlayed END WHERE id = :articleId")
-    suspend fun updatePlayback(articleId: String, positionMs: Long, isPlayed: Boolean)
-
-    @Query("UPDATE article SET isPlayed = :isPlayed WHERE id = :articleId")
-    suspend fun updatePlayedStatus(articleId: String, isPlayed: Boolean)
-
-    @Query("UPDATE article SET downloadedPath = :path WHERE id = :articleId")
-    suspend fun updateDownloadedPath(articleId: String, path: String?)
-
-    @Query("SELECT id FROM article WHERE downloadedPath = :path LIMIT 1")
-    suspend fun queryIdByDownloadedPath(path: String): String?
-
-    @Transaction
-    @Query(
-        """SELECT * FROM article
-        WHERE audioUrl IS NOT NULL AND accountId = :accountId
-        AND (:unplayedOnly = 0 OR isPlayed = 0)
-        AND (:downloadedOnly = 0 OR downloadedPath IS NOT NULL)
-        ORDER BY date DESC"""
-    )
-    fun observePodcastEpisodes(
-        accountId: Int,
-        unplayedOnly: Boolean = false,
-        downloadedOnly: Boolean = false,
-    ): Flow<List<ArticleWithFeed>>
-
     @Query("SELECT id FROM article WHERE accountId = :accountId AND id IN (:ids)")
     suspend fun queryExistingIds(accountId: Int, ids: List<String>): List<String>
 
@@ -187,57 +57,6 @@ interface ArticleDao {
         accountId: Int,
         articleIds: List<String>,
     ): List<ArticleWithFeed>
-
-    @Query(
-        """
-        SELECT article.* FROM article
-        INNER JOIN feed ON feed.id = article.feedId
-        WHERE article.accountId = :accountId
-            AND feed.accountId = :accountId
-            AND (:groupId IS NULL OR feed.groupId = :groupId)
-            AND (:feedId IS NULL OR article.feedId = :feedId)
-            AND (:unreadOnly = 0 OR article.isUnread = 1)
-        ORDER BY article.date DESC
-        LIMIT :limit
-        """
-    )
-    suspend fun queryLatestArticlesForSummary(
-        accountId: Int,
-        groupId: String?,
-        feedId: String?,
-        unreadOnly: Boolean,
-        limit: Int,
-    ): List<Article>
-
-    @Query(
-        """
-        SELECT article.id AS articleId,
-            article.accountId AS accountId,
-            article.title AS title,
-            article.rawDescription AS description,
-            article.author AS author,
-            article.link AS articleUrl,
-            article.feedId AS feedId,
-            feed.name AS feedName,
-            feed.url AS feedUrl,
-            feed.groupId AS groupId,
-            article.isUnread AS isUnread,
-            article.isStarred AS isStarred,
-            article.isReadLater AS isReadLater,
-            article.audioUrl AS audioUrl,
-            article.audioLength AS mediaSize,
-            article.durationSeconds AS mediaDuration
-        FROM article
-        INNER JOIN feed ON feed.id = article.feedId
-        WHERE article.accountId = :accountId AND feed.accountId = :accountId
-        ORDER BY article.date DESC
-        LIMIT :limit
-        """
-    )
-    fun queryAutomationCandidates(
-        accountId: Int,
-        limit: Int = 1000,
-    ): Flow<List<me.ash.reader.domain.model.article.AutomationCandidate>>
 
     @Query(
         """

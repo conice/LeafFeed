@@ -29,14 +29,18 @@ interface NetworkDataSource {
 
         fun getInstance(): NetworkDataSource {
             return instance ?: synchronized(this) {
-                instance ?: Retrofit.Builder()
-                    .baseUrl("https://api.github.com/")
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .build().create(NetworkDataSource::class.java).also {
+                instance ?: create("https://api.github.com/").also {
                         instance = it
                     }
             }
         }
+
+        internal fun create(baseUrl: String): NetworkDataSource =
+            Retrofit.Builder()
+                .baseUrl(baseUrl)
+                .addConverterFactory(GsonConverterFactory.create())
+                .build()
+                .create(NetworkDataSource::class.java)
     }
 }
 

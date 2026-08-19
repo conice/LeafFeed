@@ -30,7 +30,7 @@ import me.ash.reader.infrastructure.preference.LocalReadingTextLetterSpacing
 import me.ash.reader.infrastructure.preference.LocalReadingTextLineHeight
 import me.ash.reader.infrastructure.preference.ReadingFontsPreference
 import me.ash.reader.ui.ext.ExternalFonts
-import me.ash.reader.ui.ext.openURL
+import me.ash.reader.infrastructure.android.openURL
 import me.ash.reader.ui.ext.surfaceColorAtElevation
 import me.ash.reader.ui.theme.palette.alwaysLight
 import java.net.URI

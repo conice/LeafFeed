@@ -14,11 +14,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import me.ash.reader.domain.data.SyncLogger
-import me.ash.reader.domain.service.RssService
+import me.ash.reader.application.data.SyncLogger
+import me.ash.reader.application.service.RssService
 import me.ash.reader.infrastructure.rss.ReaderCacheHelper
 import me.ash.reader.infrastructure.ai.AiSummaryCache
-import me.ash.reader.domain.service.AccountService
+import me.ash.reader.application.service.AccountService
 import me.ash.reader.infrastructure.db.AndroidDatabase
 import me.ash.reader.infrastructure.db.ArticleCollectionDatabase
 import me.ash.reader.infrastructure.di.IODispatcher

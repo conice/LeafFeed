@@ -13,8 +13,8 @@ import androidx.compose.ui.unit.dp
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
-import me.ash.reader.domain.data.Diff
-import me.ash.reader.domain.model.article.ArticleFlowItem
+import me.ash.reader.infrastructure.sync.Diff
+import me.ash.reader.application.data.ArticleFlowItem
 import me.ash.reader.domain.model.article.ArticleWithFeed
 
 @Suppress("FunctionName")

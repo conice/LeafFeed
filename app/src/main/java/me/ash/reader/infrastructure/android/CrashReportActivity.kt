@@ -49,8 +49,8 @@ import me.ash.reader.infrastructure.preference.LocalDarkTheme
 import me.ash.reader.infrastructure.preference.LocalOpenLink
 import me.ash.reader.infrastructure.preference.LocalOpenLinkSpecificBrowser
 import me.ash.reader.infrastructure.preference.SettingsProvider
-import me.ash.reader.ui.ext.getCurrentVersion
-import me.ash.reader.ui.ext.openURL
+import me.ash.reader.infrastructure.android.getCurrentVersion
+import me.ash.reader.infrastructure.android.openURL
 import me.ash.reader.ui.theme.AppTheme
 import javax.inject.Inject
 

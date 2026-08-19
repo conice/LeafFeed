@@ -11,7 +11,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import me.ash.reader.domain.model.article.Article
 import me.ash.reader.domain.model.article.ArticleContentFetchCandidate
-import me.ash.reader.domain.service.AccountService
+import me.ash.reader.application.service.AccountService
 import me.ash.reader.infrastructure.di.IODispatcher
 import me.ash.reader.infrastructure.cache.CacheUsage
 import me.ash.reader.infrastructure.exception.runSuspendCatching

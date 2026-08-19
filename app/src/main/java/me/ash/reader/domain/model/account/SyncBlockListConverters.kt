@@ -2,8 +2,8 @@ package me.ash.reader.domain.model.account
 
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
-import me.ash.reader.infrastructure.preference.SyncBlockList
-import me.ash.reader.infrastructure.preference.SyncBlockListPreference
+import me.ash.reader.domain.model.account.SyncBlockList
+import me.ash.reader.domain.model.account.SyncBlockListPreference
 
 /**
  * Provide [TypeConverter] of [SyncBlockListPreference] for [RoomDatabase].

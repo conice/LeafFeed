@@ -43,7 +43,7 @@ import me.ash.reader.infrastructure.preference.encodeNavigationItems
 import me.ash.reader.ui.component.base.DisplayText
 import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.component.base.RYScaffold
-import me.ash.reader.ui.ext.dataStore
+import me.ash.reader.infrastructure.preference.dataStore
 import me.ash.reader.ui.theme.LayoutTokens
 import me.ash.reader.ui.theme.palette.onLight
 

@@ -1,5 +1,6 @@
 package me.ash.reader.ui.ext
 
+import me.ash.reader.infrastructure.android.extractDomain
 import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith

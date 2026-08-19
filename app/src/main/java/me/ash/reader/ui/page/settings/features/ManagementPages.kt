@@ -64,14 +64,14 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import me.ash.reader.R
-import me.ash.reader.domain.data.ArticleCollectionRepository
+import me.ash.reader.application.data.ArticleCollectionRepository
 import me.ash.reader.domain.model.article.Article
 import me.ash.reader.domain.model.article.ArticleNote
 import me.ash.reader.domain.model.article.ArticleWithFeed
 import me.ash.reader.domain.model.article.ArticleTagLabel
-import me.ash.reader.domain.repository.ArticleDao
-import me.ash.reader.domain.service.AccountService
-import me.ash.reader.domain.service.RssService
+import me.ash.reader.domain.repository.PodcastDao
+import me.ash.reader.application.service.AccountService
+import me.ash.reader.application.service.RssService
 import me.ash.reader.infrastructure.audio.PodcastDownloadRepository
 import me.ash.reader.infrastructure.audio.PodcastDownloadWorker
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
@@ -90,10 +90,10 @@ class PodcastLibraryViewModel @Inject constructor(
     accountService: AccountService,
     private val downloads: PodcastDownloadRepository,
     private val settingsProvider: SettingsProvider,
-    private val articleDao: ArticleDao,
+    private val podcastDao: PodcastDao,
 ) : ViewModel() {
     val episodes = accountService.currentAccountIdFlow.filterNotNull()
-        .flatMapLatest { articleDao.observePodcastEpisodes(it) }
+        .flatMapLatest { podcastDao.observePodcastEpisodes(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val downloadWorkInfos = downloads.downloadWorkInfosByArticleId
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())

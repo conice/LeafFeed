@@ -1,7 +1,6 @@
 package me.ash.reader.infrastructure.rss
 
 import android.content.Context
-import android.util.Log
 import com.rometools.modules.mediarss.MediaEntryModule
 import com.rometools.modules.mediarss.MediaModule
 import com.rometools.modules.mediarss.types.UrlReference
@@ -24,16 +23,17 @@ import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.repository.FeedDao
 import me.ash.reader.infrastructure.di.IODispatcher
 import me.ash.reader.infrastructure.html.Readability
-import me.ash.reader.ui.ext.decodeHTML
-import me.ash.reader.ui.ext.extractDomain
-import me.ash.reader.ui.ext.isFuture
-import me.ash.reader.ui.ext.spacerDollar
+import me.ash.reader.infrastructure.android.decodeHTML
+import me.ash.reader.infrastructure.android.extractDomain
+import me.ash.reader.infrastructure.android.isFuture
+import me.ash.reader.domain.model.general.spacerDollar
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.executeAsync
 import okhttp3.internal.commonIsSuccessful
 import okio.IOException
 import org.jsoup.Jsoup
+import timber.log.Timber
 
 val enclosureRegex = """<enclosure\s+url="([^"]+)"\s+type=".*"\s*/>""".toRegex()
 val imgRegex = """img.*?src=(["'])((?!data).*?)\1""".toRegex(RegexOption.DOT_MATCHES_ALL)
@@ -241,8 +241,7 @@ constructor(
                     .toList()
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            Log.e("RLog", "queryRssXml[${feed.name}]: ${e.message}")
+            Timber.e(e, "Unable to parse the RSS response")
             listOf()
         }
 
@@ -395,7 +394,7 @@ constructor(
         val iconFinder = BestIconFinder(okHttpClient)
         val domain = feedLink.extractDomain()
         return iconFinder.findBestIcon(domain ?: feedLink).also {
-            Log.i("RLog", "queryRssIconByLink: get $it from $domain")
+            Timber.d("Resolved an RSS icon candidate")
         }
     }
 

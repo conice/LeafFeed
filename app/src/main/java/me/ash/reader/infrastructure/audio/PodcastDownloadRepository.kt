@@ -19,7 +19,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import me.ash.reader.domain.model.article.Article
-import me.ash.reader.domain.repository.ArticleDao
+import me.ash.reader.domain.repository.PodcastDao
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
 import me.ash.reader.infrastructure.preference.SettingsProvider
 import me.ash.reader.infrastructure.exception.runSuspendCatching
@@ -31,7 +31,7 @@ import java.util.concurrent.TimeUnit
 class PodcastDownloadRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val client: OkHttpClient,
-    private val articleDao: ArticleDao,
+    private val podcastDao: PodcastDao,
     private val workManager: WorkManager,
     private val settingsProvider: SettingsProvider,
 ) {
@@ -127,7 +127,7 @@ class PodcastDownloadRepository @Inject constructor(
                 }
             }
             check(temporary.renameTo(file)) { "Unable to finalize download" }
-            articleDao.updateDownloadedPath(article.id, file.absolutePath)
+            podcastDao.updateDownloadedPath(article.id, file.absolutePath)
             pruneCache(directory)
             file
         }
@@ -136,7 +136,7 @@ class PodcastDownloadRepository @Inject constructor(
     suspend fun remove(article: Article): Result<Unit> = withContext(Dispatchers.IO) {
         runSuspendCatching {
             article.downloadedPath?.let(::File)?.takeIf(File::exists)?.delete()
-            articleDao.updateDownloadedPath(article.id, null)
+            podcastDao.updateDownloadedPath(article.id, null)
         }
     }
 
@@ -168,9 +168,9 @@ class PodcastDownloadRepository @Inject constructor(
     }
 
     private suspend fun deleteAndClear(file: File) {
-        val id = articleDao.queryIdByDownloadedPath(file.absolutePath)
+        val id = podcastDao.queryIdByDownloadedPath(file.absolutePath)
         file.delete()
-        if (id != null) articleDao.updateDownloadedPath(id, null)
+        if (id != null) podcastDao.updateDownloadedPath(id, null)
     }
 
     private fun workName(articleId: String) = "podcast-download-${articleId.hashCode()}"

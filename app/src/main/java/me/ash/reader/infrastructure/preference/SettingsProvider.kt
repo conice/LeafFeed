@@ -19,7 +19,7 @@ import me.ash.reader.infrastructure.datastore.getOrDefault
 import me.ash.reader.infrastructure.di.ApplicationScope
 import me.ash.reader.infrastructure.di.IODispatcher
 import me.ash.reader.ui.ext.collectAsStateValue
-import me.ash.reader.ui.ext.dataStore
+import me.ash.reader.infrastructure.preference.dataStore
 import javax.inject.Inject
 
 class SettingsProvider @Inject constructor(

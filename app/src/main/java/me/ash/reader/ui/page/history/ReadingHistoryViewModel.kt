@@ -20,9 +20,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
-import me.ash.reader.domain.data.toArticleFtsQuery
-import me.ash.reader.domain.model.article.ArticleFlowItem
-import me.ash.reader.domain.repository.ArticleDao
+import me.ash.reader.application.data.toArticleFtsQuery
+import me.ash.reader.application.data.ArticleFlowItem
+import me.ash.reader.domain.repository.ReadingHistoryDao
 
 private const val HISTORY_SEARCH_DEBOUNCE_MS = 300L
 
@@ -38,7 +38,7 @@ private data class HistoryScope(
 class ReadingHistoryViewModel
 @Inject
 constructor(
-    private val articleDao: ArticleDao,
+    private val readingHistoryDao: ReadingHistoryDao,
     private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
     private val scope = MutableStateFlow<HistoryScope?>(null)
@@ -52,14 +52,14 @@ constructor(
             .flatMapLatest { (historyScope, query) ->
                 Pager(PagingConfig(pageSize = 50, enablePlaceholders = false)) {
                         if (query.isBlank()) {
-                            articleDao.queryReadingHistory(
+                            readingHistoryDao.queryReadingHistory(
                                 accountId = historyScope.accountId,
                                 groupId = historyScope.groupId,
                                 feedId = historyScope.feedId,
                                 audioOnly = historyScope.audioOnly,
                             )
                         } else {
-                            articleDao.searchReadingHistory(
+                            readingHistoryDao.searchReadingHistory(
                                 accountId = historyScope.accountId,
                                 text = query.toArticleFtsQuery(),
                                 groupId = historyScope.groupId,

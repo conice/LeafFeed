@@ -5,8 +5,8 @@ import me.ash.reader.infrastructure.exception.FeverAPIException
 import me.ash.reader.infrastructure.net.RetryConfig
 import me.ash.reader.infrastructure.net.withRetries
 import me.ash.reader.infrastructure.rss.provider.ProviderAPI
-import me.ash.reader.ui.ext.encodeBase64
-import me.ash.reader.ui.ext.md5
+import me.ash.reader.infrastructure.android.encodeBase64
+import me.ash.reader.infrastructure.android.md5
 import okhttp3.FormBody
 import okhttp3.Request
 import okhttp3.executeAsync

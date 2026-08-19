@@ -15,9 +15,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.ash.reader.domain.model.account.Account
-import me.ash.reader.domain.service.AccountService
-import me.ash.reader.domain.service.OpmlService
-import me.ash.reader.domain.service.RssService
+import me.ash.reader.application.service.AccountService
+import me.ash.reader.application.service.OpmlService
+import me.ash.reader.application.service.RssService
 import me.ash.reader.infrastructure.ai.AiSummaryCache
 import me.ash.reader.infrastructure.di.ApplicationScope
 import me.ash.reader.infrastructure.di.DefaultDispatcher

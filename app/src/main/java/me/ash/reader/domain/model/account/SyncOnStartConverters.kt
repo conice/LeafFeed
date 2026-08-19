@@ -2,7 +2,7 @@ package me.ash.reader.domain.model.account
 
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverter
-import me.ash.reader.infrastructure.preference.SyncOnStartPreference
+import me.ash.reader.domain.model.account.SyncOnStartPreference
 
 /**
  * Provide [TypeConverter] of [SyncOnStartPreference] for [RoomDatabase].

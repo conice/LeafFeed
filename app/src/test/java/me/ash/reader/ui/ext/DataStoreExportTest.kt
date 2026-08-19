@@ -7,6 +7,10 @@ import me.ash.reader.infrastructure.ai.AiModelBackup
 import me.ash.reader.infrastructure.ai.AiPromptBackup
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
 import me.ash.reader.infrastructure.preference.NavigationPreferenceKeys
+import me.ash.reader.infrastructure.preference.PreferencesKey
+import me.ash.reader.infrastructure.preference.decodePreferencesJSON
+import me.ash.reader.infrastructure.preference.encodePreferencesJSON
+import me.ash.reader.infrastructure.preference.isPreferenceExportable
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue

@@ -34,9 +34,9 @@ import me.ash.reader.ui.component.base.DynamicSVGImage
 import me.ash.reader.ui.component.base.RYDialog
 import me.ash.reader.ui.component.base.RYScaffold
 import me.ash.reader.ui.component.base.Tips
-import me.ash.reader.ui.ext.PreferencesKey
-import me.ash.reader.ui.ext.dataStore
-import me.ash.reader.ui.ext.put
+import me.ash.reader.infrastructure.preference.PreferencesKey
+import me.ash.reader.infrastructure.preference.dataStore
+import me.ash.reader.infrastructure.preference.put
 import me.ash.reader.ui.page.common.RouteName
 import me.ash.reader.ui.svg.SVGString
 import me.ash.reader.ui.svg.WELCOME

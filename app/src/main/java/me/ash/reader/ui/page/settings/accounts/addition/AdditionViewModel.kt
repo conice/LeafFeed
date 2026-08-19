@@ -6,8 +6,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import me.ash.reader.domain.service.OpmlService
-import me.ash.reader.domain.service.RssService
+import me.ash.reader.application.service.OpmlService
+import me.ash.reader.application.service.RssService
 import me.ash.reader.infrastructure.android.AndroidStringsHelper
 import me.ash.reader.infrastructure.rss.RssHelper
 import javax.inject.Inject

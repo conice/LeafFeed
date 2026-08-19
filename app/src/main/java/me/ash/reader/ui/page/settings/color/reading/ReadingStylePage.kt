@@ -58,8 +58,8 @@ import me.ash.reader.ui.component.base.RadioDialog
 import me.ash.reader.ui.component.base.RadioDialogOption
 import me.ash.reader.ui.component.base.Subtitle
 import me.ash.reader.ui.ext.ExternalFonts
-import me.ash.reader.ui.ext.MimeType
-import me.ash.reader.ui.ext.showToast
+import me.ash.reader.infrastructure.android.MimeType
+import me.ash.reader.infrastructure.android.showToast
 import me.ash.reader.ui.page.settings.SettingItem
 import me.ash.reader.ui.theme.palette.onLight
 

@@ -40,7 +40,7 @@ import me.ash.reader.domain.model.article.Article
 import me.ash.reader.infrastructure.audio.PodcastPlayer
 import me.ash.reader.infrastructure.audio.PodcastPlaybackSpeeds
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
-import me.ash.reader.ui.ext.dataStore
+import me.ash.reader.infrastructure.preference.dataStore
 import me.ash.reader.ui.ext.collectAsStateValue
 import kotlinx.coroutines.flow.map
 
