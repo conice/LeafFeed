@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name" translatable="false">LeafFeed</string>
+    <string name="app_name" translatable="false">Morss</string>
     <string name="all">All</string>
     <plurals name="all_desc">
         <item quantity="one">%1$d archived item</item>
@@ -168,10 +168,10 @@
     <string name="tips_and_support">Tips &amp; support</string>
     <string name="tips_and_support_desc">About, sponsor, open source licenses</string>
     <string name="welcome">Welcome</string>
-    <string name="tos_tips">Please read and agree to LeafFeed\'s terms of service and privacy policy to continue.</string>
+    <string name="tos_tips">Please read and agree to Morss\'s terms of service and privacy policy to continue.</string>
     <string name="browse_tos_tips">Browse the <i><u>terms of service and privacy policy</u></i></string>
     <string name="terms_of_service">Terms of service</string>
-    <string name="tos_content"><h5> Privacy policy </h5> <br /> <p> LeafFeed stores feeds, articles, account credentials, and preferences locally on your device. Account credentials are protected with a device-local encryption key, and Android system backup is disabled. Use LeafFeed\'s explicit export tools for subscriptions and settings when moving devices, then enter account credentials again. LeafFeed does not operate an analytics or advertising service. </p> <br /> <p> When you enable synchronization, feed data is sent to the service you configure. When you use an AI feature, the requested titles or article content is sent directly to the AI provider and endpoint you configure. Review that provider\'s privacy policy before enabling it. </p> <br /> <p> LeafFeed requires network access to retrieve feeds and online content, and may use background work for synchronization and notifications. </p> <br /> <h5> Disclaimers </h5> <br /> <p> LeafFeed is a content collection and reading tool. You are responsible for the feeds, services, and content you configure and use. </p> <br /> <h5> Open source license </h5> <br /> <p> LeafFeed is free and open-source software under the GNU GPL 3.0. The source code and license are available at the project repository. </p> <br /> <p> - https://github.com/conice/LeafFeed </p> <p> - https://www.gnu.org/licenses/gpl-3.0.html </p></string>
+    <string name="tos_content"><h5> Privacy policy </h5> <br /> <p> Morss stores feeds, articles, account credentials, and preferences locally on your device. Account credentials are protected with a device-local encryption key, and Android system backup is disabled. Use Morss\'s explicit export tools for subscriptions and settings when moving devices, then enter account credentials again. Morss does not operate an analytics or advertising service. </p> <br /> <p> When you enable synchronization, feed data is sent to the service you configure. When you use an AI feature, the requested titles or article content is sent directly to the AI provider and endpoint you configure. Review that provider\'s privacy policy before enabling it. </p> <br /> <p> Morss requires network access to retrieve feeds and online content, and may use background work for synchronization and notifications. </p> <br /> <h5> Disclaimers </h5> <br /> <p> Morss is a content collection and reading tool. You are responsible for the feeds, services, and content you configure and use. </p> <br /> <h5> Open source license </h5> <br /> <p> Morss is free and open-source software under the GNU GPL 3.0. The source code and license are available at the project repository. </p> <br /> <p> - https://github.com/conice/Morss </p> <p> - https://www.gnu.org/licenses/gpl-3.0.html </p></string>
     <string name="agree">Agree</string>
     <string name="wallpaper_colors">Wallpaper colors</string>
     <string name="no_palettes">No palettes</string>
@@ -196,9 +196,9 @@
     <string name="reading_page">Reading page</string>
     <string name="sponsor">Sponsor</string>
     <string name="open_source_licenses">Open source licenses</string>
-    <string name="github_link" translatable="false">https://github.com/conice/LeafFeed</string>
-    <string name="wiki_link" translatable="false">https://github.com/conice/LeafFeed#readme</string>
-    <string name="update_link" translatable="false">https://api.github.com/repos/conice/LeafFeed/releases/latest</string>
+    <string name="github_link" translatable="false">https://github.com/conice/Morss</string>
+    <string name="wiki_link" translatable="false">https://github.com/conice/Morss#readme</string>
+    <string name="update_link" translatable="false">https://api.github.com/repos/conice/Morss/releases/latest</string>
     <string name="change_log">Changelog</string>
     <string name="update">Update</string>
     <string name="skip_this_version">Skip this version</string>
@@ -459,7 +459,7 @@
     <string name="troubleshooting">Troubleshooting</string>
     <string name="troubleshooting_desc">Bug report, app preferences</string>
     <string name="bug_report">Bug report</string>
-    <string name="issue_tracer_url" translatable="false">https://github.com/conice/LeafFeed/issues</string>
+    <string name="issue_tracer_url" translatable="false">https://github.com/conice/Morss/issues</string>
     <string name="app_preferences">App preferences</string>
     <string name="import_from_protobuf_file">Import from protobuf file</string>
     <string name="export_as_protobuf_file">Export as protobuf file</string>
@@ -571,7 +571,7 @@
     <string name="intake_last_seven_days">Last 7 days</string>
     <string name="intake_report_period">%1$s – %2$s · Last 7 days</string>
     <string name="intake_load_failed">Could not build the intake overview</string>
-    <string name="intake_load_failed_desc">LeafFeed could not read the local activity needed for this overview. Try again.</string>
+    <string name="intake_load_failed_desc">Morss could not read the local activity needed for this overview. Try again.</string>
     <string name="intake_empty">No intake activity yet</string>
     <string name="intake_empty_desc">After subscriptions sync and you begin opening articles, this page will show where information comes from and where it accumulates.</string>
     <string name="intake_summary_quiet">A quiet week in your feeds</string>
@@ -587,7 +587,7 @@
     <string name="intake_summary_concentrated">%1$s held most of your attention</string>
     <string name="intake_summary_concentrated_desc">%1$s accounted for %2$d%% of opened activity during this period.</string>
     <string name="intake_summary_steady">No strong shift stood out this week</string>
-    <string name="intake_summary_steady_desc">LeafFeed recorded %1$d new items and %2$d opened items during this period.</string>
+    <string name="intake_summary_steady_desc">Morss recorded %1$d new items and %2$d opened items during this period.</string>
     <string name="intake_information_flow">Information flow</string>
     <string name="intake_information_flow_desc">A seven-day view of what arrived, received attention, was cleared, or remains unread.</string>
     <string name="intake_metric_received">New items</string>

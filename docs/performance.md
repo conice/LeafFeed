@@ -1,4 +1,4 @@
-# LeafFeed Performance and Stability Gates
+# Morss Performance and Stability Gates
 
 This document defines the repeatable acceptance checks for changes that affect startup, article
 lists, synchronization, reading, media, storage, or navigation. Measurements use a minified GitHub

@@ -1,9 +1,9 @@
 # Application startup and the primary feed-to-reading path.
-Lme/ash/reader/infrastructure/android/AndroidApp;
-Lme/ash/reader/infrastructure/android/MainActivity;
-Lme/ash/reader/ui/page/nav3/AppEntryKt;
-Lme/ash/reader/ui/page/home/feeds/FeedsPageKt;
-Lme/ash/reader/ui/page/home/flow/FlowPageKt;
-Lme/ash/reader/ui/page/home/flow/ArticleListKt;
-Lme/ash/reader/ui/page/home/reading/ReadingPageKt;
-Lme/ash/reader/ui/page/adaptive/ArticleListReaderViewModel;
+Lcom/conice/morss/infrastructure/android/AndroidApp;
+Lcom/conice/morss/infrastructure/android/MainActivity;
+Lcom/conice/morss/ui/page/nav3/AppEntryKt;
+Lcom/conice/morss/ui/page/home/feeds/FeedsPageKt;
+Lcom/conice/morss/ui/page/home/flow/FlowPageKt;
+Lcom/conice/morss/ui/page/home/flow/ArticleListKt;
+Lcom/conice/morss/ui/page/home/reading/ReadingPageKt;
+Lcom/conice/morss/ui/page/adaptive/ArticleListReaderViewModel;

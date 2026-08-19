@@ -31,7 +31,7 @@ jobs:
               if: always()
               uses: actions/upload-artifact@v6
               with:
-                  name: LeafFeed-Lint-GitHub-Debug-${{ github.sha }}
+                  name: Morss-Lint-GitHub-Debug-${{ github.sha }}
                   path: |
                       app/build/reports/lint-results-githubDebug.*
                       app/build/intermediates/lint_intermediate_text_report/githubDebug/lintReportGithubDebug/lint-results-githubDebug.txt

@@ -1,17 +1,17 @@
 <div align="center">
-  <a href="https://github.com/conice/LeafFeed">
-    <img src="fastlane/metadata/android/en-US/images/icon.png" alt="LeafFeed Logo" width="80" height="80">
+  <a href="https://github.com/conice/Morss">
+    <img src="fastlane/metadata/android/en-US/images/icon.png" alt="Morss Logo" width="80" height="80">
   </a>
 
-  <h3>LeafFeed</h3>
+  <h3>Morss</h3>
   <p>A private, modern RSS reader for Android</p>
 
   <p>
-    <a href="https://github.com/conice/LeafFeed/stargazers"><img src="https://img.shields.io/github/stars/conice/LeafFeed?style=flat-square&logo=github&label=Stars&labelColor=black&color=ffcb47" alt="GitHub Stars"></a>
-    <a href="https://github.com/conice/LeafFeed/graphs/contributors"><img src="https://img.shields.io/github/contributors/conice/LeafFeed?style=flat-square&logo=github&label=Contributors&labelColor=black" alt="Contributors"></a>
-    <a href="https://github.com/conice/LeafFeed/releases"><img src="https://img.shields.io/github/downloads/conice/LeafFeed/total?style=flat-square&logo=github&label=Downloads&labelColor=black&color=369eff" alt="Downloads"></a>
-    <a href="https://github.com/conice/LeafFeed/releases/latest"><img src="https://img.shields.io/github/v/release/conice/LeafFeed?style=flat-square&logo=android&label=Release&labelColor=black&color=3ddc84" alt="Latest Release"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/github/license/conice/LeafFeed?style=flat-square&labelColor=black" alt="License"></a>
+    <a href="https://github.com/conice/Morss/stargazers"><img src="https://img.shields.io/github/stars/conice/Morss?style=flat-square&logo=github&label=Stars&labelColor=black&color=ffcb47" alt="GitHub Stars"></a>
+    <a href="https://github.com/conice/Morss/graphs/contributors"><img src="https://img.shields.io/github/contributors/conice/Morss?style=flat-square&logo=github&label=Contributors&labelColor=black" alt="Contributors"></a>
+    <a href="https://github.com/conice/Morss/releases"><img src="https://img.shields.io/github/downloads/conice/Morss/total?style=flat-square&logo=github&label=Downloads&labelColor=black&color=369eff" alt="Downloads"></a>
+    <a href="https://github.com/conice/Morss/releases/latest"><img src="https://img.shields.io/github/v/release/conice/Morss?style=flat-square&logo=android&label=Release&labelColor=black&color=3ddc84" alt="Latest Release"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/github/license/conice/Morss?style=flat-square&labelColor=black" alt="License"></a>
     <br />
     <img src="https://img.shields.io/badge/Android-8.0%2B-3ddc84?style=flat-square&logo=android&logoColor=white&labelColor=black" alt="Android 8.0+">
     <img src="https://img.shields.io/badge/Material-You-6750a4?style=flat-square&logo=materialdesign&logoColor=white&labelColor=black" alt="Material You">
@@ -26,17 +26,17 @@
   </p>
 </div>
 
-LeafFeed is an Android RSS and podcast reader built around your subscriptions rather than an algorithm. Keep feeds, articles, playback progress, and settings on your device; connect only the sync and AI services you choose.
+Morss is an Android RSS and podcast reader built around your subscriptions rather than an algorithm. Keep feeds, articles, playback progress, and settings on your device; connect only the sync and AI services you choose.
 
 ## Getting Started
 
-LeafFeed is under active development. Feedback and bug reports are welcome in [GitHub Issues](https://github.com/conice/LeafFeed/issues).
+Morss is under active development. Feedback and bug reports are welcome in [GitHub Issues](https://github.com/conice/Morss/issues).
 
 | Platform | Requirement | Source |
 | :--- | :--- | :--- |
-| Android | Android 8.0 / API 26 or later | [![GitHub Release](https://img.shields.io/badge/GitHub-Release-181717?style=for-the-badge&logo=github)](https://github.com/conice/LeafFeed/releases/latest) |
-| Android | Latest CI test build | [![GitHub Actions](https://img.shields.io/badge/GitHub-Actions-2088ff?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/conice/LeafFeed/actions) |
-| Source | Kotlin / Jetpack Compose | [![Source Code](https://img.shields.io/badge/Source-Code-ffcb47?style=for-the-badge&logo=git&logoColor=black)](https://github.com/conice/LeafFeed) |
+| Android | Android 8.0 / API 26 or later | [![GitHub Release](https://img.shields.io/badge/GitHub-Release-181717?style=for-the-badge&logo=github)](https://github.com/conice/Morss/releases/latest) |
+| Android | Latest CI test build | [![GitHub Actions](https://img.shields.io/badge/GitHub-Actions-2088ff?style=for-the-badge&logo=githubactions&logoColor=white)](https://github.com/conice/Morss/actions) |
+| Source | Kotlin / Jetpack Compose | [![Source Code](https://img.shields.io/badge/Source-Code-ffcb47?style=for-the-badge&logo=git&logoColor=black)](https://github.com/conice/Morss) |
 
 > [!IMPORTANT]
 >
@@ -44,7 +44,7 @@ LeafFeed is under active development. Feedback and bug reports are welcome in [G
 
 Star the repository to keep track of new versions and release notes.
 
-## What LeafFeed Does
+## What Morss Does
 
 ### Follow What You Chose
 
@@ -118,16 +118,16 @@ The development environment requires JDK 17, Android SDK with Compile SDK 36, an
 Release builds require a persistent signing certificate configured through these environment variables:
 
 ```text
-LEAFFEED_SIGNING_STORE_FILE
-LEAFFEED_SIGNING_STORE_PASSWORD
-LEAFFEED_SIGNING_KEY_ALIAS
-LEAFFEED_SIGNING_KEY_PASSWORD
+MORSS_SIGNING_STORE_FILE
+MORSS_SIGNING_STORE_PASSWORD
+MORSS_SIGNING_KEY_ALIAS
+MORSS_SIGNING_KEY_PASSWORD
 ```
 
 For local builds, the same properties can be kept in the user's Gradle properties file instead of
 the repository. On Termux this is `/data/data/com.termux/files/home/.gradle/gradle.properties`.
 Gradle user properties are loaded automatically and are used when the corresponding environment
-variable is not set. The file may use either the `LEAFFEED_SIGNING_*` names above or the shorter
+variable is not set. The file may use either the `MORSS_SIGNING_*` names above or the shorter
 `storeFile`, `storePassword`, `keyAlias`, and `keyPassword` names.
 
 ```bash
@@ -146,9 +146,9 @@ Anyone producing an independent build is responsible for signing it and safeguar
 
 ## Privacy
 
-LeafFeed contains no advertising or built-in analytics service. Accounts, subscriptions, articles, and preferences are stored locally by default.
+Morss contains no advertising or built-in analytics service. Accounts, subscriptions, articles, and preferences are stored locally by default.
 
-- Android system backup is disabled because account credentials are protected by a device-local encryption key. Use LeafFeed's explicit export tools for subscriptions and settings when moving devices, then enter account credentials again.
+- Android system backup is disabled because account credentials are protected by a device-local encryption key. Use Morss's explicit export tools for subscriptions and settings when moving devices, then enter account credentials again.
 - When synchronization is enabled, subscription and reading-state data is sent to the service configured by the user.
 - When an AI feature is used, selected headlines or article content is sent directly to the configured AI provider and endpoint.
 - Background synchronization, notifications, and podcast playback may use the network, wake locks, and foreground services.
@@ -156,10 +156,10 @@ LeafFeed contains no advertising or built-in analytics service. Accounts, subscr
 
 ## License
 
-LeafFeed is distributed under the [GNU General Public License v3.0](LICENSE). Distributions of modified versions must comply with the source-availability and license-preservation requirements of GPL-3.0. Third-party components and assets remain subject to their respective licenses.
+Morss is distributed under the [GNU General Public License v3.0](LICENSE). Distributions of modified versions must comply with the source-availability and license-preservation requirements of GPL-3.0. Third-party components and assets remain subject to their respective licenses.
 
 ## Upstream Acknowledgement
 
-LeafFeed is a derivative project based on [Read You](https://github.com/Ashinch/ReadYou). We thank Read You author Ashinch and every upstream contributor for the design, code, and open-source foundation on which this project builds.
+Morss is a derivative project based on [Read You](https://github.com/Ashinch/ReadYou). We thank Read You author Ashinch and every upstream contributor for the design, code, and open-source foundation on which this project builds.
 
-LeafFeed is not an official Read You release and is not affiliated with or endorsed by the upstream project or its maintainers. Issues caused by LeafFeed-specific features or modifications should be reported to [LeafFeed Issues](https://github.com/conice/LeafFeed/issues); upstream maintainers should not be expected to support this fork. Copyright in the original code and subsequent modifications remains with the respective contributors, and the project continues to be distributed under GPL-3.0.
+Morss is not an official Read You release and is not affiliated with or endorsed by the upstream project or its maintainers. Issues caused by Morss-specific features or modifications should be reported to [Morss Issues](https://github.com/conice/Morss/issues); upstream maintainers should not be expected to support this fork. Copyright in the original code and subsequent modifications remains with the respective contributors, and the project continues to be distributed under GPL-3.0.

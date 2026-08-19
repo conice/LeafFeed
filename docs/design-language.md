@@ -1,6 +1,6 @@
-# LeafFeed Design Language
+# Morss Design Language
 
-LeafFeed is quiet, clear, content-first, and predictable. The interface should help people scan,
+Morss is quiet, clear, content-first, and predictable. The interface should help people scan,
 choose, and read without competing with the article. This document is the implementation contract
 for new and updated UI.
 

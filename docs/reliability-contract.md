@@ -1,6 +1,6 @@
 # Local-First Reliability Contract
 
-LeafFeed's core reading path must remain useful without a network connection or a successful
+Morss's core reading path must remain useful without a network connection or a successful
 full-page parser request.
 
 ## Data
@@ -9,8 +9,8 @@ full-page parser request.
 - Account credentials use versioned AES-GCM encryption backed by an Android Keystore key. Legacy DES
   rows are readable only for in-place migration and are never used for new writes.
 - Android system backup and device transfer are excluded because the credential key is device-local;
-  users move subscriptions and settings through LeafFeed's explicit exports and re-enter credentials.
-- Reading collections use the versioned `leaffeed.collections` format. Version 2 includes a SHA-256
+  users move subscriptions and settings through Morss's explicit exports and re-enter credentials.
+- Reading collections use the versioned `morss.collections` format. Version 2 includes a SHA-256
   integrity value; version 1 remains importable for existing backups.
 - API keys are excluded from preference exports unless the user explicitly opts in.
 

@@ -1,0 +1,47 @@
+package com.conice.morss.infrastructure.preference
+
+import android.content.Context
+import androidx.compose.runtime.compositionLocalOf
+import androidx.datastore.preferences.core.Preferences
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import com.conice.morss.domain.model.constant.ElevationTokens
+import com.conice.morss.infrastructure.preference.PreferencesKey
+import com.conice.morss.infrastructure.preference.getPreference
+import com.conice.morss.infrastructure.preference.PreferencesKey.Companion.readingPageTonalElevation
+import com.conice.morss.infrastructure.preference.dataStore
+import com.conice.morss.infrastructure.preference.put
+
+val LocalReadingPageTonalElevation =
+    compositionLocalOf<ReadingPageTonalElevationPreference> { ReadingPageTonalElevationPreference.default }
+
+sealed class ReadingPageTonalElevationPreference(val value: Int) : Preference() {
+    data object Outlined : ReadingPageTonalElevationPreference(ElevationTokens.Level0)
+    data object Elevated : ReadingPageTonalElevationPreference(ElevationTokens.Level2)
+
+    override fun put(context: Context, scope: CoroutineScope) {
+        scope.launch {
+            context.dataStore.put(readingPageTonalElevation, value)
+        }
+    }
+
+    fun toDesc(context: Context): String =
+        when (this) {
+            Outlined -> "${ElevationTokens.Level0}dp"
+            Elevated -> "${ElevationTokens.Level2}dp"
+        }
+
+    companion object {
+
+        val default = Outlined
+        val values = listOf(Outlined, Elevated)
+
+        fun fromPreferences(preferences: Preferences) =
+            when (preferences.getPreference<Int>(readingPageTonalElevation)) {
+                ElevationTokens.Level0 -> Outlined
+                ElevationTokens.Level2 -> Elevated
+                else -> default
+            }
+    }
+}
+

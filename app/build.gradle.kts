@@ -24,7 +24,7 @@ val gitCommitHash =
         }.standardOutput.asText.map { output -> output.trim().ifBlank { "unknown" } }
         .get()
 val ciVersionCode =
-    providers.environmentVariable("LEAFFEED_VERSION_CODE").orNull?.toIntOrNull()
+    providers.environmentVariable("MORSS_VERSION_CODE").orNull?.toIntOrNull()
 val keyProps = Properties()
 val releaseKeyPropsFile: File = rootProject.file("signature/keystore_release.properties")
 val debugKeyPropsFile: File = rootProject.file("signature/keystore.properties")
@@ -46,10 +46,10 @@ fun signingProperty(propertyName: String, environmentName: String): String? =
             ?.takeIf { it.isNotBlank() }
         ?: keyProps.getProperty(propertyName)?.takeIf { it.isNotBlank() }
 
-val releaseStoreFilePath = signingProperty("storeFile", "LEAFFEED_SIGNING_STORE_FILE")
-val releaseStorePassword = signingProperty("storePassword", "LEAFFEED_SIGNING_STORE_PASSWORD")
-val releaseKeyAlias = signingProperty("keyAlias", "LEAFFEED_SIGNING_KEY_ALIAS")
-val releaseKeyPassword = signingProperty("keyPassword", "LEAFFEED_SIGNING_KEY_PASSWORD")
+val releaseStoreFilePath = signingProperty("storeFile", "MORSS_SIGNING_STORE_FILE")
+val releaseStorePassword = signingProperty("storePassword", "MORSS_SIGNING_STORE_PASSWORD")
+val releaseKeyAlias = signingProperty("keyAlias", "MORSS_SIGNING_KEY_ALIAS")
+val releaseKeyPassword = signingProperty("keyPassword", "MORSS_SIGNING_KEY_PASSWORD")
 val releaseStoreFile = releaseStoreFilePath?.let { project.file(it) }
 val hasReleaseSigning =
     releaseStoreFile?.isFile == true &&
@@ -65,8 +65,8 @@ val releaseBuildRequested = gradle.startParameter.taskNames.any { requestedTask 
 if (releaseBuildRequested && !hasReleaseSigning) {
     throw GradleException(
         "Release signing is not configured. Provide " +
-            "LEAFFEED_SIGNING_STORE_FILE, LEAFFEED_SIGNING_STORE_PASSWORD, " +
-            "LEAFFEED_SIGNING_KEY_ALIAS, and LEAFFEED_SIGNING_KEY_PASSWORD " +
+            "MORSS_SIGNING_STORE_FILE, MORSS_SIGNING_STORE_PASSWORD, " +
+            "MORSS_SIGNING_KEY_ALIAS, and MORSS_SIGNING_KEY_PASSWORD " +
             "through environment variables or Gradle properties, " +
             "or configure signature/keystore_release.properties.",
     )
@@ -76,18 +76,18 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.finnsta.leaffeed"
+        applicationId = "com.conice.morss"
         minSdk = 26
         targetSdk = 35
         // CI uses a monotonically increasing value so APKs signed by the same certificate can be
         // installed as updates. Local builds keep the stable development fallback.
         versionCode = ciVersionCode ?: 1
-        versionName = "0.3.0"
+        versionName = "0.3.1"
 
         buildConfigField(
             "String",
             "USER_AGENT_STRING",
-            "\"LeafFeed/${versionName}(${versionCode})\"",
+            "\"Morss/${versionName}(${versionCode})\"",
         )
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -107,7 +107,6 @@ android {
         create("fdroid") { dimension = "channel" }
         create("googlePlay") {
             dimension = "channel"
-            applicationIdSuffix = ".google.play"
         }
     }
     signingConfigs {
@@ -145,7 +144,7 @@ android {
     applicationVariants.all {
         outputs.all {
             (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
-                "LeafFeed-${defaultConfig.versionName}-${gitCommitHash}.apk"
+                "Morss-${defaultConfig.versionName}-${gitCommitHash}.apk"
         }
     }
     compileOptions {
@@ -159,7 +158,7 @@ android {
     }
     // Locale directories are retained for project structure, but this fork ships English only.
     androidResources { generateLocaleConfig = false }
-    namespace = "me.ash.reader"
+    namespace = "com.conice.morss"
 }
 
 kotlin {

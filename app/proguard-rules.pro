@@ -47,17 +47,17 @@
 # remain available when R8 full mode is enabled.
 -keep class com.google.gson.reflect.TypeToken { *; }
 -keep class * extends com.google.gson.reflect.TypeToken { *; }
--keep class me.ash.reader.infrastructure.rss.provider.** { *; }
--keep class me.ash.reader.infrastructure.net.LatestRelease { *; }
--keep class me.ash.reader.infrastructure.net.AssetsItem { *; }
--keep class me.ash.reader.domain.model.account.security.** { *; }
--keep class me.ash.reader.domain.data.Diff { *; }
--keep class me.ash.reader.ui.ext.PreferencesExport { *; }
--keep class me.ash.reader.infrastructure.ai.AiConfigurationBackup { *; }
--keep class me.ash.reader.infrastructure.ai.AiConnectionBackup { *; }
--keep class me.ash.reader.infrastructure.ai.AiModelBackup { *; }
--keep class me.ash.reader.infrastructure.ai.AiPromptBackup { *; }
--keep class me.ash.reader.infrastructure.ai.AiBindingBackup { *; }
+-keep class com.conice.morss.infrastructure.rss.provider.** { *; }
+-keep class com.conice.morss.infrastructure.net.LatestRelease { *; }
+-keep class com.conice.morss.infrastructure.net.AssetsItem { *; }
+-keep class com.conice.morss.domain.model.account.security.** { *; }
+-keep class com.conice.morss.domain.data.Diff { *; }
+-keep class com.conice.morss.ui.ext.PreferencesExport { *; }
+-keep class com.conice.morss.infrastructure.ai.AiConfigurationBackup { *; }
+-keep class com.conice.morss.infrastructure.ai.AiConnectionBackup { *; }
+-keep class com.conice.morss.infrastructure.ai.AiModelBackup { *; }
+-keep class com.conice.morss.infrastructure.ai.AiPromptBackup { *; }
+-keep class com.conice.morss.infrastructure.ai.AiBindingBackup { *; }
 
 # https://github.com/flutter/flutter/issues/127388
 -dontwarn org.kxml2.io.KXml**
@@ -65,4 +65,4 @@
 # https://youtrack.jetbrains.com/issue/KTOR-5528
 -dontwarn org.slf4j.impl.StaticLoggerBinder
 
--keep class me.ash.reader.R$font { *; }
+-keep class com.conice.morss.R$font { *; }

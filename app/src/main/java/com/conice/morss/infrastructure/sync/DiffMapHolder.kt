@@ -1,0 +1,376 @@
+package com.conice.morss.infrastructure.sync
+
+import android.content.Context
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.snapshotFlow
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.withContext
+import com.conice.morss.domain.model.account.Account
+import com.conice.morss.domain.model.account.AccountType
+import com.conice.morss.domain.model.article.ArticleWithFeed
+import com.conice.morss.application.service.AccountService
+import com.conice.morss.application.service.RssService
+import com.conice.morss.infrastructure.di.ApplicationScope
+import com.conice.morss.infrastructure.di.IODispatcher
+import javax.inject.Inject
+import timber.log.Timber
+
+internal data class DiffBatch(
+    val markAsReadArticleIds: Set<String>,
+    val markAsUnreadArticleIds: Set<String>,
+)
+
+internal fun Map<String, Diff>.toDiffBatch() =
+    DiffBatch(
+        markAsReadArticleIds = filterValues { !it.isUnread }.keys,
+        markAsUnreadArticleIds = filterValues { it.isUnread }.keys,
+    )
+
+internal fun MutableMap<String, Diff>.removeAppliedDiffs(appliedDiffs: Map<String, Diff>) {
+    appliedDiffs.forEach { (articleId, appliedDiff) ->
+        if (this[articleId] == appliedDiff) remove(articleId)
+    }
+}
+
+@OptIn(FlowPreview::class)
+class DiffMapHolder @Inject constructor(
+    @ApplicationContext private val context: Context,
+    @ApplicationScope private val applicationScope: CoroutineScope,
+    @IODispatcher private val ioDispatcher: CoroutineDispatcher,
+    private val accountService: AccountService,
+    private val rssService: RssService,
+) {
+    val diffMap = mutableStateMapOf<String, Diff>()
+
+    private val pendingSyncDiffs = mutableStateMapOf<String, Diff>()
+    private val syncedDiffs = mutableMapOf<String, Diff>()
+
+    val diffMapSnapshotFlow = snapshotFlow { diffMap.toMap() }.stateIn(
+        applicationScope, SharingStarted.Eagerly, emptyMap()
+    )
+
+    private val pendingSyncDiffsSnapshotFlow = snapshotFlow { pendingSyncDiffs.toMap() }.stateIn(
+        applicationScope, SharingStarted.Eagerly, emptyMap()
+    )
+
+    val shouldSyncWithRemote get() = currentAccount?.type?.let { it != AccountType.Local } == true
+
+    private val outboxRoot = context.filesDir.resolve("read-status-outbox")
+    private val legacyCacheRoot = context.cacheDir.resolve("diff")
+    private var outboxStore = ReadStatusOutboxStore(outboxRoot.resolve("uninitialized"))
+
+    private var currentAccount: Account? = null
+
+    private var dbJob: Job? = null
+    private var remoteJob: Job? = null
+    private var cacheRestoreJob: Job? = null
+    private val commitMutex = Mutex()
+    private val persistenceMutex = Mutex()
+
+    init {
+        applicationScope.launch {
+            accountService.currentAccountFlow.mapNotNull { it }.collect { account ->
+                val previousAccount = currentAccount
+                if (previousAccount != null && previousAccount != account) {
+                    cleanup()
+                }
+                currentAccount = account
+                init(account)
+            }
+        }
+    }
+
+    private fun init(account: Account) {
+        outboxStore = ReadStatusOutboxStore(outboxRoot.resolve(account.id.toString()))
+        commitOnChange()
+        if (account.type != AccountType.Local) {
+            syncOnChange()
+        }
+        restoreOutbox(account)
+    }
+
+    private suspend fun cleanup() {
+        dbJob?.cancelAndJoin()
+        remoteJob?.cancelAndJoin()
+        cacheRestoreJob?.cancelAndJoin()
+        commitMutex.withLock {
+            persistOutbox()
+            diffMap.clear()
+            pendingSyncDiffs.clear()
+            syncedDiffs.clear()
+        }
+    }
+
+    private fun commitOnChange() {
+        dbJob = applicationScope.launch(ioDispatcher) {
+            snapshotFlow {
+                ReadStatusOutboxSnapshot(
+                    localDiffs = diffMap.toMap(),
+                    pendingRemoteDiffs = pendingSyncDiffs.toMap(),
+                )
+            }.debounce(PERSIST_DEBOUNCE_MILLIS).collect {
+                persistOutbox()
+            }
+        }
+    }
+
+    private fun syncOnChange() {
+        remoteJob = applicationScope.launch(ioDispatcher) {
+            pendingSyncDiffsSnapshotFlow
+                .debounce(REMOTE_SYNC_DEBOUNCE_MILLIS)
+                .distinctUntilChanged()
+                .collect { initialDiffs ->
+                    if (initialDiffs.isEmpty()) return@collect
+                    drainReadStatusOutbox(
+                        pendingSnapshot = { pendingSyncDiffs.toMap() },
+                        sync = ::syncDiffsWithRemote,
+                        removeSynced = ::removeSyncedDiffs,
+                        persist = { persistOutbox() },
+                    )
+                }
+        }
+    }
+
+    fun checkIfUnread(articleWithFeed: ArticleWithFeed): Boolean {
+        return diffMap[articleWithFeed.article.id]?.isUnread ?: articleWithFeed.article.isUnread
+    }
+
+    /**
+     * Updates the diff map with changes to an article's read/unread status.
+     *
+     * This function manages a map (`diffMap`) that tracks pending changes (diffs) to the
+     * read/unread status of articles. These changes are not immediately applied to the
+     * underlying data store but are held in `diffMap` until a later commit operation.
+     *
+     * The function supports three modes of updating:
+     *
+     * 1. **Toggle:** If `isUnread` is `null`, the function toggles the current read/unread
+     *    status of the article.  If the article is currently unread, it will be marked as read,
+     *    and vice-versa.
+     * 2. **Mark as Unread:** If `isUnread` is `true`, the article will be marked as unread,
+     *    regardless of its current status.
+     * 3. **Mark as Read:** If `isUnread` is `false`, the article will be marked as read,
+     *    regardless of its current status.
+     *
+     * The function determines if a change needs to be tracked based on the current status and desired status:
+     *  - If the requested change matches the article's current status, the diff is removed from the map, if it exists. (No change is needed.)
+     *  - Otherwise, the diff is added to or updated in the map.
+     *
+     * @param articleWithFeed The article and its associated feed data. This is used to identify the article
+     *                        and access its current read/unread state.
+     * @param isUnread An optional boolean indicating the desired read/unread status of the article.
+     *                 - `null`: Toggles the current read/unread status.
+     *                 - `true`: Marks the article as unread.
+     *                 - `false`: Marks the article as read.
+     *
+     * @return A [Diff] object representing the changes made to the article.
+     *
+     * @see Diff
+     */
+    private fun updateDiffInternal(
+        articleWithFeed: ArticleWithFeed, isUnread: Boolean? = null
+    ): Diff? {
+        val articleId = articleWithFeed.article.id
+
+        val diff = diffMap[articleId]
+
+        if (diff == null) {
+            val isUnread = isUnread ?: !articleWithFeed.article.isUnread
+            val diff = Diff(
+                isUnread = isUnread, articleWithFeed = articleWithFeed
+            )
+            diffMap[articleId] = diff
+            return diff
+        } else {
+            if (isUnread == null || diff.isUnread != isUnread) {
+                val diff = diffMap.remove(articleId)
+                return diff?.copy(isUnread = !diff.isUnread)
+            }
+        }
+        return null
+    }
+
+    fun updateDiff(
+        vararg articleWithFeed: ArticleWithFeed, isUnread: Boolean? = null
+    ) {
+        val appliedDiffs = articleWithFeed.mapNotNull {
+            updateDiffInternal(it, isUnread)
+        }
+        if (shouldSyncWithRemote) {
+            appliedDiffs.forEach {
+                appendDiffToSync(it)
+            }
+        }
+        applicationScope.launch(ioDispatcher) { persistOutbox() }
+    }
+
+    private fun appendDiffToSync(diff: Diff) {
+        val syncedDiff = syncedDiffs[diff.articleId]
+        if (syncedDiff == null || syncedDiff.isUnread != diff.isUnread) {
+            pendingSyncDiffs[diff.articleId] = diff
+        }
+    }
+
+    fun commitDiffsToDb() {
+        applicationScope.launch(ioDispatcher) {
+            commitDiffsToDbInternal()
+        }
+    }
+
+    private suspend fun commitDiffsToDbInternal() {
+        commitMutex.withLock {
+            val diffs = diffMap.toMap()
+            if (diffs.isEmpty()) return@withLock
+
+            val batch = diffs.toDiffBatch()
+            val service = rssService.get()
+            if (batch.markAsReadArticleIds.isNotEmpty()) {
+                service.batchMarkAsRead(
+                    articleIds = batch.markAsReadArticleIds,
+                    isUnread = false,
+                )
+            }
+            if (batch.markAsUnreadArticleIds.isNotEmpty()) {
+                service.batchMarkAsRead(
+                    articleIds = batch.markAsUnreadArticleIds,
+                    isUnread = true,
+                )
+            }
+
+            diffMap.removeAppliedDiffs(diffs)
+            persistOutbox()
+        }
+    }
+
+    private suspend fun persistOutbox() {
+        withContext(ioDispatcher) {
+            persistenceMutex.withLock {
+                val snapshot =
+                    ReadStatusOutboxSnapshot(
+                        localDiffs = diffMap.toMap(),
+                        pendingRemoteDiffs = pendingSyncDiffs.toMap(),
+                    )
+                try {
+                    outboxStore.write(snapshot)
+                } catch (error: Exception) {
+                    Timber.e(error, "Unable to persist the read-status outbox")
+                }
+            }
+        }
+    }
+
+    private suspend fun syncDiffsWithRemote(diffs: Map<String, Diff>): Set<String> {
+        if (!shouldSyncWithRemote || diffs.isEmpty()) return emptySet()
+        val toBeSync = diffs
+        val markAsReadArticles =
+            toBeSync.filter { !it.value.isUnread }.map { it.key }.toSet()
+        val markAsUnreadArticles =
+            toBeSync.filter { it.value.isUnread }.map { it.key }.toSet()
+
+        val rssService = rssService.get()
+
+        return supervisorScope {
+            val read =
+                markAsReadArticles.takeIf { it.isNotEmpty() }?.let { articleIds ->
+                    async {
+                        rssService.syncReadStatus(articleIds = articleIds, isUnread = false)
+                    }
+                }
+            val unread =
+                markAsUnreadArticles.takeIf { it.isNotEmpty() }?.let { articleIds ->
+                    async {
+                        rssService.syncReadStatus(articleIds = articleIds, isUnread = true)
+                    }
+                }
+            (read?.let { runCatching { it.await() }.getOrDefault(emptySet()) } ?: emptySet()) +
+                (unread?.let { runCatching { it.await() }.getOrDefault(emptySet()) } ?: emptySet())
+        }
+    }
+
+    private fun removeSyncedDiffs(
+        attemptedDiffs: Map<String, Diff>,
+        syncedArticleIds: Set<String>,
+    ) {
+        syncedArticleIds.forEach { articleId ->
+            val attemptedDiff = attemptedDiffs[articleId] ?: return@forEach
+            if (pendingSyncDiffs[articleId] == attemptedDiff) {
+                pendingSyncDiffs.remove(articleId)
+                syncedDiffs[articleId] = attemptedDiff
+            }
+        }
+    }
+
+    private fun restoreOutbox(account: Account) {
+        cacheRestoreJob = applicationScope.launch(ioDispatcher) {
+            var restored =
+                try {
+                    outboxStore.read()
+                } catch (error: Exception) {
+                    Timber.e(error, "Unable to restore the read-status outbox")
+                    ReadStatusOutboxSnapshot()
+                }
+            val legacyCacheFile =
+                legacyCacheRoot.resolve(account.id.toString()).resolve("diff_map.json")
+            if (
+                restored == ReadStatusOutboxSnapshot() &&
+                    legacyCacheFile.isFile
+            ) {
+                restored =
+                    runCatching {
+                        val type = object : TypeToken<Map<String, Diff>>() {}.type
+                        val localDiffs =
+                            Gson().fromJson<Map<String, Diff>>(legacyCacheFile.readText(), type)
+                                .orEmpty()
+                        ReadStatusOutboxSnapshot(localDiffs = localDiffs)
+                    }.getOrElse { error ->
+                        Timber.e(error, "Unable to migrate the legacy read-status cache")
+                        ReadStatusOutboxSnapshot()
+                    }
+                if (restored.localDiffs.isNotEmpty()) legacyCacheFile.delete()
+            }
+            diffMap.clear()
+            diffMap.putAll(restored.localDiffs)
+            pendingSyncDiffs.clear()
+            pendingSyncDiffs.putAll(restored.pendingRemoteDiffs)
+            if (account.type != AccountType.Local && restored.pendingRemoteDiffs.isEmpty()) {
+                // Legacy state did not distinguish local changes from remote work. Replaying these
+                // idempotent updates is safer than silently losing a cross-device status change.
+                pendingSyncDiffs.putAll(restored.localDiffs)
+            }
+            commitDiffsToDbInternal()
+            persistOutbox()
+        }
+    }
+
+    private companion object {
+        const val PERSIST_DEBOUNCE_MILLIS = 250L
+        const val REMOTE_SYNC_DEBOUNCE_MILLIS = 2_000L
+    }
+}
+
+data class Diff(
+    val isUnread: Boolean, val articleId: String, val feedId: String
+) {
+    constructor(isUnread: Boolean, articleWithFeed: ArticleWithFeed) : this(
+        isUnread = isUnread,
+        articleId = articleWithFeed.article.id,
+        feedId = articleWithFeed.feed.id,
+    )
+}

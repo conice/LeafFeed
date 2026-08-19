@@ -15,5 +15,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "LeafFeed"
+rootProject.name = "Morss"
 include(":app")
