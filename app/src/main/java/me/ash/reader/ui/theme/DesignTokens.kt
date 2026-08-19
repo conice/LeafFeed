@@ -17,7 +17,6 @@ object LayoutTokens {
     val ActionGap = 16.dp
     val ListItemGap = 4.dp
     val ContentGap = 12.dp
-    val MinimumTouchTarget = 48.dp
     val DividerThickness = 1.dp
 }
 
@@ -37,6 +36,4 @@ object MotionTokens {
 object ShapeTokens {
     val Control = Shapes.small
     val Surface = Shapes.medium
-    val Sheet = Shapes.large
-    val Pill = Shapes.extraLarge
 }

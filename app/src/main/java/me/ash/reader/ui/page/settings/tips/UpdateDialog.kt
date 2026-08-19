@@ -111,14 +111,6 @@ fun UpdateDialog(
             TextButton(
                 onClick = {
                     context.openURL("${resources.getString(R.string.github_link)}/releases/latest", OpenLinkPreference.AutoPreferCustomTabs)
-                    // Disable automatic updates in F-Droid
-//                    if (downloadState !is Download.Progress) {
-//                        updateViewModel.dispatch(
-//                            UpdateViewAction.DownloadUpdate(
-//                                url = context.newVersionDownloadUrl,
-//                            )
-//                        )
-//                    }
                 }
             ) {
                 Text(

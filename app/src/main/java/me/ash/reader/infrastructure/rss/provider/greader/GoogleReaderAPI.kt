@@ -27,8 +27,6 @@ import okhttp3.executeAsync
 import okio.IOException
 import timber.log.Timber
 
-private const val TAG = "GoogleReaderAPI"
-
 class GoogleReaderAPI
 private constructor(
     context: Context,

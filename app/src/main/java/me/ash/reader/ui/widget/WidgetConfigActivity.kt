@@ -68,7 +68,6 @@ class WidgetConfigActivity : ComponentActivity() {
     @Inject lateinit var settingsProvider: SettingsProvider
     @Inject lateinit var workManager: WorkManager
     private val glanceManager by lazy { GlanceAppWidgetManager(this) }
-    private val appWidgetManager by lazy { AppWidgetManager.getInstance(this) }
 
     @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {

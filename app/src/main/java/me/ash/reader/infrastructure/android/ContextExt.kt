@@ -81,8 +81,7 @@ fun Context.showToastLong(message: String?) {
     showToast(message, Toast.LENGTH_LONG)
 }
 
-@Deprecated("Use LocalUriHandler.current instead")
-fun Context.openURL(
+internal fun Context.openURL(
     url: String?,
     openLink: OpenLinkPreference,
     specificBrowser: OpenLinkSpecificBrowserPreference = OpenLinkSpecificBrowserPreference.default

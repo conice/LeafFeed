@@ -12,7 +12,6 @@ import javax.inject.Inject
 import kotlin.collections.any
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,7 +44,6 @@ import me.ash.reader.domain.model.article.ArticleTagLabel
 import me.ash.reader.application.data.ArticleFlowItem
 import me.ash.reader.domain.model.article.ArticleWithFeed
 import me.ash.reader.domain.model.article.SavedSearch
-import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.model.general.MarkAsReadConditions
 import me.ash.reader.domain.model.general.Filter
 import me.ash.reader.domain.repository.ArticleDao
@@ -72,7 +70,6 @@ import me.ash.reader.ui.page.home.SyncOperationState
 import timber.log.Timber
 import org.jsoup.Jsoup
 
-private const val TAG = "FlowViewModel"
 private const val ARTICLE_SUMMARY_MAX_CHARS = 30_000
 private const val SEARCH_DEBOUNCE_MILLIS = 300L
 
@@ -513,9 +510,6 @@ constructor(
 
     private val currentArticle: Article?
         get() = readingUiState.value.articleWithFeed?.article
-
-    private val currentFeed: Feed?
-        get() = readingUiState.value.articleWithFeed?.feed
 
     fun initData(articleId: String, listIndex: Int? = null) {
         val openedAt = Date()

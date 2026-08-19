@@ -38,9 +38,7 @@ import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.repository.FeedDao
 import me.ash.reader.domain.repository.GroupDao
 import me.ash.reader.infrastructure.android.NotificationHelper
-import me.ash.reader.infrastructure.di.DefaultDispatcher
 import me.ash.reader.infrastructure.di.IODispatcher
-import me.ash.reader.infrastructure.di.MainDispatcher
 import me.ash.reader.infrastructure.html.Readability
 import me.ash.reader.infrastructure.net.onFailure
 import me.ash.reader.infrastructure.net.onSuccess
@@ -61,8 +59,6 @@ import me.ash.reader.infrastructure.android.isFuture
 import me.ash.reader.domain.model.general.spacerDollar
 import timber.log.Timber
 
-private const val TAG = "GoogleReaderRssService"
-
 class GoogleReaderRssService
 @Inject
 constructor(
@@ -73,8 +69,6 @@ constructor(
     private val notificationHelper: NotificationHelper,
     private val groupDao: GroupDao,
     @IODispatcher private val ioDispatcher: CoroutineDispatcher,
-    @MainDispatcher private val mainDispatcher: CoroutineDispatcher,
-    @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
     private val workManager: WorkManager,
     private val accountService: AccountService,
     private val syncLogger: SyncLogger,
@@ -85,9 +79,7 @@ constructor(
         feedDao,
         workManager,
         rssHelper,
-        notificationHelper,
         ioDispatcher,
-        defaultDispatcher,
         accountService,
     ) {
 
@@ -164,7 +156,6 @@ constructor(
         // TODO: When users need to subscribe to multiple feeds continuously, this makes them
         // uncomfortable.
         //  It is necessary to make syncWork support synchronizing individual specified feeds.
-        // super.doSyncOneTime()
     }
 
     override suspend fun addGroup(destFeed: Feed?, newGroupName: String): String {
@@ -516,11 +507,6 @@ constructor(
         } catch (e: Exception) {
             Timber.tag("RLog").e(e, "On sync exception: ${e.message}")
             syncLogger.log(e)
-            //                withContext(mainDispatcher) {
-            //                    context.showToast(e.message) todo: find a good way to
-            // notice user
-            // the error
-            //                }
             ListenableWorker.Result.retry()
         }
     }
@@ -722,9 +708,6 @@ constructor(
                                 shortDescription =
                                     Readability.parseToText(it.summary?.content, findArticleURL(it))
                                         .take(280),
-                                //                        fullContent = it.summary?.content
-                                // ?:
-                                // "",
                                 img = rssHelper.findThumbnail(it.summary?.content),
                                 link = normalizeArticleUrl(findArticleURL(it)),
                                 feedId =

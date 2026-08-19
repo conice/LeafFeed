@@ -11,10 +11,9 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import me.ash.reader.infrastructure.preference.LocalOpenLink
-import me.ash.reader.infrastructure.preference.LocalOpenLinkSpecificBrowser
 import me.ash.reader.infrastructure.preference.LocalReadingBoldCharacters
 import me.ash.reader.infrastructure.preference.LocalReadingFonts
 import me.ash.reader.infrastructure.preference.LocalReadingImageHorizontalPadding
@@ -30,7 +29,6 @@ import me.ash.reader.infrastructure.preference.LocalReadingTextLetterSpacing
 import me.ash.reader.infrastructure.preference.LocalReadingTextLineHeight
 import me.ash.reader.infrastructure.preference.ReadingFontsPreference
 import me.ash.reader.ui.ext.ExternalFonts
-import me.ash.reader.infrastructure.android.openURL
 import me.ash.reader.ui.ext.surfaceColorAtElevation
 import me.ash.reader.ui.theme.palette.alwaysLight
 import java.net.URI
@@ -44,8 +42,7 @@ fun RYWebView(
     onSelectionActiveChange: ((Boolean) -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val openLink = LocalOpenLink.current
-    val openLinkSpecificBrowser = LocalOpenLinkSpecificBrowser.current
+    val uriHandler = LocalUriHandler.current
     val tonalElevation = LocalReadingPageTonalElevation.current
     val selectionTextColor =
         (MaterialTheme.colorScheme.onTertiaryContainer alwaysLight true).toArgb()
@@ -87,8 +84,7 @@ fun RYWebView(
             }
         }
     val escapedBaseUrl = remember(safeBaseUrl) { TextUtils.htmlEncode(safeBaseUrl.orEmpty()) }
-    val currentOpenLink by rememberUpdatedState(openLink)
-    val currentOpenLinkSpecificBrowser by rememberUpdatedState(openLinkSpecificBrowser)
+    val currentUriHandler by rememberUpdatedState(uriHandler)
     val currentOnImageClick by rememberUpdatedState(onImageClick)
     val currentOnSelectionActiveChange by rememberUpdatedState(onSelectionActiveChange)
 
@@ -107,13 +103,7 @@ fun RYWebView(
                     WebViewClient(
                         refererUrl = refererUrl,
                         imageClicksEnabled = onImageClick != null,
-                        onOpenLink = { url ->
-                            context.openURL(
-                                url,
-                                currentOpenLink,
-                                currentOpenLinkSpecificBrowser,
-                            )
-                        },
+                        onOpenLink = { url -> currentUriHandler.openUri(url) },
                     ),
                 onImageClick =
                     if (onImageClick != null) {

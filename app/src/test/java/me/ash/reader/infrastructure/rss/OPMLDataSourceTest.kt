@@ -1,17 +1,11 @@
 package me.ash.reader.infrastructure.rss
 
-import android.content.Context
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.runBlocking
 import me.ash.reader.domain.model.group.Group
 import me.ash.reader.domain.model.group.GroupWithFeed
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.mockito.Mock
-import org.mockito.junit.MockitoJUnitRunner
-import org.mockito.kotlin.mock
 
 internal const val OPML_TEMPLATE: String = """
 <opml version="1.0">
@@ -24,26 +18,14 @@ internal const val OPML_TEMPLATE: String = """
 </opml>
 """
 
-@RunWith(MockitoJUnitRunner::class)
 class OPMLDataSourceTest {
-
-    @Mock
-    private lateinit var mockContext: Context
-
-    @Mock
-    private lateinit var mockIODispatcher: CoroutineDispatcher
-
     private lateinit var opmlDataSource: OPMLDataSource
 
     private val defaultGroup = Group(id = "1", name = "Default", accountId = 1)
 
-    private lateinit var mockObject: OPMLDataSourceTest
-
     @Before
     fun setUp() {
-        mockContext = mock<Context> { }
-        mockIODispatcher = mock<CoroutineDispatcher> {}
-        opmlDataSource = OPMLDataSource(mockContext, mockIODispatcher)
+        opmlDataSource = OPMLDataSource()
     }
 
     private fun fill(value: String): String = OPML_TEMPLATE.replace("{{var}}", value)

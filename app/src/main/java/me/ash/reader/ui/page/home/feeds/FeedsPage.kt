@@ -66,7 +66,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.eventFlow
 import androidx.work.WorkInfo
-import kotlin.collections.set
 import kotlinx.coroutines.launch
 import me.ash.reader.R
 import me.ash.reader.application.service.OpmlImportPhase
@@ -311,7 +310,6 @@ fun FeedsPage(
 
     RYScaffold(
         topBarTonalElevation = topBarTonalElevation.value.dp,
-        //        containerTonalElevation = groupListTonalElevation.value.dp,
         topBar = {
             TopAppBar(
                 modifier =

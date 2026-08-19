@@ -216,26 +216,6 @@ fun AppEntry(backStack: NavBackStack<NavKey>, podcastPlayer: PodcastPlayer) {
                                 },
                             )
                         }
-                    //                    is Route.Reading -> {
-                    //                        NavEntry(key) {
-                    //                            val articleId = key.articleId
-                    //
-                    //                            val readingViewModel: ReadingViewModel =
-                    //                                hiltViewModel<
-                    //                                    ReadingViewModel,
-                    //                                    ReadingViewModel.ReadingViewModelFactory,
-                    //                                > { factory ->
-                    //                                    factory.create(articleId.toString(), null)
-                    //                                }
-                    //
-                    //                            ReadingPage(
-                    //                                readingViewModel = readingViewModel,
-                    //                                onBack = onBack,
-                    //                                onNavigateToStylePage = {
-                    // backStack.add(Route.ReadingPageStyle) },
-                    //                            )
-                    //                        }
-                    //                    }
                     Route.Startup -> {
                         NavEntry(key) {
                             StartupPage(onNavigateToFeeds = { backStack.add(Route.Feeds) })

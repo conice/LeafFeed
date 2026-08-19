@@ -30,8 +30,6 @@ import me.ash.reader.infrastructure.preference.LocalHideEmptyGroups
 import me.ash.reader.infrastructure.preference.LocalInitialFilter
 import me.ash.reader.infrastructure.preference.LocalInitialPage
 import me.ash.reader.infrastructure.preference.LocalMarkAsReadOnScroll
-import me.ash.reader.infrastructure.preference.LocalOpenLink
-import me.ash.reader.infrastructure.preference.LocalOpenLinkSpecificBrowser
 import me.ash.reader.infrastructure.preference.LocalPullToSwitchArticle
 import me.ash.reader.infrastructure.preference.LocalSettings
 import me.ash.reader.infrastructure.preference.LocalSharedContent
@@ -68,10 +66,10 @@ fun InteractionPage(
     val hideEmptyGroups = LocalHideEmptyGroups.current
     val sortUnreadArticles = LocalSortUnreadArticles.current
     val pullToSwitchArticle = LocalPullToSwitchArticle.current
-    val openLink = LocalOpenLink.current
-    val openLinkSpecificBrowser = LocalOpenLinkSpecificBrowser.current
     val sharedContent = LocalSharedContent.current
     val settings = LocalSettings.current
+    val openLink = settings.openLink
+    val openLinkSpecificBrowser = settings.openLinkSpecificBrowser
     val pullToSwitchFeed = settings.pullToSwitchFeed
 
     val scope = rememberCoroutineScope()

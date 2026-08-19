@@ -1,14 +1,10 @@
 package me.ash.reader.infrastructure.rss
 
-import android.content.Context
 import be.ceau.opml.OpmlParser
 import be.ceau.opml.entity.Outline
-import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineDispatcher
 import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.model.group.Group
 import me.ash.reader.domain.model.group.GroupWithFeed
-import me.ash.reader.infrastructure.di.IODispatcher
 import me.ash.reader.infrastructure.android.extractDomain
 import me.ash.reader.domain.model.general.spacerDollar
 import java.io.BufferedInputStream
@@ -16,12 +12,7 @@ import java.io.InputStream
 import java.util.*
 import javax.inject.Inject
 
-class OPMLDataSource @Inject constructor(
-    @ApplicationContext
-    private val context: Context,
-    @IODispatcher
-    private val ioDispatcher: CoroutineDispatcher,
-) {
+class OPMLDataSource @Inject constructor() {
 
     @Throws(Exception::class)
     suspend fun parseFileInputStream(

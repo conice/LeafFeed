@@ -69,9 +69,6 @@ open class RYArticleGrabberExtended(options: ReadabilityOptions, regExExtended: 
                         if(childNode is TextNode && childNode.text().trim().length > 0) {
                             val p = doc.createElement("p")
                             p.text(childNode.text())
-                            // EXPERIMENTAL
-                            // p.attr("style", "display: inline;")
-                            // p.addClass("readability-styled")
                             childNode.replaceWith(p)
                         }
                     }

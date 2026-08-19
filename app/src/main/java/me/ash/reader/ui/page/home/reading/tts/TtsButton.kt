@@ -150,8 +150,6 @@ fun TtsProgressIndicator(
 private fun Preview() {
     Column {
         TtsProgressIndicator({ .5f })
-//        TtsButton(onClick = {}, state = TextToSpeechManager.State.Idle)
-//        TtsButton(onClick = {}, state = TextToSpeechManager.State.Reading(2, 4))
         var state: TextToSpeechManager.State by remember { mutableStateOf(TextToSpeechManager.State.Idle) }
         TtsButton(onClick = {
             state = if (state == TextToSpeechManager.State.Idle) {

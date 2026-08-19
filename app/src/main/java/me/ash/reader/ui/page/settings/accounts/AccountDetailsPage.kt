@@ -52,9 +52,6 @@ import me.ash.reader.R
 import me.ash.reader.domain.model.account.KeepArchivedPreference
 import me.ash.reader.domain.model.account.SyncBlockListPreference
 import me.ash.reader.domain.model.account.SyncIntervalPreference
-import me.ash.reader.domain.model.account.SyncOnStartPreference
-import me.ash.reader.domain.model.account.SyncOnlyOnWiFiPreference
-import me.ash.reader.domain.model.account.SyncOnlyWhenChargingPreference
 import me.ash.reader.domain.model.account.not
 import me.ash.reader.ui.component.base.DisplayText
 import me.ash.reader.ui.component.base.FeedbackIconButton
@@ -238,10 +235,6 @@ fun AccountDetailsPage(
                         desc = selectedAccount?.keepArchived?.toDesc(context),
                         onClick = { keepArchivedDialogVisible = true },
                     ) {}
-                    // SettingItem(
-                    //     title = stringResource(R.string.block_list),
-                    //     onClick = { blockListDialogVisible = true },
-                    // ) {}
                     Tips(
                         text =
                             stringResource(R.string.synchronous_tips) +

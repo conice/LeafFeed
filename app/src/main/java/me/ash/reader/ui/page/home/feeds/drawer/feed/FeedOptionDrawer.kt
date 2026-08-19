@@ -2,7 +2,6 @@ package me.ash.reader.ui.page.home.feeds.drawer.feed
 
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -26,8 +26,6 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import me.ash.reader.R
 import me.ash.reader.application.data.ArticleContentType
 import me.ash.reader.domain.model.feed.Feed
-import me.ash.reader.infrastructure.preference.LocalOpenLink
-import me.ash.reader.infrastructure.preference.LocalOpenLinkSpecificBrowser
 import me.ash.reader.ui.component.ChangeUrlDialog
 import me.ash.reader.ui.component.FeedIcon
 import me.ash.reader.ui.component.RenameDialog
@@ -35,8 +33,6 @@ import me.ash.reader.ui.component.base.BottomDrawer
 import me.ash.reader.ui.component.base.ExpressiveIconButton
 import me.ash.reader.ui.component.base.TextFieldDialog
 import me.ash.reader.ui.ext.collectAsStateValue
-import me.ash.reader.infrastructure.android.openURL
-import me.ash.reader.ui.ext.roundClick
 import me.ash.reader.infrastructure.android.showToast
 import me.ash.reader.ui.interaction.alphaIndicationClickable
 import me.ash.reader.ui.page.home.feeds.FeedOptionView
@@ -54,9 +50,8 @@ fun FeedOptionDrawer(
     content: @Composable () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val view = LocalView.current
-    val openLink = LocalOpenLink.current
-    val openLinkSpecificBrowser = LocalOpenLinkSpecificBrowser.current
     val feedOptionUiState = feedOptionViewModel.feedOptionUiState.collectAsStateValue()
     val feed = feedOptionUiState.feed
     val toastString = stringResource(R.string.rename_toast, feedOptionUiState.newName)
@@ -134,7 +129,7 @@ fun FeedOptionDrawer(
                         feedOptionViewModel.showNewGroupDialog()
                     },
                     onFeedUrlClick = {
-                        context.openURL(feed?.url, openLink, openLinkSpecificBrowser)
+                        feed?.url?.let(uriHandler::openUri)
                     },
                     onFeedUrlLongClick = {
                         if (feedOptionViewModel.rssService.get().updateSubscription) {

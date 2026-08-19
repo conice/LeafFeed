@@ -114,7 +114,6 @@ fun Banner(
                 )
                 desc?.let {
                     Text(
-//                        modifier = Modifier.animateContentSize(tween()),
                         text = it,
                         style = MaterialTheme.typography.bodyMedium,
                         color = contentColor.copy(alpha = .7f),

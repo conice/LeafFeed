@@ -1,7 +1,6 @@
 package me.ash.reader.ui.page.settings.color.reading
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,13 +18,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import me.ash.reader.R
-import me.ash.reader.infrastructure.preference.LocalOpenLink
-import me.ash.reader.infrastructure.preference.LocalOpenLinkSpecificBrowser
 import me.ash.reader.infrastructure.preference.LocalReadingBoldCharacters
 import me.ash.reader.infrastructure.preference.not
 import me.ash.reader.ui.component.base.Banner
@@ -42,8 +38,6 @@ fun BoldCharactersPage(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val openLink = LocalOpenLink.current
-    val openLinkSpecificBrowser = LocalOpenLinkSpecificBrowser.current
 
     val boldCharacters = LocalReadingBoldCharacters.current
 

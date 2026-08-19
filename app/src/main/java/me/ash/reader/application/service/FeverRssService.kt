@@ -10,7 +10,6 @@ import com.rometools.rome.feed.synd.SyndFeed
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Date
 import javax.inject.Inject
-import kotlin.collections.set
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.coroutineScope
 import me.ash.reader.R
@@ -25,9 +24,7 @@ import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.repository.FeedDao
 import me.ash.reader.domain.repository.GroupDao
 import me.ash.reader.infrastructure.android.NotificationHelper
-import me.ash.reader.infrastructure.di.DefaultDispatcher
 import me.ash.reader.infrastructure.di.IODispatcher
-import me.ash.reader.infrastructure.di.MainDispatcher
 import me.ash.reader.infrastructure.exception.FeverAPIException
 import me.ash.reader.infrastructure.html.Readability
 import me.ash.reader.infrastructure.rss.RssHelper
@@ -49,8 +46,6 @@ constructor(
     private val notificationHelper: NotificationHelper,
     private val groupDao: GroupDao,
     @IODispatcher private val ioDispatcher: CoroutineDispatcher,
-    @MainDispatcher private val mainDispatcher: CoroutineDispatcher,
-    @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
     workManager: WorkManager,
     private val accountService: AccountService,
 ) :
@@ -60,9 +55,7 @@ constructor(
         feedDao,
         workManager,
         rssHelper,
-        notificationHelper,
         ioDispatcher,
-        defaultDispatcher,
         accountService,
     ) {
 
@@ -328,9 +321,6 @@ constructor(
             ListenableWorker.Result.success()
         } catch (e: Exception) {
             Log.e("RLog", "On sync exception: ${e.message}", e)
-            //                withContext(mainDispatcher) {
-            //                    context.showToast(e.message)
-            //                }
             ListenableWorker.Result.failure(
                 androidx.work.workDataOf(SyncWorker.ERROR_MESSAGE to (e.message ?: e.javaClass.simpleName))
             )

@@ -30,7 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -40,11 +40,8 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import me.ash.reader.R
 import me.ash.reader.infrastructure.preference.LocalFlowArticleListFeedIcon
 import me.ash.reader.infrastructure.preference.LocalFlowArticleListTonalElevation
-import me.ash.reader.infrastructure.preference.LocalOpenLink
-import me.ash.reader.infrastructure.preference.LocalOpenLinkSpecificBrowser
 import me.ash.reader.ui.component.base.FeedbackIconButton
 import me.ash.reader.ui.component.base.RYScaffold
-import me.ash.reader.infrastructure.android.openURL
 import me.ash.reader.ui.page.home.flow.ArticleList
 import me.ash.reader.ui.page.home.flow.SearchBar
 
@@ -58,11 +55,9 @@ fun ReadingHistoryPage(
     onOpenArticle: (String) -> Unit,
     viewModel: ReadingHistoryViewModel = hiltViewModel(),
 ) {
-    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val articleListFeedIcon = LocalFlowArticleListFeedIcon.current
     val articleListTonalElevation = LocalFlowArticleListTonalElevation.current
-    val openLink = LocalOpenLink.current
-    val openLinkSpecificBrowser = LocalOpenLinkSpecificBrowser.current
     val pagingItems = viewModel.pagingData.collectAsLazyPagingItems()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
@@ -133,11 +128,7 @@ fun ReadingHistoryPage(
                             isMenuEnabled = false,
                             onClick = { articleWithFeed, _ ->
                                 if (articleWithFeed.feed.isBrowser) {
-                                    context.openURL(
-                                        articleWithFeed.article.link,
-                                        openLink,
-                                        openLinkSpecificBrowser,
-                                    )
+                                    uriHandler.openUri(articleWithFeed.article.link)
                                 } else {
                                     onOpenArticle(articleWithFeed.article.id)
                                 }

@@ -18,7 +18,6 @@ import me.ash.reader.ui.widget.ArticleCardWidget
 import me.ash.reader.ui.widget.ArticleCardWidgetReceiver
 import me.ash.reader.ui.widget.ArticleListWidget
 import me.ash.reader.ui.widget.ArticleListWidgetReceiver
-import me.ash.reader.ui.widget.WidgetRepository
 
 @HiltWorker
 class WidgetUpdateWorker
@@ -26,7 +25,6 @@ class WidgetUpdateWorker
 constructor(
     @Assisted private val context: Context,
     @Assisted private val workerParams: WorkerParameters,
-    private val repository: WidgetRepository,
 ) : CoroutineWorker(context, workerParams) {
     var haveSetPreviews = false
 

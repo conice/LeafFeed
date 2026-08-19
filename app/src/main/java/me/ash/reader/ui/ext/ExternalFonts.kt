@@ -27,12 +27,6 @@ class ExternalFonts(
     init {
         ctx.contentResolver.openInputStream(uri)?.use { inputStream ->
             fontByteArray = inputStream.readBytes()
-            // File(inputStream.readString()).let {
-            //     if (!it.exists()) throw IllegalArgumentException("Invalid path")
-            //     if (!it.isFile) throw IllegalArgumentException("Invalid path")
-            //     if (it.extension.lowercase() != "ttf") throw IllegalArgumentException("Only *.ttf fonts are supported")
-            //     fontByteArray = it
-            // }
         }
     }
 

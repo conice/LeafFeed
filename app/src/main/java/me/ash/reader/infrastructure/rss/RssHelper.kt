@@ -256,16 +256,6 @@ constructor(
             syndEntry.contents
                 .takeIf { it.isNotEmpty() }
                 ?.let { it.joinToString("\n") { it.value } }
-        //        Log.i(
-        //            "RLog",
-        //            "request rss:\n" +
-        //                    "name: ${feed.name}\n" +
-        //                    "feedUrl: ${feed.url}\n" +
-        //                    "url: ${syndEntry.link}\n" +
-        //                    "title: ${syndEntry.title}\n" +
-        //                    "desc: ${desc}\n" +
-        //                    "content: ${content}\n"
-        //        )
         val enclosure = syndEntry.enclosures?.firstOrNull {
             isPodcastAudio(it.url, it.type)
         }
@@ -319,7 +309,6 @@ constructor(
             author = syndEntry.author,
             rawDescription = content ?: desc ?: "",
             shortDescription = Readability.parseToText(desc ?: content, syndEntry.link).take(280),
-            //            fullContent = content,
             img = findThumbnail(syndEntry)?.takeUnless { it == audioUrl } ?: findThumbnail(content ?: desc),
             link = normalizeArticleUrl(syndEntry.link).ifBlank { audioUrl.orEmpty() },
             updateAt = preDate,

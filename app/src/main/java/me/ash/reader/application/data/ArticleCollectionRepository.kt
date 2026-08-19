@@ -26,7 +26,6 @@ import me.ash.reader.domain.model.article.SavedSearch
 import me.ash.reader.domain.model.feed.Feed
 import me.ash.reader.domain.model.group.Group
 import me.ash.reader.domain.repository.ArticleCollectionDao
-import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.repository.ArticleBackupDao
 import me.ash.reader.domain.repository.FeedDao
 import me.ash.reader.domain.repository.GroupDao
@@ -39,7 +38,6 @@ class ArticleCollectionRepository
 @Inject
 constructor(
     private val dao: ArticleCollectionDao,
-    private val articleDao: ArticleDao,
     private val articleBackupDao: ArticleBackupDao,
     private val feedDao: FeedDao,
     private val groupDao: GroupDao,

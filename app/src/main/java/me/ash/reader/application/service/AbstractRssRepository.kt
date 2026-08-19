@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.flowOn
 import me.ash.reader.domain.model.account.Account
 import me.ash.reader.domain.model.article.ArchivedArticle
 import me.ash.reader.domain.model.article.ArchivedArticleCleanupCandidate
-import me.ash.reader.domain.model.article.Article
 import me.ash.reader.domain.model.article.ArticleWithFeed
 import me.ash.reader.application.data.ArticleContentType
 import me.ash.reader.application.data.toArticleFtsQuery
@@ -25,7 +24,6 @@ import me.ash.reader.domain.model.group.GroupWithFeed
 import me.ash.reader.domain.repository.ArticleDao
 import me.ash.reader.domain.repository.FeedDao
 import me.ash.reader.domain.repository.GroupDao
-import me.ash.reader.infrastructure.android.NotificationHelper
 import me.ash.reader.domain.model.account.SyncIntervalPreference
 import me.ash.reader.infrastructure.rss.RssHelper
 import me.ash.reader.infrastructure.widget.WidgetUpdateWorker
@@ -38,9 +36,7 @@ abstract class AbstractRssRepository(
     private val feedDao: FeedDao,
     private val workManager: WorkManager,
     private val rssHelper: RssHelper,
-    private val notificationHelper: NotificationHelper,
     private val dispatcherIO: CoroutineDispatcher,
-    private val dispatcherDefault: CoroutineDispatcher,
     private val accountService: AccountService,
 ) {
 

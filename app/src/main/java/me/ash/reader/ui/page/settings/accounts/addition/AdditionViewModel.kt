@@ -6,19 +6,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import me.ash.reader.application.service.OpmlService
-import me.ash.reader.application.service.RssService
-import me.ash.reader.infrastructure.android.AndroidStringsHelper
-import me.ash.reader.infrastructure.rss.RssHelper
 import javax.inject.Inject
 
 @HiltViewModel
-class AdditionViewModel @Inject constructor(
-    private val opmlService: OpmlService,
-    private val rssService: RssService,
-    private val rssHelper: RssHelper,
-    private val androidStringsHelper: AndroidStringsHelper,
-) : ViewModel() {
+class AdditionViewModel @Inject constructor() : ViewModel() {
 
     private val _additionUiState = MutableStateFlow(AdditionUiState())
     val additionUiState: StateFlow<AdditionUiState> = _additionUiState.asStateFlow()

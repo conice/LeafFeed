@@ -21,7 +21,6 @@
 package me.ash.reader.ui.component.reader
 
 import android.content.Context
-import android.util.Log
 import androidx.compose.foundation.lazy.LazyListScope
 import me.ash.reader.R
 
@@ -34,7 +33,6 @@ fun LazyListScope.Reader(
     onImageClick: ((imgUrl: String, altText: String) -> Unit)? = null,
     onLinkClick: (String) -> Unit
 ) {
-//    Log.i("RLog", "Reader: ")
     htmlFormattedText(
         inputStream = content.byteInputStream(),
         subheadUpperCase = subheadUpperCase,

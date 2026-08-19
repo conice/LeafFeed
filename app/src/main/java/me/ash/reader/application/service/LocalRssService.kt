@@ -29,7 +29,6 @@ import me.ash.reader.domain.repository.FeedDao
 import me.ash.reader.domain.repository.GroupDao
 import me.ash.reader.infrastructure.android.NotificationHelper
 import me.ash.reader.infrastructure.audio.PodcastDownloadRepository
-import me.ash.reader.infrastructure.di.DefaultDispatcher
 import me.ash.reader.infrastructure.di.IODispatcher
 import me.ash.reader.infrastructure.preference.FeaturePreferenceKeys
 import me.ash.reader.infrastructure.preference.SettingsProvider
@@ -37,7 +36,6 @@ import me.ash.reader.infrastructure.rss.RssHelper
 import me.ash.reader.infrastructure.rss.normalizeArticleUrl
 import timber.log.Timber
 
-private const val TAG = "LocalRssService"
 private const val LOCAL_SYNC_CONCURRENCY = 4
 internal const val LOCAL_SYNC_BATCH_FEEDS = 12
 internal const val LOCAL_SYNC_BATCH_ARTICLES = 200
@@ -58,7 +56,6 @@ constructor(
     private val podcastDownloadRepository: PodcastDownloadRepository,
     private val groupDao: GroupDao,
     @IODispatcher private val ioDispatcher: CoroutineDispatcher,
-    @DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher,
     private val workManager: WorkManager,
     private val accountService: AccountService,
     private val syncLogger: SyncLogger,
@@ -70,9 +67,7 @@ constructor(
         feedDao,
         workManager,
         rssHelper,
-        notificationHelper,
         ioDispatcher,
-        defaultDispatcher,
         accountService,
     ) {
 

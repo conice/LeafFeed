@@ -70,7 +70,6 @@ class AppService @Inject constructor(
             val currentVersion = context.getCurrentVersion()
             val latest = response.body()!!
             val latestVersion = latest.tag_name.toVersion()
-//            val latestVersion = "1.0.0".toVersion()
             val latestLog = latest.body ?: ""
             val latestPublishDate = latest.published_at ?: latest.created_at ?: ""
             val latestSize = latest.assets?.first()?.size ?: 0

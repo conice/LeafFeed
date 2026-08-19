@@ -1,7 +1,6 @@
 package me.ash.reader.infrastructure.preference
 
 import android.content.Context
-import androidx.compose.runtime.compositionLocalOf
 import androidx.datastore.preferences.core.Preferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -11,10 +10,6 @@ import me.ash.reader.infrastructure.preference.getPreference
 import me.ash.reader.infrastructure.preference.PreferencesKey.Companion.openLink
 import me.ash.reader.infrastructure.preference.dataStore
 import me.ash.reader.infrastructure.preference.put
-
-@Deprecated("Use LocalUriHandler instead")
-val LocalOpenLink =
-    compositionLocalOf<OpenLinkPreference> { OpenLinkPreference.default }
 
 sealed class OpenLinkPreference(val value: Int) : Preference() {
     object AutoPreferCustomTabs : OpenLinkPreference(0)
