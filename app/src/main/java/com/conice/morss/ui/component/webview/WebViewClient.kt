@@ -44,6 +44,7 @@ class WebViewClient(
     }
 
     override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+        if (request?.isForMainFrame != true) return false
         val uri = request?.url ?: return false
         if (uri.scheme?.lowercase() in EXTERNAL_LINK_SCHEMES) {
             onOpenLink(uri.toString())

@@ -46,7 +46,7 @@ object WebViewLayout {
 
                         else -> "sans-serif"
                     }
-                domStorageEnabled = false
+                domStorageEnabled = true
                 databaseEnabled = false
                 setGeolocationEnabled(false)
                 javaScriptEnabled = true

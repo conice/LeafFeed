@@ -31,8 +31,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.conice.morss.ui.interaction.expressivePressFeedback
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -113,12 +111,6 @@ fun SelectableSettingGroupItem(
                     )
                 }
             }
-            Icon(
-                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                contentDescription = null,
-                modifier = Modifier.padding(start = 12.dp),
-                tint = secondaryColor,
-            )
         }
     }
 }

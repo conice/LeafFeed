@@ -42,7 +42,6 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.OpenInNew
 import com.conice.morss.ui.theme.palette.LocalTonalPalettes
@@ -196,12 +195,6 @@ fun SettingItem(
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
                         strokeWidth = 2.dp,
-                    )
-                })
-                type == SettingItemType.Navigation -> ({
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
-                        contentDescription = null,
                     )
                 })
                 type == SettingItemType.Choice -> ({

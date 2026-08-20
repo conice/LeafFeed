@@ -28,11 +28,12 @@ full-page parser request.
 
 ## Reader content safety
 
-- Feed HTML is untrusted input. The WebView renderer removes scripts, embedded browsing contexts,
-  event handlers, form controls, and active URL schemes before loading an article.
-- A restrictive content security policy blocks frames, objects, form submissions, external styles,
-  and fetch/XHR/WebSocket connections. Reader-provided JavaScript is limited to formatting and the
-  optional image-click bridge.
+- Feed HTML is untrusted input. The WebView renderer removes scripts, untrusted embedded browsing
+  contexts, event handlers, form controls, and active URL schemes before loading an article. Video
+  frames are limited to YouTube, YouTube NoCookie, Vimeo, and Bilibili player URLs.
+- A restrictive content security policy blocks objects, form submissions, external styles, and
+  fetch/XHR/WebSocket connections while allowing only those video frames. Reader-provided
+  JavaScript is limited to formatting and the optional image-click bridge.
 - Relative resources use only a validated HTTP(S) article URL. Proxied image requests send an
   origin-only referrer, never the article path, query, credentials, or body content.
 

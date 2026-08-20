@@ -137,7 +137,9 @@ fun RYWebView(
         else if (readingFonts is ReadingFontsPreference.GoogleSans) {
             "/android_res/font/google_sans_flex.ttf"
         } else null
-    val sanitizedContent = remember(content) { sanitizeWebViewContent(content) }
+    val sanitizedContent = remember(content, safeBaseUrl) {
+        sanitizeWebViewContent(content, safeBaseUrl)
+    }
 
     key(webView) {
         AndroidView(
