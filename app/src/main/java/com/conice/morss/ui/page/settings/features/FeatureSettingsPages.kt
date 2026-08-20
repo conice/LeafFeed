@@ -25,6 +25,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -87,6 +88,7 @@ fun PodcastSettingsPage(
     navigateToNotifications: () -> Unit,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val viewModel: PodcastSettingsViewModel = hiltViewModel()
     var confirmClearDownloads by remember { mutableStateOf(false) }
     FeatureSettingsPage(title = stringResource(R.string.settings_podcast_title), onBack = onBack, targetSetting = targetSetting) { settings, write ->
@@ -156,7 +158,7 @@ fun PodcastSettingsPage(
         action(stringResource(R.string.settings_podcast_clear_downloads), stringResource(R.string.settings_podcast_clear_downloads_desc), settingKey = SettingKeys.PodcastClearDownloads, type = SettingItemType.Destructive) {
             if (settings.cleanupConfirmation) confirmClearDownloads = true
             else viewModel.clearDownloads { result ->
-                context.showToast(context.getString(if (result.isSuccess) R.string.settings_podcast_downloads_cleared else R.string.settings_podcast_downloads_clear_failed))
+                context.showToast(resources.getString(if (result.isSuccess) R.string.settings_podcast_downloads_cleared else R.string.settings_podcast_downloads_clear_failed))
             }
         }
 
@@ -173,7 +175,7 @@ fun PodcastSettingsPage(
             onConfirm = {
                 confirmClearDownloads = false
                 viewModel.clearDownloads { result ->
-                    context.showToast(context.getString(if (result.isSuccess) R.string.settings_podcast_downloads_cleared else R.string.settings_podcast_downloads_clear_failed))
+                    context.showToast(resources.getString(if (result.isSuccess) R.string.settings_podcast_downloads_cleared else R.string.settings_podcast_downloads_clear_failed))
                 }
             },
         )
@@ -214,6 +216,7 @@ fun DataPrivacySettingsPage(
     navigateToDiagnosticDetails: () -> Unit,
 ) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val viewModel: CacheSettingsViewModel = hiltViewModel()
     val cacheUsage by viewModel.usage.collectAsStateWithLifecycle()
     val storageOperationInProgress by viewModel.operationInProgress.collectAsStateWithLifecycle()
@@ -243,7 +246,7 @@ fun DataPrivacySettingsPage(
         ) {
             if (settings.cleanupConfirmation) confirmClearAi = true
             else viewModel.clearAiSummaryCache { success ->
-                context.showToast(context.getString(if (success) R.string.settings_data_ai_cache_cleared else R.string.settings_data_ai_cache_clear_failed))
+                context.showToast(resources.getString(if (success) R.string.settings_data_ai_cache_cleared else R.string.settings_data_ai_cache_clear_failed))
             }
         }
 
@@ -268,7 +271,7 @@ fun DataPrivacySettingsPage(
         ) {
             viewModel.clearTemporaryCache { success ->
                 context.showToast(
-                    context.getString(if (success) R.string.settings_data_temporary_cleared else R.string.settings_data_temporary_clear_failed)
+                    resources.getString(if (success) R.string.settings_data_temporary_cleared else R.string.settings_data_temporary_clear_failed)
                 )
             }
         }
@@ -282,7 +285,7 @@ fun DataPrivacySettingsPage(
         ) {
             if (settings.cleanupConfirmation) confirmClearReader = true
             else viewModel.clearReaderCache { success ->
-                context.showToast(context.getString(if (success) R.string.settings_data_article_cache_cleared else R.string.settings_data_article_cache_clear_failed))
+                context.showToast(resources.getString(if (success) R.string.settings_data_article_cache_cleared else R.string.settings_data_article_cache_clear_failed))
             }
         }
         action(
@@ -297,8 +300,8 @@ fun DataPrivacySettingsPage(
             else viewModel.cleanOldReadArticles { result ->
                 context.showToast(
                     result.fold(
-                        onSuccess = { context.resources.getQuantityString(R.plurals.settings_data_articles_removed, it, it) },
-                        onFailure = { context.getString(R.string.settings_data_cleanup_articles_failed) },
+                        onSuccess = { resources.getQuantityString(R.plurals.settings_data_articles_removed, it, it) },
+                        onFailure = { resources.getString(R.string.settings_data_cleanup_articles_failed) },
                     )
                 )
             }
@@ -340,7 +343,7 @@ fun DataPrivacySettingsPage(
             onConfirm = {
                 confirmClearAi = false
                 viewModel.clearAiSummaryCache { success ->
-                    context.showToast(context.getString(if (success) R.string.settings_data_ai_cache_cleared else R.string.settings_data_ai_cache_clear_failed))
+                    context.showToast(resources.getString(if (success) R.string.settings_data_ai_cache_cleared else R.string.settings_data_ai_cache_clear_failed))
                 }
             },
         )
@@ -354,7 +357,7 @@ fun DataPrivacySettingsPage(
             onConfirm = {
                 confirmClearReader = false
                 viewModel.clearReaderCache { success ->
-                    context.showToast(context.getString(if (success) R.string.settings_data_article_cache_cleared else R.string.settings_data_article_cache_clear_failed))
+                    context.showToast(resources.getString(if (success) R.string.settings_data_article_cache_cleared else R.string.settings_data_article_cache_clear_failed))
                 }
             },
         )
@@ -370,8 +373,8 @@ fun DataPrivacySettingsPage(
                 viewModel.cleanOldReadArticles { result ->
                     context.showToast(
                         result.fold(
-                            onSuccess = { context.resources.getQuantityString(R.plurals.settings_data_articles_removed, it, it) },
-                            onFailure = { context.getString(R.string.settings_data_cleanup_articles_failed) },
+                            onSuccess = { resources.getQuantityString(R.plurals.settings_data_articles_removed, it, it) },
+                            onFailure = { resources.getString(R.string.settings_data_cleanup_articles_failed) },
                         )
                     )
                 }
@@ -388,7 +391,7 @@ fun DataPrivacySettingsPage(
                 confirmOptimizeDatabase = false
                 viewModel.optimizeDatabases { result ->
                     context.showToast(
-                        context.getString(if (result.isSuccess) R.string.settings_data_optimized else R.string.settings_data_optimize_failed)
+                        resources.getString(if (result.isSuccess) R.string.settings_data_optimized else R.string.settings_data_optimize_failed)
                     )
                 }
             },
